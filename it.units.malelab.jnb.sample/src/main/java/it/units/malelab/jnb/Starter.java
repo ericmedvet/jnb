@@ -16,7 +16,16 @@
 
 package it.units.malelab.jnb;
 
+import it.units.malelab.jnb.core.Param;
+
+import java.util.List;
+
 public class Starter {
+
+  record Office(@Param("roomNumber") int roomNumber, @Param("head") Person head, @Param("staff") List<Person> staff) {}
+
+  record Person(@Param("firstName") String firstName, @Param("lastName") String lastName, @Param("age") int age) {}
+
   public static void main(String[] args) {
     System.out.println("Hello world!");
   }
