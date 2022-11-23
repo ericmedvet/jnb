@@ -16,17 +16,42 @@
 
 package it.units.malelab.jnb;
 
+import it.units.malelab.jnb.core.NamedBuilder;
 import it.units.malelab.jnb.core.Param;
 
 import java.util.List;
 
 public class Starter {
 
-  record Office(@Param("roomNumber") int roomNumber, @Param("head") Person head, @Param("staff") List<Person> staff) {}
+  public record Office(
+      @Param("roomNumbers") List<Integer> roomNumbers,
+      @Param("head") Person head,
+      @Param("staff") List<Person> staff
+  ) {}
 
-  record Person(@Param("firstName") String firstName, @Param("lastName") String lastName, @Param("age") int age) {}
+  public record Person(
+      @Param("name") String name,
+      @Param("age") int age
+  ) {}
 
   public static void main(String[] args) {
-    System.out.println("Hello world!");
+    String description = """
+        office(
+          head = person(name = "Mario Rossi"; age = 43);
+          staff = [
+            person(name = Alice; age = 33);
+            person(name = Bob; age = 25);
+            person(name = Charlie; age = 38)
+          ];
+          roomNumbers = [1;2] \s
+        )
+        """;
+    NamedBuilder<?> namedBuilder = NamedBuilder.empty()
+        .and(NamedBuilder.fromClass(Office.class))
+        .and(NamedBuilder.fromClass(Person.class));
+    System.out.println(namedBuilder.build("person(name=Eric;age=43)"));
+    Office office = (Office) namedBuilder.build(description);
+    System.out.println(office);
+    System.out.println(office.head().name());
   }
 }
