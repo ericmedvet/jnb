@@ -49,9 +49,8 @@ public class Starter {
     NamedBuilder<?> namedBuilder = NamedBuilder.empty()
         .and(NamedBuilder.fromClass(Office.class))
         .and(NamedBuilder.fromClass(Person.class));
-    System.out.println(namedBuilder.build("person(name=Eric;age=43)"));
     Office office = (Office) namedBuilder.build(description);
     System.out.println(office);
-    System.out.println(office.head().name());
+    System.out.printf("The head's name is: %s%n", office.head().name());
   }
 }
