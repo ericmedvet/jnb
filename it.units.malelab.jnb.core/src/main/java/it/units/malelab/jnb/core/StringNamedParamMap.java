@@ -28,17 +28,6 @@ import java.util.stream.IntStream;
  */
 public class StringNamedParamMap implements NamedParamMap {
 
-  // BNF
-  // <e> ::= <n>(<nps>)
-  // <nps> ::= ∅ | <np> | <nps>;<np>
-  // <np> ::= <n>=<e> | <n>=<d> | <n>=<s> | <n>=<le> | <n>=<ld> | <n>=<ls>
-  // <le> ::= (<np>)*<le> | <i>*[<es>] | [<es>]
-  // <ld> ::= [<d>:<d>:<d>] | [<ds>]
-  // <ls> ::= [<ss>]
-  // <es> ::= ∅ | <e> | <es>;<e>
-  // <ds> ::= ∅ | <d> | <ds>;<d>
-  // <ss> ::= ∅ | <s> | <ss>;<s>
-
   private final String name;
   private final SortedMap<String, Double> dMap;
   private final SortedMap<String, String> sMap;
@@ -101,7 +90,7 @@ public class StringNamedParamMap implements NamedParamMap {
   private enum TokenType {
     NUM("\\s*-?[0-9]+(\\.[0-9]+)?\\s*", ""),
     I_NUM("\\s*[0-9]+?\\s*", ""),
-    STRING("\\s*([A-Za-z][A-Za-z0-9_]*)|(\"[./:\\-\\w]+\")\\s*", ""),
+    STRING("\\s*([A-Za-z][A-Za-z0-9_]*)|(\"[./:\\-\\w\\s]+\")\\s*", ""),
     NAME("\\s*[A-Za-z][" + NamedBuilder.NAME_SEPARATOR + "A-Za-z0-9_]*\\s*", ""),
     OPEN_CONTENT("\\s*\\(\\s*", "("),
     CLOSED_CONTENT("\\s*\\)\\s*", ")"),
