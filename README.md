@@ -3,7 +3,7 @@
 **jnb** is a Java library for building instances of classes given textual descriptions formatted in a proper way.
 
 More specifically, jnb provides a few interfaces and classes for doing the following key things:
-1. **annotating** an existing class or method to be used as a builder: the key artifacts for this are the annotations [`@Param`](it.units.malelab.jnb.core/src/main/java/it.unis.malelab.jnb.core/Param.java) and [`@BuilderMethod`](it.units.malelab.jnb.core/src/main/java/it/units/malelab/jnb/core/BuilderMethod.java);
+1. **annotating** an existing class or method to be used as a builder: the key artifacts for this are the annotations [`@Param`](it.units.malelab.jnb.core/src/main/java/it/units/malelab/jnb/core/Param.java) and [`@BuilderMethod`](it.units.malelab.jnb.core/src/main/java/it/units/malelab/jnb/core/BuilderMethod.java);
 2. **parsing** a textual description into an object storing the information needed to invoke a builder: the key artifact here is the interface [`NamedParamMap`](it.units.malelab.jnb.core/src/main/java/it/units/malelab/jnb/core/NamedParamMap.java);
 3. **building** a builder automatically from annotated class: the key artifact here is the [`NamedBuilder`](it.units.malelab.jnb.core/src/main/java/it/units/malelab/jnb/core/NamedBuilder.java).
 
@@ -43,7 +43,7 @@ public static void main(String[] args) {
           person(name = Bob; age = 25);
           person(name = Charlie; age = 38)
         ];
-        roomNumbers = [202:1:205] \s
+        roomNumbers = [202:1:205]
       )
       """;
   NamedBuilder<?> namedBuilder = NamedBuilder.empty()
@@ -56,6 +56,8 @@ public static void main(String[] args) {
   System.out.printf("One young person is: %s%n", namedBuilder.build("p.old(name=Jack)"));
 }
 ```
+
+Note that in this example there are 3 ways for building a person: the corresponding names are `person`, `persons.young`, and `persons.old`.
 
 ## Installation
 
@@ -109,7 +111,7 @@ public static Person young(@Param("name") String name, @Param(value = "age",dI =
   return new Person(name, 18);
 }
 ```
-will result in a named builder where the name is `person` and the expected parameters are `name` and, optionally (in the sense that there is a default value of `43`), `age`.
+will result in a named builder where the name is `young` (possibly with a prefix, as in the previous example) and the expected parameters are `name` and, optionally (in the sense that there is a default value of `43`), `age`.
 
 ### Defining a named parameter map
 
@@ -129,7 +131,7 @@ It can be described with a string adhering the following human- and machine-read
 where:
 - `<npm>` is a named parameter map;
 - `<n>` is a name, i.e., a string in the format `[A-Za-z][.A-Za-z0-9_]*`;
-- `<s>` is a string in the format `([A-Za-z][A-Za-z0-9_]*)|(\"[./:\-\w]+\")`;
+- `<s>` is a string in the format `([A-Za-z][A-Za-z0-9_]*)|(\"[./:\-\w\s]+\")`;
 - `<d>` is a number in the format `-?[0-9]+(\.[0-9]+)?`;
 - `<i>` is a number in the format `[0-9]+`;
 - `∅` is the empty string.
