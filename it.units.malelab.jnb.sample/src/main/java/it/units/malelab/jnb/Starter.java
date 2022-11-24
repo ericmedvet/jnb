@@ -34,6 +34,16 @@ public class Starter {
       @Param("age") int age
   ) {}
 
+  public static class Persons {
+    public static Person old(@Param("name") String name) {
+      return new Person(name, 60);
+    }
+
+    public static Person young(@Param("name") String name) {
+      return new Person(name, 18);
+    }
+  }
+
   public static void main(String[] args) {
     String description = """
         office(
@@ -43,14 +53,16 @@ public class Starter {
             person(name = Bob; age = 25);
             person(name = Charlie; age = 38)
           ];
-          roomNumbers = [1;2] \s
+          roomNumbers = [202:1:205] \s
         )
         """;
     NamedBuilder<?> namedBuilder = NamedBuilder.empty()
         .and(NamedBuilder.fromClass(Office.class))
-        .and(NamedBuilder.fromClass(Person.class));
+        .and(NamedBuilder.fromClass(Person.class))
+        .and(List.of("persons", "p"), NamedBuilder.fromUtilityClass(Persons.class));
     Office office = (Office) namedBuilder.build(description);
     System.out.println(office);
     System.out.printf("The head's name is: %s%n", office.head().name());
+    System.out.printf("One young person is: %s%n", namedBuilder.build("p.old(name=Jack)"));
   }
 }
