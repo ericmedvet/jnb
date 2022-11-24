@@ -86,12 +86,12 @@ And finally include it in the maven project you are doing, by adding this to you
 ```
 where `VERSION` has to be replaced with the current version.
 
-If your Java project uses modules, you will **need** to modify your `module-info.java` by requiring the jnp core module and by exporting every package you need to annotate the jnb core module (this is required because jnb uses reflection).
+If your Java project uses modules, you will **need** to modify your `module-info.java` by **requiring** the jnp core module and by **opening** every package you need to annotate the jnb core module (this is required because jnb uses reflection).
 Example:
 ```
 module it.units.malelab.jnb.sample {
   requires it.units.malelab.jnb.core;
-  exports your.project.package to it.units.malelab.jnb.core;
+  opens your.project.package to it.units.malelab.jnb.core;
 }
 ```
 
