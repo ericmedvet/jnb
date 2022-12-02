@@ -329,7 +329,7 @@ public class InfoPrinter {
             ps.printf("%s Builder `%s()`%n", heading(builderHeadingLevel), builderInfo.longestName().fullName());
             ps.println();
             if (builderInfo.builder() instanceof DocumentedBuilder<?> documentedBuilder) {
-              if (documentedBuilder.params().isEmpty()) {
+              if (documentedBuilder.params().stream().noneMatch(p -> p.injection().equals(Param.Injection.NONE))) {
                 //signature
                 ps.printf("`%s()`%n", builderInfo.shortestName().fullName());
               } else {
@@ -338,6 +338,7 @@ public class InfoPrinter {
                     "`%s(%s)`%n",
                     builderInfo.shortestName().fullName(),
                     documentedBuilder.params().stream()
+                        .filter(p -> p.injection().equals(Param.Injection.NONE))
                         .map(DocumentedBuilder.ParamInfo::name)
                         .collect(Collectors.joining("; "))
                 );
