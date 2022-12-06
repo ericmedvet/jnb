@@ -99,7 +99,8 @@ public class StringNamedParamMap implements NamedParamMap {
     INTERVAL_SEPARATOR("\\s*:\\s*", ":"),
     OPEN_LIST("\\s*\\[\\s*", "["),
     CLOSED_LIST("\\s*\\]\\s*", "]"),
-    JOIN("\\s*\\*\\s*", "*");
+    LIST_JOIN("\\s*\\*\\s*", "*"),
+    LIST_CONCAT("\\s*\\+\\s*", "+");
     private final String regex;
     private final String rendered;
 
@@ -275,7 +276,7 @@ public class StringNamedParamMap implements NamedParamMap {
             s,
             npNode.token().end()
         ));
-        Token jointT = TokenType.JOIN.next(s, closedT.end()).orElseThrow(error(TokenType.JOIN, s, closedT.end()));
+        Token jointT = TokenType.LIST_JOIN.next(s, closedT.end()).orElseThrow(error(TokenType.LIST_JOIN, s, closedT.end()));
         LENode outerLENode = LENode.parse(s, jointT.end());
         //do cartesian product
         List<ENode> originalENodes = outerLENode.child().children();
@@ -335,7 +336,7 @@ public class StringNamedParamMap implements NamedParamMap {
       try {
         Token multToken = TokenType.I_NUM.next(s, i).orElseThrow(error(TokenType.I_NUM, s, i));
         int mult = Integer.parseInt(multToken.trimmedContent(s));
-        Token jointT = TokenType.JOIN.next(s, multToken.end()).orElseThrow(error(TokenType.JOIN, s, multToken.end()));
+        Token jointT = TokenType.LIST_JOIN.next(s, multToken.end()).orElseThrow(error(TokenType.LIST_JOIN, s, multToken.end()));
         LENode originalLENode = LENode.parse(s, jointT.end());
         //multiply
         List<ENode> eNodes = new ArrayList<>();
@@ -343,7 +344,23 @@ public class StringNamedParamMap implements NamedParamMap {
           eNodes.addAll(originalLENode.child().children());
         }
         return new LENode(new Token(multToken.start(), originalLENode.token().end()), new ESNode(
-            new Token(originalLENode.token().start(), originalLENode.token.end()),
+            new Token(originalLENode.token().start(), originalLENode.token().end()),
+            eNodes
+        ));
+      } catch (IllegalArgumentException e) {
+        //ignore
+      }
+      //list with concat
+      try {
+        Token firstConcatT = TokenType.LIST_CONCAT.next(s, i).orElseThrow(error(TokenType.LIST_CONCAT, s, i));
+        LENode firstLENode = LENode.parse(s, firstConcatT.end());
+        Token secondConcatT = TokenType.LIST_CONCAT.next(s, firstLENode.token().end()).orElseThrow(error(TokenType.LIST_CONCAT, s, firstLENode.token().end()));
+        LENode secondLENode = LENode.parse(s, secondConcatT.end());
+        //concat
+        List<ENode> eNodes = new ArrayList<>(firstLENode.child().children());
+        eNodes.addAll(secondLENode.child().children());
+        return new LENode(new Token(firstConcatT.start(), secondLENode.token().end()), new ESNode(
+            new Token(firstConcatT.start(), secondLENode.token().end()),
             eNodes
         ));
       } catch (IllegalArgumentException e) {

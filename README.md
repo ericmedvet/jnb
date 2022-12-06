@@ -121,7 +121,7 @@ It can be described with a string adhering the following human- and machine-read
 <npm> ::= <n>(<nps>)
 <nps> ::= ∅ | <np> | <nps>;<np>
 <np> ::= <n>=<npm> | <n>=<d> | <n>=<s> | <n>=<lnpm> | <n>=<ld> | <n>=<ls>
-<lnmp> ::= (<np>)*<lnpm> | <i>*[<npms>] | [<npms>]
+<lnmp> ::= (<np>)*<lnpm> | <i>*[<npms>] | +[<npms>]+[<npms>] | [<npms>]
 <ld> ::= [<d>:<d>:<d>] | [<ds>]
 <ls> ::= [<ss>]
 <npms> ::= ∅ | <npm> | <npms>;<npm>
@@ -159,7 +159,7 @@ office(
 ```
 In this case, the `head` parameter of `office` is valued with another named parameter map: `person(name = "Mario Rossi"; age = 43)`.
 
-##### The `*` operator
+##### The `*` and `+` operators
 
 Note the possible use of `*` for specifying arrays of named parameter maps (broadly speaking, collections of them) in a more compact way.
 For example, `2 * [dog(name = simba); dog(name = gass)]` corresponds to `[dog(name = simba); dog(name = gass); dog(name = simba); dog(name = gass)]`.
@@ -175,6 +175,24 @@ corresponds to:
   hoodie(color = red; size = xxs)
 ]
 ```
+
+The `+` operator simply concatenates arrays.
+Note that the first array has to be prefixed with `+` too.
+
+An example of combined use of `*` and `+` is:
+```
++ (size = [m; s; xxs]) * [hoodie(color = red)] + [hoodie(color = blue; size = m)]
+```
+that corresponds to:
+```
+[
+  hoodie(color = red; size = m);
+  hoodie(color = red; size = s);
+  hoodie(color = red; size = xxs);
+  hoodie(color = blue; size = m)
+]
+```
+
 
 ### Building and using a `NamedBuilder`
 

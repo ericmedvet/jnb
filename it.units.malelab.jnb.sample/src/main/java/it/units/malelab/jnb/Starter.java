@@ -48,11 +48,11 @@ public class Starter {
     String description = """
         office(
           head = person(name = "Mario Rossi"; age = 43);
-          staff = [
+          staff = + [
             person(name = Alice; age = 33);
             person(name = Bob; age = 25);
             person(name = Charlie; age = 38)
-          ];
+          ] + [person(name = Dane; age = 28)];
           roomNumbers = [202:1:205] \s
         )
         """;
