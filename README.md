@@ -197,3 +197,10 @@ that corresponds to:
 ### Building and using a `NamedBuilder`
 
 In the typical case, you will build a `NamedBuilder` by chaining together a few other named builders, each built automatically with the methods `fromClass()` and `fromUtilityClass()` of [`NamedBuilder`](it.units.malelab.jnb.core/src/main/java/it/units/malelab/jnb/core/NamedBuilder.java), as shown in the [example above](#example).
+
+### Usages
+
+This project is used in three other projects:
+- [JGEA](https://github.com/ericmedvet/jgea)
+- [2D-MR-Sim](https://github.com/ericmedvet/2dmrsim)
+- [2d-robot-evolution](https://github.com/ericmedvet/2d-robot-evolution)
