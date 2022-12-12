@@ -30,7 +30,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jdk.version>18</jdk.version>
-        <revision>1.0.2</revision>
+        <revision>1.0.3-dev</revision>
     </properties>
     <dependencies>
     </dependencies>
