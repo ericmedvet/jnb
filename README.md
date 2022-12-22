@@ -81,7 +81,7 @@ And finally include it in the maven project you are doing, by adding this to you
 <dependency>
     <groupId>io.github.ericmedvet</groupId>
     <artifactId>jnb.core</artifactId>
-    <version>1.0.3-SNAPSHOT</version>
+    <version>1.0.3</version>
 </dependency>
 ```
 where `VERSION` has to be replaced with the current version.
