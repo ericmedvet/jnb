@@ -59,24 +59,11 @@ public static void main(String[] args) {
 
 Note that in this example there are 3 ways for building a person: the corresponding names are `person`, `persons.young`, and `persons.old`.
 
-## Installation
+## Usage
 
-This software has no dependencies other than:
-- JDK 18
-- Maven
+### Preparation
 
-If you are using a Unix based system, you can install both easily using [sdkman](https://sdkman.io/).
-
-For using jnb, you first need to clone it:
-```shell
-git clone https://github.com/ericmedvet/jnb.git
-```
-Then, build it:
-```shell
-cd jnb
-mvn clean install
-```
-And finally include it in the maven project you are doing, by adding this to your `pom.xml`:
+Add this to your `pom.xml`:
 ```xml
 <dependency>
     <groupId>io.github.ericmedvet</groupId>
@@ -84,7 +71,6 @@ And finally include it in the maven project you are doing, by adding this to you
     <version>${project.version}</version>
 </dependency>
 ```
-where `VERSION` has to be replaced with the current version.
 
 If your Java project uses modules, you will **need** to modify your `module-info.java` by **requiring** the jnp core module and by **opening** every package you need to annotate the jnb core module (this is required because jnb uses reflection).
 Example:
@@ -95,7 +81,7 @@ module io.github.ericmedvet.jnb.sample {
 }
 ```
 
-## Usage
+### Overview
 
 The core concept is the one of **named builder**, which can build instances of classes given a **named parameter map** (or named dictionary, using a different term).
 A named parameter map is simply a collection of (key, value) pairs with a name.
