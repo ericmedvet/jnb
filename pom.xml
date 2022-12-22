@@ -56,7 +56,7 @@
     <packaging>pom</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jdk.version>18</jdk.version>
+        <jdk.version>17</jdk.version>
         <revision>1.0.3-SNAPSHOT</revision>
     </properties>
     <dependencies>
