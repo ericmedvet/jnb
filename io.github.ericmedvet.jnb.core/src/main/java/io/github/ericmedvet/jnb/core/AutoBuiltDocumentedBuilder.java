@@ -48,7 +48,7 @@ public record AutoBuiltDocumentedBuilder<T>(
       return Enum.valueOf((Class) clazz, pa.dS().toUpperCase());
     }
     if (type.equals(Type.NAMED_PARAM_MAP) && !pa.dNPM().isEmpty()) {
-      return StringNamedParamMap.parse(pa.dNPM());
+      return StringParser.parse(pa.dNPM());
     }
     if (type.equals(Type.INTS)) {
       return Arrays.stream(pa.dIs()).boxed().toList();
@@ -67,7 +67,7 @@ public record AutoBuiltDocumentedBuilder<T>(
       return Arrays.stream(pa.dSs()).map(s -> Enum.valueOf((Class) clazz, s.toUpperCase())).toList();
     }
     if (type.equals(Type.NAMED_PARAM_MAPS)) {
-      return Arrays.stream(pa.dNPMs()).map(StringNamedParamMap::parse).toList();
+      return Arrays.stream(pa.dNPMs()).map(StringParser::parse).toList();
     }
     return null;
   }

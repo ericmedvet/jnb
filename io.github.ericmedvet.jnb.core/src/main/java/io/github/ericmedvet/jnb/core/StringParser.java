@@ -1,61 +1,24 @@
-/*
- * Copyright 2022 eric
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.github.ericmedvet.jnb.core;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-/**
- * @author "Eric Medvet" on 2022/08/08 for 2d-robot-evolution
- */
-public class StringNamedParamMap implements NamedParamMap {
+public class StringParser {
 
-  private final String name;
-  private final SortedMap<String, Double> dMap;
-  private final SortedMap<String, String> sMap;
-  private final SortedMap<String, StringNamedParamMap> npmMap;
-  private final SortedMap<String, List<Double>> dsMap;
-  private final SortedMap<String, List<String>> ssMap;
-  private final SortedMap<String, List<StringNamedParamMap>> npmsMap;
-
-  private StringNamedParamMap(
-      String name,
-      Map<String, Double> dMap,
-      Map<String, String> sMap,
-      Map<String, StringNamedParamMap> npmMap,
-      Map<String, List<Double>> dsMap,
-      Map<String, List<String>> ssMap,
-      Map<String, List<StringNamedParamMap>> npmsMap
-  ) {
-    this.name = name;
-    this.dMap = new TreeMap<>(dMap);
-    this.sMap = new TreeMap<>(sMap);
-    this.npmMap = new TreeMap<>(npmMap);
-    this.dsMap = new TreeMap<>(dsMap);
-    this.ssMap = new TreeMap<>(ssMap);
-    this.npmsMap = new TreeMap<>(npmsMap);
+  private StringParser() {
   }
-
-  private StringNamedParamMap(ENode eNode) {
-    this(
+  
+  public static NamedParamMap parse(String s) {
+    return from(ENode.parse(s, 0));
+  }
+  
+  private static MapNamedParamMap from(ENode eNode) {
+    return new MapNamedParamMap(
         eNode.name(),
         eNode.child().children().stream()
             .filter(n -> n.value() instanceof DNode)
@@ -65,7 +28,7 @@ public class StringNamedParamMap implements NamedParamMap {
             .collect(Collectors.toMap(NPNode::name, n -> ((SNode) n.value()).value())),
         eNode.child().children().stream()
             .filter(n -> n.value() instanceof ENode)
-            .collect(Collectors.toMap(NPNode::name, n -> new StringNamedParamMap((ENode) n.value))),
+            .collect(Collectors.toMap(NPNode::name, n -> from((ENode) n.value))),
         eNode.child().children().stream()
             .filter(n -> n.value() instanceof LDNode)
             .collect(Collectors.toMap(
@@ -82,12 +45,13 @@ public class StringNamedParamMap implements NamedParamMap {
             .filter(n -> n.value() instanceof LENode)
             .collect(Collectors.toMap(
                 NPNode::name,
-                n -> ((LENode) n.value()).child().children().stream().map(StringNamedParamMap::new).toList()
+                n -> ((LENode) n.value()).child().children().stream().map(StringParser::from).toList()
             ))
+        
     );
   }
 
-  private enum TokenType {
+  protected enum TokenType {
     NUM("\\s*-?[0-9]+(\\.[0-9]+)?\\s*", ""),
     I_NUM("\\s*[0-9]+?\\s*", ""),
     STRING("\\s*([A-Za-z][A-Za-z0-9_]*)|(\"[^\"]+\")\\s*", ""),
@@ -109,7 +73,7 @@ public class StringNamedParamMap implements NamedParamMap {
       this.rendered = rendered;
     }
 
-    public Optional<Token> next(String s, int i) {
+    Optional<Token> next(String s, int i) {
       Matcher matcher = Pattern.compile(regex).matcher(s);
       if (!matcher.find(i)) {
         return Optional.empty();
@@ -276,7 +240,11 @@ public class StringNamedParamMap implements NamedParamMap {
             s,
             npNode.token().end()
         ));
-        Token jointT = TokenType.LIST_JOIN.next(s, closedT.end()).orElseThrow(error(TokenType.LIST_JOIN, s, closedT.end()));
+        Token jointT = TokenType.LIST_JOIN.next(s, closedT.end()).orElseThrow(error(
+            TokenType.LIST_JOIN,
+            s,
+            closedT.end()
+        ));
         LENode outerLENode = LENode.parse(s, jointT.end());
         //do cartesian product
         List<ENode> originalENodes = outerLENode.child().children();
@@ -336,7 +304,11 @@ public class StringNamedParamMap implements NamedParamMap {
       try {
         Token multToken = TokenType.I_NUM.next(s, i).orElseThrow(error(TokenType.I_NUM, s, i));
         int mult = Integer.parseInt(multToken.trimmedContent(s));
-        Token jointT = TokenType.LIST_JOIN.next(s, multToken.end()).orElseThrow(error(TokenType.LIST_JOIN, s, multToken.end()));
+        Token jointT = TokenType.LIST_JOIN.next(s, multToken.end()).orElseThrow(error(
+            TokenType.LIST_JOIN,
+            s,
+            multToken.end()
+        ));
         LENode originalLENode = LENode.parse(s, jointT.end());
         //multiply
         List<ENode> eNodes = new ArrayList<>();
@@ -354,7 +326,8 @@ public class StringNamedParamMap implements NamedParamMap {
       try {
         Token firstConcatT = TokenType.LIST_CONCAT.next(s, i).orElseThrow(error(TokenType.LIST_CONCAT, s, i));
         LENode firstLENode = LENode.parse(s, firstConcatT.end());
-        Token secondConcatT = TokenType.LIST_CONCAT.next(s, firstLENode.token().end()).orElseThrow(error(TokenType.LIST_CONCAT, s, firstLENode.token().end()));
+        Token secondConcatT = TokenType.LIST_CONCAT.next(s, firstLENode.token().end())
+            .orElseThrow(error(TokenType.LIST_CONCAT, s, firstLENode.token().end()));
         LENode secondLENode = LENode.parse(s, secondConcatT.end());
         //concat
         List<ENode> eNodes = new ArrayList<>(firstLENode.child().children());
@@ -512,11 +485,6 @@ public class StringNamedParamMap implements NamedParamMap {
     }
   }
 
-  private static int currentLineLength(String s) {
-    String[] lines = s.split("\n");
-    return lines[lines.length - 1].length();
-  }
-
   private static Supplier<IllegalArgumentException> error(TokenType tokenType, String s, int i) {
     return () -> new IllegalArgumentException(String.format(
         "Cannot find %s token: `%s` does not match %s",
@@ -526,289 +494,10 @@ public class StringNamedParamMap implements NamedParamMap {
     ));
   }
 
-  private static String indent(int w) {
-    return IntStream.range(0, w).mapToObj(i -> " ").collect(Collectors.joining());
-  }
-
-  private static boolean isInt(Double v) {
-    return v.intValue() == v;
-  }
-
-  private static String listContentToInlineString(List<?> l, String space) {
-    StringBuilder sb = new StringBuilder();
-    for (int j = 0; j < l.size(); j++) {
-      if (l.get(j) instanceof ParamMap m) {
-        if (m instanceof NamedParamMap namedParamMap) {
-          sb.append(namedParamMap.getName())
-              .append(TokenType.OPEN_CONTENT.rendered());
-        }
-        sb.append(mapContentToInlineString(m, space));
-        if (m instanceof NamedParamMap) {
-          sb.append(TokenType.CLOSED_CONTENT.rendered());
-        }
-      } else {
-        sb.append(l.get(j).toString());
-      }
-      if (j < l.size() - 1) {
-        sb.append(TokenType.LIST_SEPARATOR.rendered()).append(space);
-      }
-    }
-    return sb.toString();
-  }
-
-  private static void listContentToMultilineString(
-      StringBuilder sb,
-      int maxW,
-      int w,
-      int indent,
-      String space,
-      List<?> l
-  ) {
-    for (int j = 0; j < l.size(); j++) {
-      sb.append("\n").append(indent(w + indent + indent));
-      if (l.get(j) instanceof NamedParamMap m) {
-        prettyToString(m, sb, maxW, w + indent + indent, indent, space);
-      } else {
-        sb.append(l.get(j).toString());
-      }
-      if (j < l.size() - 1) {
-        sb.append(TokenType.LIST_SEPARATOR.rendered());
-      }
-    }
-    sb.append("\n").append(indent(w + indent));
-  }
-
-  private static String mapContentToInlineString(ParamMap m, String space) {
-    StringBuilder sb = new StringBuilder();
-    List<String> names = new ArrayList<>(m.names());
-    for (int i = 0; i < names.size(); i++) {
-      sb.append(names.get(i))
-          .append(space)
-          .append(TokenType.ASSIGN_SEPARATOR.rendered())
-          .append(space);
-      Object value = m.value(names.get(i));
-      if (value instanceof List<?> l) {
-        sb.append(TokenType.OPEN_LIST.rendered())
-            .append(listContentToInlineString(l, space))
-            .append(TokenType.CLOSED_LIST.rendered());
-      } else if (value instanceof ParamMap innerMap) {
-        if (innerMap instanceof NamedParamMap namedParamMap) {
-          sb.append(namedParamMap.getName())
-              .append(TokenType.OPEN_CONTENT.rendered());
-        }
-        sb.append(mapContentToInlineString(innerMap, space));
-        if (innerMap instanceof NamedParamMap) {
-          sb.append(TokenType.CLOSED_CONTENT.rendered());
-        }
-      } else {
-        sb.append(value.toString());
-      }
-      if (i < names.size() - 1) {
-        sb.append(TokenType.LIST_SEPARATOR.rendered()).append(space);
-      }
-    }
-    return sb.toString();
-  }
-
-  private static void mapContentToMultilineString(
-      StringBuilder sb,
-      int maxW,
-      int w,
-      int indent,
-      String space,
-      ParamMap map
-  ) {
-    List<String> names = new ArrayList<>(map.names());
-    for (int i = 0; i < names.size(); i++) {
-      sb.append("\n")
-          .append(indent(w + indent))
-          .append(names.get(i))
-          .append(space)
-          .append(TokenType.ASSIGN_SEPARATOR.rendered())
-          .append(space);
-      Object value = map.value(names.get(i));
-      if (value instanceof List<?> l) {
-        sb.append(TokenType.OPEN_LIST.rendered());
-        String listContent = listContentToInlineString(l, space);
-        if (l.isEmpty() || listContent.length() + currentLineLength(sb.toString()) < maxW) {
-          sb.append(listContent);
-        } else {
-          listContentToMultilineString(sb, maxW, w, indent, space, l);
-        }
-        sb.append(TokenType.CLOSED_LIST.rendered());
-      } else if (value instanceof NamedParamMap m) {
-        prettyToString(m, sb, maxW, w + indent, indent, space);
-      } else {
-        sb.append(value.toString());
-      }
-      if (i < names.size() - 1) {
-        sb.append(TokenType.LIST_SEPARATOR.rendered());
-      }
-    }
-    sb.append("\n").append(indent(w));
-  }
-
-  public static StringNamedParamMap parse(String string) throws IllegalArgumentException {
-    ENode eNode = ENode.parse(string, 0);
-    return new StringNamedParamMap(eNode);
-  }
-
-  @SuppressWarnings("unused")
-  public static String prettyToString(ParamMap map) {
-    return prettyToString(map, 80);
-  }
-
-  public static String prettyToString(ParamMap map, int maxW) {
-    StringBuilder sb = new StringBuilder();
-    prettyToString(map, sb, maxW, 0, 2, " ");
-    return sb.toString();
-  }
-
-  public static void prettyToString(ParamMap map, StringBuilder sb, int maxW, int w, int indent, String space) {
-    //iterate
-    if (map instanceof NamedParamMap namedParamMap) {
-      sb.append(namedParamMap.getName());
-    }
-    sb.append(TokenType.OPEN_CONTENT.rendered());
-    String content = mapContentToInlineString(map, space);
-    if (map.names().isEmpty() || content.length() + currentLineLength(sb.toString()) < maxW) {
-      sb.append(content);
-    } else {
-      mapContentToMultilineString(sb, maxW, w, indent, space, map);
-    }
-    sb.append(TokenType.CLOSED_CONTENT.rendered());
-  }
-
   private static <T> List<T> withAppended(List<T> ts, T t) {
     List<T> newTs = new ArrayList<>(ts);
     newTs.add(t);
     return newTs;
   }
 
-  @Override
-  public Boolean b(String n) {
-    if (sMap.containsKey(n) &&
-        (sMap.get(n).equalsIgnoreCase(Boolean.TRUE.toString()) ||
-            sMap.get(n).equalsIgnoreCase(Boolean.FALSE.toString()))) {
-      return sMap.get(n).equalsIgnoreCase(Boolean.TRUE.toString());
-    }
-    return null;
-  }
-
-  @Override
-  public List<Boolean> bs(String n) {
-    if (!ssMap.containsKey(n)) {
-      return null;
-    }
-    return ssMap.get(n).stream().map(s -> s.equalsIgnoreCase(Boolean.TRUE.toString())).toList();
-  }
-
-  @Override
-  public Double d(String n) {
-    return dMap.get(n);
-  }
-
-  @Override
-  public List<Double> ds(String n) {
-    return dsMap.get(n);
-  }
-
-  @Override
-  public Integer i(String n) {
-    if (!dMap.containsKey(n)) {
-      return null;
-    }
-    double v = dMap.get(n);
-    return isInt(v) ? (int) v : null;
-  }
-
-  @Override
-  public List<Integer> is(String n) {
-    if (!dsMap.containsKey(n)) {
-      return null;
-    }
-    List<Double> vs = dsMap.get(n);
-    List<Integer> is = vs.stream().filter(StringNamedParamMap::isInt).map(Double::intValue).toList();
-    if (is.size() == vs.size()) {
-      return is;
-    }
-    return null;
-  }
-
-  @Override
-  public Set<String> names() {
-    Set<String> names = new TreeSet<>();
-    names.addAll(dMap.keySet());
-    names.addAll(sMap.keySet());
-    names.addAll(npmMap.keySet());
-    names.addAll(dsMap.keySet());
-    names.addAll(ssMap.keySet());
-    names.addAll(npmsMap.keySet());
-    return names;
-  }
-
-  @Override
-  public StringNamedParamMap npm(String n) {
-    return npmMap.get(n);
-  }
-
-  @Override
-  public List<NamedParamMap> npms(String n) {
-    return npmsMap.containsKey(n) ? npmsMap.get(n).stream().map(m -> (NamedParamMap) m).toList() : null;
-  }
-
-  @Override
-  public String s(String n) {
-    return sMap.get(n);
-  }
-
-  @Override
-  public List<String> ss(String n) {
-    return ssMap.get(n);
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-
-  @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append(name);
-    sb.append(TokenType.OPEN_CONTENT.rendered());
-    Map<String, String> content = new TreeMap<>();
-    dMap.forEach((key, value) -> content.put(key, value.toString()));
-    npmMap.forEach((key, value) -> content.put(key, value.toString()));
-    content.putAll(sMap);
-    dsMap.forEach((key, value) -> content.put(
-        key,
-        TokenType.OPEN_LIST.rendered() +
-            value.stream()
-                .map(Object::toString)
-                .collect(Collectors.joining(TokenType.LIST_SEPARATOR.rendered)) +
-            TokenType.CLOSED_LIST.rendered()
-    ));
-    ssMap.forEach((key, value) -> content.put(
-        key,
-        TokenType.OPEN_LIST.rendered() +
-            value.stream()
-                .map(Object::toString)
-                .collect(Collectors.joining(TokenType.LIST_SEPARATOR.rendered)) +
-            TokenType.CLOSED_LIST.rendered()
-    ));
-    npmsMap.forEach((key, value) -> content.put(
-        key,
-        TokenType.OPEN_LIST.rendered() +
-            value.stream()
-                .map(Object::toString)
-                .collect(Collectors.joining(TokenType.LIST_SEPARATOR.rendered)) +
-            TokenType.CLOSED_LIST.rendered()
-    ));
-    sb.append(content.entrySet().stream()
-        .map(e -> e.getKey() + TokenType.ASSIGN_SEPARATOR.rendered() + e.getValue())
-        .collect(Collectors.joining(TokenType.LIST_SEPARATOR.rendered())));
-    sb.append(TokenType.CLOSED_CONTENT.rendered());
-    return sb.toString();
-  }
 }

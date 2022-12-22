@@ -125,7 +125,7 @@ public class NamedBuilder<X> {
 
   @SuppressWarnings("unused")
   public <T extends X> T build(String mapString, Supplier<T> defaultSupplier) throws BuilderException {
-    return build(StringNamedParamMap.parse(mapString), defaultSupplier);
+    return build(StringParser.parse(mapString), defaultSupplier);
   }
 
   public X build(NamedParamMap map) throws BuilderException {
@@ -134,7 +134,7 @@ public class NamedBuilder<X> {
 
   @SuppressWarnings("UnusedReturnValue")
   public X build(String mapString) throws BuilderException {
-    return build(StringNamedParamMap.parse(mapString));
+    return build(StringParser.parse(mapString));
   }
 
   private double distance(String s1, String s2) {
