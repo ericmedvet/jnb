@@ -23,7 +23,7 @@
     <artifactId>jnb</artifactId>
     <version>${revision}</version>
 
-    <name>java-named-builder</name>
+    <name>jnb</name>
     <description>A small framework for building objects from a named parameter map.</description>
     <url>https://github.com/ericmedvet/jnb</url>
 
