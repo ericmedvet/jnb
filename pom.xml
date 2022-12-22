@@ -19,12 +19,12 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>it.units.malelab</groupId>
+    <groupId>io.github.ericmedvet</groupId>
     <artifactId>jnb</artifactId>
     <version>${revision}</version>
     <modules>
-        <module>it.units.malelab.jnb.core</module>
-        <module>it.units.malelab.jnb.sample</module>
+        <module>io.github.ericmedvet.jnb.core</module>
+        <module>io.github.ericmedvet.jnb.sample</module>
     </modules>
     <packaging>pom</packaging>
     <properties>

@@ -3,15 +3,15 @@
 **jnb** is a Java library for building instances of classes given textual descriptions formatted in a proper way.
 
 More specifically, jnb provides a few interfaces and classes for doing the following key things:
-1. **annotating** an existing class or method to be used as a builder: the key artifacts for this are the annotations [`@Param`](it.units.malelab.jnb.core/src/main/java/it/units/malelab/jnb/core/Param.java) and [`@BuilderMethod`](it.units.malelab.jnb.core/src/main/java/it/units/malelab/jnb/core/BuilderMethod.java);
-2. **parsing** a textual description into an object storing the information needed to invoke a builder: the key artifact here is the interface [`NamedParamMap`](it.units.malelab.jnb.core/src/main/java/it/units/malelab/jnb/core/NamedParamMap.java);
-3. **building** a builder automatically from annotated class: the key artifact here is the [`NamedBuilder`](it.units.malelab.jnb.core/src/main/java/it/units/malelab/jnb/core/NamedBuilder.java).
+1. **annotating** an existing class or method to be used as a builder: the key artifacts for this are the annotations [`@Param`](io.github.ericmedvet.jnb.core/src/main/java/io/github/ericmedvet/jnb/core/Param.java) and [`@BuilderMethod`](io.github.ericmedvet.jnb.core/src/main/java/io/github/ericmedvet/jnb/core/BuilderMethod.java);
+2. **parsing** a textual description into an object storing the information needed to invoke a builder: the key artifact here is the interface [`NamedParamMap`](io.github.ericmedvet.jnb.core/src/main/java/io/github/ericmedvet/jnb/core/NamedParamMap.java);
+3. **building** a builder automatically from annotated class: the key artifact here is the [`NamedBuilder`](io.github.ericmedvet.jnb.core/src/main/java/io/github/ericmedvet/jnb/core/NamedBuilder.java).
 
 The three steps, and the corresponding key artifacts, are explained below.
 
 ## Example
 
-Very in brief, the intended usage is the one represented in [this example](it.units.malelab.jnb.sample/src/main/java/it/units/malelab/jnb/Starter.java), which is mostly self-explanatory:
+Very in brief, the intended usage is the one represented in [this example](io.github.ericmedvet.jnb.sample/src/main/java/io/github/ericmedvet/jnb/Starter.java), which is mostly self-explanatory:
 ```java
 public record Office(
     @Param("roomNumbers") List<Integer> roomNumbers,
@@ -53,7 +53,7 @@ public static void main(String[] args) {
   Office office = (Office) namedBuilder.build(description);
   System.out.println(office);
   System.out.printf("The head's name is: %s%n", office.head().name());
-  System.out.printf("One young person is: %s%n", namedBuilder.build("p.old(name=Jack)"));
+  System.out.printf("One young person is: %s%n", namedBuilder.build("p.young(name=Jack)"));
 }
 ```
 
@@ -79,7 +79,7 @@ mvn clean install
 And finally include it in the maven project you are doing, by adding this to your `pom.xml`:
 ```xml
 <dependency>
-    <groupId>it.units.malelab</groupId>
+    <groupId>io.github.ericmedvet</groupId>
     <artifactId>jnb.core</artifactId>
     <version>VERSION</version>
 </dependency>
@@ -89,9 +89,9 @@ where `VERSION` has to be replaced with the current version.
 If your Java project uses modules, you will **need** to modify your `module-info.java` by **requiring** the jnp core module and by **opening** every package you need to annotate the jnb core module (this is required because jnb uses reflection).
 Example:
 ```
-module it.units.malelab.jnb.sample {
-  requires it.units.malelab.jnb.core;
-  opens your.project.package to it.units.malelab.jnb.core;
+module io.github.ericmedvet.jnb.sample {
+  requires io.github.ericmedvet.jnb.core;
+  opens your.project.package to io.github.ericmedvet.jnb.core;
 }
 ```
 
@@ -103,7 +103,7 @@ See [below](#defining-a-named-parameter-map) for more details.
 
 ### Annotating a class or method
 
-You can annotate a method or a constructor (also of a `record`) in order to make it discoverable by the methods `fromClass()` and `fromUtilityClass()` of [`NamedBuilder`](it.units.malelab.jnb.core/src/main/java/it/units/malelab/jnb/core/NamedBuilder.java).
+You can annotate a method or a constructor (also of a `record`) in order to make it discoverable by the methods `fromClass()` and `fromUtilityClass()` of [`NamedBuilder`](io.github.ericmedvet.jnb.core/src/main/java/io/github/ericmedvet/jnb/core/NamedBuilder.java).
 
 For example:
 ```java
@@ -140,7 +140,7 @@ The format is reasonably robust to spaces and line-breaks.
 
 An example of a syntactically valid named parameter map is:
 ```
-car(dealer=Ferrari;price=45000)
+car(dealer = Ferrari; price = 45000)
 ```
 where `dealer` and `price` are parameter names and `Ferrari` and `45000` are parameter values.
 `car` is the name of the map.
@@ -196,7 +196,7 @@ that corresponds to:
 
 ### Building and using a `NamedBuilder`
 
-In the typical case, you will build a `NamedBuilder` by chaining together a few other named builders, each built automatically with the methods `fromClass()` and `fromUtilityClass()` of [`NamedBuilder`](it.units.malelab.jnb.core/src/main/java/it/units/malelab/jnb/core/NamedBuilder.java), as shown in the [example above](#example).
+In the typical case, you will build a `NamedBuilder` by chaining together a few other named builders, each built automatically with the methods `fromClass()` and `fromUtilityClass()` of [`NamedBuilder`](io.github.ericmedvet.jnb.core/src/main/java/io/github/ericmedvet/jnb/core/NamedBuilder.java), as shown in the [example above](#example).
 
 ### Usages
 
