@@ -25,6 +25,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
+    <name>jnb-sample</name>
+    <description>Usage examples of jnb, a small framework for building objects from a named parameter map.</description>
     <artifactId>jnb.sample</artifactId>
     <packaging>jar</packaging>
 

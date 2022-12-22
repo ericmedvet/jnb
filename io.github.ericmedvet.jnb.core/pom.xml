@@ -25,6 +25,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
+    <name>jnb-core</name>
+    <description>Core components of jnb, a small framework for building objects from a named parameter map.</description>
     <artifactId>jnb.core</artifactId>
     <packaging>jar</packaging>
 
