@@ -22,6 +22,33 @@
     <groupId>io.github.ericmedvet</groupId>
     <artifactId>jnb</artifactId>
     <version>${revision}</version>
+
+    <name>java-named-builder</name>
+    <description>A small framework for building objects from a named parameter map.</description>
+    <url>https://github.com/ericmedvet/jnb</url>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Eric Medvet</name>
+            <email>eric.medvet@gmail.com</email>
+            <organization>Eric Medvet</organization>
+            <organizationUrl>https://github.com/ericmedvet</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/ericmedvet/jnb.git</connection>
+        <developerConnection>scm:git:ssh://github.com:ericmedvet/jnb.git</developerConnection>
+        <url>http://github.com/ericmedvet/jnb/tree/main</url>
+    </scm>
+
     <modules>
         <module>io.github.ericmedvet.jnb.core</module>
         <module>io.github.ericmedvet.jnb.sample</module>
