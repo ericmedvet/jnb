@@ -76,6 +76,8 @@ public class MapNamedParamMap implements NamedParamMap {
         if (m instanceof NamedParamMap) {
           sb.append(StringParser.TokenType.CLOSED_CONTENT.rendered());
         }
+      } else if (l.get(j) instanceof String s) {
+        sb.append(stringValue(s));
       } else {
         sb.append(l.get(j).toString());
       }
@@ -98,6 +100,8 @@ public class MapNamedParamMap implements NamedParamMap {
       sb.append("\n").append(indent(w + indent + indent));
       if (l.get(j) instanceof NamedParamMap m) {
         prettyToString(m, sb, maxW, w + indent + indent, indent, space);
+      } else if (l.get(j) instanceof String s) {
+        sb.append(stringValue(s));
       } else {
         sb.append(l.get(j).toString());
       }
@@ -130,6 +134,8 @@ public class MapNamedParamMap implements NamedParamMap {
         if (innerMap instanceof NamedParamMap) {
           sb.append(StringParser.TokenType.CLOSED_CONTENT.rendered());
         }
+      } else if (value instanceof String) {
+        sb.append(stringValue((String) value));
       } else {
         sb.append(value.toString());
       }
@@ -168,6 +174,8 @@ public class MapNamedParamMap implements NamedParamMap {
         sb.append(StringParser.TokenType.CLOSED_LIST.rendered());
       } else if (value instanceof NamedParamMap m) {
         prettyToString(m, sb, maxW, w + indent, indent, space);
+      } else if (value instanceof String) {
+        sb.append(stringValue((String) value));
       } else {
         sb.append(value.toString());
       }
@@ -203,7 +211,7 @@ public class MapNamedParamMap implements NamedParamMap {
     }
     sb.append(StringParser.TokenType.CLOSED_CONTENT.rendered());
   }
-  
+
   @Override
   public Boolean b(String n) {
     if (sMap.containsKey(n) &&
@@ -214,12 +222,8 @@ public class MapNamedParamMap implements NamedParamMap {
     return null;
   }
 
-  @Override
-  public List<Boolean> bs(String n) {
-    if (!ssMap.containsKey(n)) {
-      return null;
-    }
-    return ssMap.get(n).stream().map(s -> s.equalsIgnoreCase(Boolean.TRUE.toString())).toList();
+  private static String stringValue(String value) {
+    return value.matches("[A-Za-z][A-Za-z0-9_]*") ? value : ('"' + value + '"');
   }
 
   @Override
@@ -292,6 +296,16 @@ public class MapNamedParamMap implements NamedParamMap {
   }
 
   @Override
+  public List<Boolean> bs(String n) {
+    if (!ssMap.containsKey(n) || !ssMap.get(n)
+        .stream()
+        .allMatch(s -> s.equalsIgnoreCase(Boolean.TRUE.toString()) || s.equalsIgnoreCase(Boolean.FALSE.toString()))) {
+      return null;
+    }
+    return ssMap.get(n).stream().map(s -> s.equalsIgnoreCase(Boolean.TRUE.toString())).toList();
+  }
+
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append(name);
@@ -299,7 +313,10 @@ public class MapNamedParamMap implements NamedParamMap {
     Map<String, String> content = new TreeMap<>();
     dMap.forEach((key, value) -> content.put(key, value.toString()));
     npmMap.forEach((key, value) -> content.put(key, value.toString()));
-    content.putAll(sMap);
+    sMap.forEach((key, value) -> content.put(
+        key,
+        stringValue(value)
+    ));
     dsMap.forEach((key, value) -> content.put(
         key,
         StringParser.TokenType.OPEN_LIST.rendered() +
@@ -312,7 +329,7 @@ public class MapNamedParamMap implements NamedParamMap {
         key,
         StringParser.TokenType.OPEN_LIST.rendered() +
             value.stream()
-                .map(Object::toString)
+                .map(MapNamedParamMap::stringValue)
                 .collect(Collectors.joining(StringParser.TokenType.LIST_SEPARATOR.rendered())) +
             StringParser.TokenType.CLOSED_LIST.rendered()
     ));
