@@ -98,7 +98,7 @@ public class NamedBuilder<X> {
   }
 
   @SuppressWarnings("unchecked")
-  public <T extends X> T build(NamedParamMap map, Supplier<T> defaultSupplier) throws BuilderException {
+  public <T extends X> T build(NamedParamMap map, Supplier<T> defaultSupplier, int index) throws BuilderException {
     if (!builders.containsKey(map.getName())) {
       if (defaultSupplier != null) {
         return defaultSupplier.get();
@@ -113,7 +113,7 @@ public class NamedBuilder<X> {
       ));
     }
     try {
-      return (T) builders.get(map.getName()).build(map, this);
+      return (T) builders.get(map.getName()).build(map, this, index);
     } catch (BuilderException e) {
       if (defaultSupplier != null) {
         return defaultSupplier.get();
@@ -125,11 +125,11 @@ public class NamedBuilder<X> {
 
   @SuppressWarnings("unused")
   public <T extends X> T build(String mapString, Supplier<T> defaultSupplier) throws BuilderException {
-    return build(StringParser.parse(mapString), defaultSupplier);
+    return build(StringParser.parse(mapString), defaultSupplier, 0);
   }
 
   public X build(NamedParamMap map) throws BuilderException {
-    return build(map, null);
+    return build(map, null, 0);
   }
 
   @SuppressWarnings("UnusedReturnValue")

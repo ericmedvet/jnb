@@ -20,6 +20,7 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * @author "Eric Medvet" on 2022/08/12 for 2dmrsim
@@ -88,7 +89,7 @@ public record AutoBuiltDocumentedBuilder<T>(
       case NAMED_PARAM_MAP -> processNPM(pi.defaultValue() == null ? m.npm(pi.name()) : m.npm(
           pi.name(),
           (NamedParamMap) pi.defaultValue()
-      ), ap, nb);
+      ), ap, nb, 0);
       case INTS -> pi.defaultValue() == null ? m.is(pi.name()) : m.is(pi.name(), (List<Integer>) pi.defaultValue());
       case DOUBLES -> pi.defaultValue() == null ? m.ds(pi.name()) : m.ds(pi.name(), (List<Double>) pi.defaultValue());
       case STRINGS -> pi.defaultValue() == null ? m.ss(pi.name()) : m.ss(pi.name(), (List<String>) pi.defaultValue());
@@ -99,13 +100,15 @@ public record AutoBuiltDocumentedBuilder<T>(
               (Class) pi.enumClass(),
               (List) pi.defaultValue()
           );
-      case NAMED_PARAM_MAPS -> pi.defaultValue() == null ? m.npms(pi.name()) : m.npms(
-              pi.name(),
-              (List<NamedParamMap>) pi.defaultValue()
-          )
-          .stream()
-          .map(npm -> processNPM(npm, ap, nb))
-          .toList();
+      case NAMED_PARAM_MAPS -> {
+        if (pi.defaultValue() == null) {
+          yield m.npms(pi.name());
+        }
+        List<NamedParamMap> npms = m.npms(pi.name(), (List<NamedParamMap>) pi.defaultValue());
+        yield IntStream.range(0, npms.size())
+            .mapToObj(i -> processNPM(npms.get(i), ap, nb, i))
+            .toList();
+      }
     };
   }
 
@@ -155,7 +158,7 @@ public record AutoBuiltDocumentedBuilder<T>(
         finalName,
         buildType,
         paramInfos,
-        (ParamMap map, NamedBuilder<?> namedBuilder) -> {
+        (ParamMap map, NamedBuilder<?> namedBuilder, int index) -> {
           Object[] params = new Object[paramInfos.size() + (hasNamedBuilder ? 1 : 0)];
           if (hasNamedBuilder) {
             params[0] = namedBuilder;
@@ -166,6 +169,8 @@ public record AutoBuiltDocumentedBuilder<T>(
               params[k] = map;
             } else if (paramInfos.get(j).injection().equals(Param.Injection.BUILDER)) {
               params[k] = namedBuilder;
+            } else if (paramInfos.get(j).injection().equals(Param.Injection.INDEX)) {
+              params[k] = index;
             } else {
               try {
                 //noinspection unchecked
@@ -217,6 +222,9 @@ public record AutoBuiltDocumentedBuilder<T>(
     }
     if (paramAnnotation.injection().equals(Param.Injection.BUILDER) && !parameter.getType()
         .equals(NamedBuilder.class)) {
+      return null;
+    }
+    if (paramAnnotation.injection().equals(Param.Injection.INDEX) && !parameter.getType().equals(Integer.TYPE)) {
       return null;
     }
     String name = paramAnnotation.value();
@@ -364,11 +372,11 @@ public record AutoBuiltDocumentedBuilder<T>(
     );
   }
 
-  private static Object processNPM(NamedParamMap npm, Parameter actualParameter, NamedBuilder<Object> nb) {
+  private static Object processNPM(NamedParamMap npm, Parameter actualParameter, NamedBuilder<Object> nb, int index) {
     if (actualParameter.getType().equals(NamedParamMap.class)) {
       return npm;
     }
-    return nb.build(npm);
+    return nb.build(npm, null, index);
   }
 
   private static String toLowerCamelCase(String s) {
@@ -376,8 +384,8 @@ public record AutoBuiltDocumentedBuilder<T>(
   }
 
   @Override
-  public T build(ParamMap map, NamedBuilder<?> namedBuilder) throws BuilderException {
-    return builder.build(map, namedBuilder);
+  public T build(ParamMap map, NamedBuilder<?> namedBuilder, int index) throws BuilderException {
+    return builder.build(map, namedBuilder, index);
   }
 
   @Override

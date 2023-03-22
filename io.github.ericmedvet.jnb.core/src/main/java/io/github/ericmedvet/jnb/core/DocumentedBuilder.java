@@ -47,7 +47,11 @@ public interface DocumentedBuilder<T> extends Builder<T> {
   }
 
   record ParamInfo(
-      Type type, Class<?> enumClass, String name, Object defaultValue, Param.Injection injection,
+      Type type,
+      Class<?> enumClass,
+      String name,
+      Object defaultValue,
+      Param.Injection injection,
       java.lang.reflect.Type javaType
   ) {
     @Override
