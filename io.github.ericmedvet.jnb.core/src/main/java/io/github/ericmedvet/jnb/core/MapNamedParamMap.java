@@ -28,19 +28,19 @@ public class MapNamedParamMap implements NamedParamMap {
   private final String name;
   private final SortedMap<String, Double> dMap;
   private final SortedMap<String, String> sMap;
-  private final SortedMap<String, MapNamedParamMap> npmMap;
+  private final SortedMap<String, NamedParamMap> npmMap;
   private final SortedMap<String, List<Double>> dsMap;
   private final SortedMap<String, List<String>> ssMap;
-  private final SortedMap<String, List<MapNamedParamMap>> npmsMap;
+  private final SortedMap<String, List<NamedParamMap>> npmsMap;
 
   protected MapNamedParamMap(
       String name,
       Map<String, Double> dMap,
       Map<String, String> sMap,
-      Map<String, MapNamedParamMap> npmMap,
+      Map<String, NamedParamMap> npmMap,
       Map<String, List<Double>> dsMap,
       Map<String, List<String>> ssMap,
-      Map<String, List<MapNamedParamMap>> npmsMap
+      Map<String, List<NamedParamMap>> npmsMap
   ) {
     this.name = name;
     this.dMap = new TreeMap<>(dMap);
@@ -271,13 +271,13 @@ public class MapNamedParamMap implements NamedParamMap {
   }
 
   @Override
-  public MapNamedParamMap npm(String n) {
+  public NamedParamMap npm(String n) {
     return npmMap.get(n);
   }
 
   @Override
   public List<NamedParamMap> npms(String n) {
-    return npmsMap.containsKey(n) ? npmsMap.get(n).stream().map(m -> (NamedParamMap) m).toList() : null;
+    return npmsMap.containsKey(n) ? npmsMap.get(n).stream().toList() : null;
   }
 
   @Override

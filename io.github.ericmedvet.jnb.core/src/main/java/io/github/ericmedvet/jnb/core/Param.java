@@ -29,7 +29,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.PARAMETER)
 public @interface Param {
 
-  enum Injection {NONE, MAP, BUILDER, INDEX}
+  enum Injection {NONE, MAP, MAP_WITH_DEFAULTS, BUILDER, INDEX}
 
   boolean dB() default false;
 

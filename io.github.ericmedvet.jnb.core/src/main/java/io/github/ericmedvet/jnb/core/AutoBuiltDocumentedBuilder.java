@@ -58,7 +58,11 @@ public record AutoBuiltDocumentedBuilder<T>(
       return Arrays.stream(pa.dDs()).boxed().toList();
     }
     if (type.equals(Type.BOOLEANS)) {
-      return List.of(pa.dBs());
+      List<Boolean> booleans = new ArrayList<>();
+      for (boolean b : pa.dBs()) {
+        booleans.add(b);
+      }
+      return Collections.unmodifiableList(booleans);
     }
     if (type.equals(Type.STRINGS)) {
       return List.of(pa.dSs());
@@ -167,6 +171,10 @@ public record AutoBuiltDocumentedBuilder<T>(
             int k = j + (hasNamedBuilder ? 1 : 0);
             if (paramInfos.get(j).injection().equals(Param.Injection.MAP)) {
               params[k] = map;
+            } else if (paramInfos.get(j).injection().equals(Param.Injection.MAP_WITH_DEFAULTS)) {
+              if (map instanceof NamedParamMap npm) {
+                params[k] = namedBuilder.fillWithDefaults(npm);
+              }
             } else if (paramInfos.get(j).injection().equals(Param.Injection.BUILDER)) {
               params[k] = namedBuilder;
             } else if (paramInfos.get(j).injection().equals(Param.Injection.INDEX)) {
@@ -312,6 +320,19 @@ public record AutoBuiltDocumentedBuilder<T>(
             null,
             name,
             buildDefaultValue(Type.STRINGS, String.class, paramAnnotation),
+            paramAnnotation.injection(),
+            parameter.getParameterizedType()
+        );
+      }
+    }
+    if (parameter.getType()
+        .equals(List.class) && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
+      if (parameterizedType.getActualTypeArguments()[0].equals(Boolean.class)) {
+        return new ParamInfo(
+            Type.BOOLEANS,
+            null,
+            name,
+            buildDefaultValue(Type.BOOLEANS, Boolean.class, paramAnnotation),
             paramAnnotation.injection(),
             parameter.getParameterizedType()
         );

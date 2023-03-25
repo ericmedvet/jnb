@@ -17,7 +17,7 @@ public class StringParser {
     return from(ENode.parse(s, 0));
   }
   
-  private static MapNamedParamMap from(ENode eNode) {
+  private static NamedParamMap from(ENode eNode) {
     return new MapNamedParamMap(
         eNode.name(),
         eNode.child().children().stream()
