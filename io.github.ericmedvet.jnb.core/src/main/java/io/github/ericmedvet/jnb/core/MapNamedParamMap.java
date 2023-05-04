@@ -33,7 +33,7 @@ public class MapNamedParamMap implements NamedParamMap {
   private final SortedMap<String, List<String>> ssMap;
   private final SortedMap<String, List<NamedParamMap>> npmsMap;
 
-  protected MapNamedParamMap(
+  public MapNamedParamMap(
       String name,
       Map<String, Double> dMap,
       Map<String, String> sMap,
