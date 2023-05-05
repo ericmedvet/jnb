@@ -259,11 +259,18 @@ public class NamedBuilder<X> {
                 p.name(),
                 map.ss(p.name(), (List<String>) p.defaultValue())
             );
-        case ENUMS, BOOLEANS -> ssMap.put(
+        case BOOLEANS -> ssMap.put(
             p.name(),
             map.ss(p.name(), ((List<?>) p.defaultValue())
                 .stream()
                 .map(o -> o.toString().toLowerCase())
+                .toList())
+        );
+        case ENUMS -> ssMap.put(
+            p.name(),
+            map.ss(p.name(), ((List<?>) p.defaultValue())
+                .stream()
+                .map(o -> ((Enum<?>)o).name().toLowerCase())
                 .toList())
         );
         case NAMED_PARAM_MAPS -> //noinspection unchecked
