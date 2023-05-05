@@ -78,6 +78,8 @@ public class MapNamedParamMap implements NamedParamMap {
         }
       } else if (l.get(j) instanceof String s) {
         sb.append(stringValue(s));
+      } else if (l.get(j) instanceof Enum<?> e) {
+        sb.append(e.name().toLowerCase());
       } else {
         sb.append(l.get(j).toString());
       }
@@ -102,6 +104,8 @@ public class MapNamedParamMap implements NamedParamMap {
         prettyToString(m, sb, maxW, w + indent + indent, indent, space);
       } else if (l.get(j) instanceof String s) {
         sb.append(stringValue(s));
+      } else if (l.get(j) instanceof Enum<?> e) {
+        sb.append(e.name().toLowerCase());
       } else {
         sb.append(l.get(j).toString());
       }

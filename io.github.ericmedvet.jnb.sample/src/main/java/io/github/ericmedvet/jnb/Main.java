@@ -18,7 +18,13 @@ public class Main {
             )
       """;
 
-  public enum DayOfWeek {MON, TUE, WED, THU, FRI, SAT, SUN}
+  public enum DayOfWeek {MON, TUE, WED, THU, FRI, SAT, SUN;
+
+    @Override
+    public String toString() {
+      return "DayOfWeek{}";
+    }
+  }
 
   public enum Gender {M, F, OTHER}
 
@@ -55,7 +61,8 @@ public class Main {
         .and(NamedBuilder.fromClass(Pet.class));
     Office office = (Office) namedBuilder.build(S);
     System.out.println(office);
+    System.out.println(MapNamedParamMap.prettyToString(StringParser.parse("person(name = Eric; preferredDays = [mon; fri])")));
     System.out.println(MapNamedParamMap.prettyToString(StringParser.parse(S)));
-    System.out.println(MapNamedParamMap.prettyToString(namedBuilder.fillWithDefaults(StringParser.parse(S))));
+    //System.out.println(MapNamedParamMap.prettyToString(namedBuilder.fillWithDefaults(StringParser.parse(S))));
   }
 }
