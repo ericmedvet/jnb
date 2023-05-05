@@ -51,27 +51,27 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     this.npmsMap = new TreeMap<>(npmsMap);
   }
 
-  public SortedMap<String, Double> getdMap() {
+  public SortedMap<String, Double> dMap() {
     return dMap;
   }
 
-  public SortedMap<String, String> getsMap() {
+  public SortedMap<String, String> sMap() {
     return sMap;
   }
 
-  public SortedMap<String, NamedParamMap> getNpmMap() {
+  public SortedMap<String, NamedParamMap> npmMap() {
     return npmMap;
   }
 
-  public SortedMap<String, List<Double>> getDsMap() {
+  public SortedMap<String, List<Double>> dsMap() {
     return dsMap;
   }
 
-  public SortedMap<String, List<String>> getSsMap() {
+  public SortedMap<String, List<String>> ssMap() {
     return ssMap;
   }
 
-  public SortedMap<String, List<NamedParamMap>> getNpmsMap() {
+  public SortedMap<String, List<NamedParamMap>> npmsMap() {
     return npmsMap;
   }
 
@@ -343,7 +343,8 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     boolean alternate = (flags & FormattableFlags.ALTERNATE) == FormattableFlags.ALTERNATE;
     if (alternate) {
       formatter.format("%s", name);
+    } else {
+      formatter.format("%s", prettyToString(this, Integer.MAX_VALUE));
     }
-    formatter.format("%s", this);
   }
 }
