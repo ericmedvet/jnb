@@ -311,44 +311,6 @@ public class MapNamedParamMap implements NamedParamMap {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append(name);
-    sb.append(StringParser.TokenType.OPEN_CONTENT.rendered());
-    Map<String, String> content = new TreeMap<>();
-    dMap.forEach((key, value) -> content.put(key, value.toString()));
-    npmMap.forEach((key, value) -> content.put(key, value.toString()));
-    sMap.forEach((key, value) -> content.put(
-        key,
-        stringValue(value)
-    ));
-    dsMap.forEach((key, value) -> content.put(
-        key,
-        StringParser.TokenType.OPEN_LIST.rendered() +
-            value.stream()
-                .map(Object::toString)
-                .collect(Collectors.joining(StringParser.TokenType.LIST_SEPARATOR.rendered())) +
-            StringParser.TokenType.CLOSED_LIST.rendered()
-    ));
-    ssMap.forEach((key, value) -> content.put(
-        key,
-        StringParser.TokenType.OPEN_LIST.rendered() +
-            value.stream()
-                .map(MapNamedParamMap::stringValue)
-                .collect(Collectors.joining(StringParser.TokenType.LIST_SEPARATOR.rendered())) +
-            StringParser.TokenType.CLOSED_LIST.rendered()
-    ));
-    npmsMap.forEach((key, value) -> content.put(
-        key,
-        StringParser.TokenType.OPEN_LIST.rendered() +
-            value.stream()
-                .map(Object::toString)
-                .collect(Collectors.joining(StringParser.TokenType.LIST_SEPARATOR.rendered())) +
-            StringParser.TokenType.CLOSED_LIST.rendered()
-    ));
-    sb.append(content.entrySet().stream()
-        .map(e -> e.getKey() + StringParser.TokenType.ASSIGN_SEPARATOR.rendered() + e.getValue())
-        .collect(Collectors.joining(StringParser.TokenType.LIST_SEPARATOR.rendered())));
-    sb.append(StringParser.TokenType.CLOSED_CONTENT.rendered());
-    return sb.toString();
+    return prettyToString(this, Integer.MAX_VALUE);
   }
 }

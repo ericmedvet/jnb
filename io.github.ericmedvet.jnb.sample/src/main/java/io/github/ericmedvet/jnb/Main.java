@@ -61,9 +61,10 @@ public class Main {
         .and(NamedBuilder.fromClass(Pet.class));
     Office office = (Office) nb.build(S);
     System.out.println(office);
-    System.out.println(MapNamedParamMap.prettyToString(StringParser.parse("person(name = Eric; preferredDays = [mon; fri])")));
-    System.out.println(MapNamedParamMap.prettyToString(StringParser.parse("person(name = Andrew)")));
-    System.out.println(MapNamedParamMap.prettyToString(nb.fillWithDefaults(StringParser.parse("person(name = Andrew)"))));
+    //System.out.println(MapNamedParamMap.prettyToString(StringParser.parse("person(name = Eric; preferredDays = [mon; fri])")));
+    //System.out.println(MapNamedParamMap.prettyToString(StringParser.parse("person(name = Andrew)")));
+    System.out.println(MapNamedParamMap.prettyToString(nb.fillWithDefaults(StringParser.parse("person(name = Andrew)")), Integer.MAX_VALUE));
+    System.out.println(nb.fillWithDefaults(StringParser.parse("person(name = Andrew)")));
     //System.out.println(MapNamedParamMap.prettyToString(StringParser.parse(S)));
     //System.out.println(MapNamedParamMap.prettyToString(namedBuilder.fillWithDefaults(StringParser.parse(S))));
   }
