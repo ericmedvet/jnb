@@ -23,7 +23,7 @@ import java.util.stream.IntStream;
 /**
  * @author "Eric Medvet" on 2022/08/08 for 2d-robot-evolution
  */
-public class MapNamedParamMap implements NamedParamMap {
+public class MapNamedParamMap implements NamedParamMap, Formattable {
 
   private final String name;
   private final SortedMap<String, Double> dMap;
@@ -49,6 +49,30 @@ public class MapNamedParamMap implements NamedParamMap {
     this.dsMap = new TreeMap<>(dsMap);
     this.ssMap = new TreeMap<>(ssMap);
     this.npmsMap = new TreeMap<>(npmsMap);
+  }
+
+  public SortedMap<String, Double> getdMap() {
+    return dMap;
+  }
+
+  public SortedMap<String, String> getsMap() {
+    return sMap;
+  }
+
+  public SortedMap<String, NamedParamMap> getNpmMap() {
+    return npmMap;
+  }
+
+  public SortedMap<String, List<Double>> getDsMap() {
+    return dsMap;
+  }
+
+  public SortedMap<String, List<String>> getSsMap() {
+    return ssMap;
+  }
+
+  public SortedMap<String, List<NamedParamMap>> getNpmsMap() {
+    return npmsMap;
   }
 
   private static int currentLineLength(String s) {
@@ -312,5 +336,14 @@ public class MapNamedParamMap implements NamedParamMap {
   @Override
   public String toString() {
     return prettyToString(this, Integer.MAX_VALUE);
+  }
+
+  @Override
+  public void formatTo(Formatter formatter, int flags, int width, int precision) {
+    boolean alternate = (flags & FormattableFlags.ALTERNATE) == FormattableFlags.ALTERNATE;
+    if (alternate) {
+      formatter.format("%s", name);
+    }
+    formatter.format("%s", this);
   }
 }
