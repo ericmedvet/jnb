@@ -68,7 +68,7 @@ Add this to your `pom.xml`:
 <dependency>
     <groupId>io.github.ericmedvet</groupId>
     <artifactId>jnb.core</artifactId>
-    <version>1.1.6-SNAPSHOT</version>
+    <version>1.1.6</version>
 </dependency>
 ```
 
