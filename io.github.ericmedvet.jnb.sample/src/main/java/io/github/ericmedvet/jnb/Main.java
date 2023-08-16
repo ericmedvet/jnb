@@ -13,7 +13,7 @@ public class Main {
               head = person(name = "Mario Rossi"; pet = pet(booleans = [true]));
               staff = + [
                 person(name = Alice; age = 33; nicknames = [Puce; "The Cice"]; gender = f);
-                person(name = Bob),
+                person(name = Bob);
                 person(name = Charlie; age = 38)
               ] + [person(name = Dane; age = 28)];
               roomNumbers = [202:1:205]
@@ -61,6 +61,8 @@ public class Main {
         .and(NamedBuilder.fromClass(Office.class))
         .and(NamedBuilder.fromClass(Person.class))
         .and(NamedBuilder.fromClass(Pet.class));
+    System.out.println(nb.build("person(name=Eric;age=44)"));
+
     Office office = (Office) nb.build(S);
     System.out.println(office);
     //System.out.println(MapNamedParamMap.prettyToString(StringParser.parse("person(name = Eric; preferredDays = [mon; fri])")));

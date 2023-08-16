@@ -11,4 +11,8 @@ public record Token(int start, int end) {
   public String trimmedUnquotedContent(String s) {
     return trimmedContent(s).replaceAll("\"", "");
   }
+
+  public int length() {
+    return end - start;
+  }
 }
