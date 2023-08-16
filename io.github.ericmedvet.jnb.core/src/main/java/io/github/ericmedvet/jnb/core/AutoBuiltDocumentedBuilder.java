@@ -16,6 +16,8 @@
 
 package io.github.ericmedvet.jnb.core;
 
+import io.github.ericmedvet.jnb.core.parsing.StringParser;
+
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.logging.Logger;

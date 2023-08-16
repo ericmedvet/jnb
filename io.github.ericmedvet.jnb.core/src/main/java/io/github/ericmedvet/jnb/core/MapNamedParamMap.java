@@ -16,6 +16,8 @@
 
 package io.github.ericmedvet.jnb.core;
 
+import io.github.ericmedvet.jnb.core.parsing.TokenType;
+
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -94,11 +96,11 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
       if (l.get(j) instanceof ParamMap m) {
         if (m instanceof NamedParamMap namedParamMap) {
           sb.append(namedParamMap.getName())
-              .append(StringParser.TokenType.OPEN_CONTENT.rendered());
+              .append(TokenType.OPEN_CONTENT.rendered());
         }
         sb.append(mapContentToInlineString(m, space));
         if (m instanceof NamedParamMap) {
-          sb.append(StringParser.TokenType.CLOSED_CONTENT.rendered());
+          sb.append(TokenType.CLOSED_CONTENT.rendered());
         }
       } else if (l.get(j) instanceof String s) {
         sb.append(stringValue(s));
@@ -108,7 +110,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
         sb.append(l.get(j).toString());
       }
       if (j < l.size() - 1) {
-        sb.append(StringParser.TokenType.LIST_SEPARATOR.rendered()).append(space);
+        sb.append(TokenType.LIST_SEPARATOR.rendered()).append(space);
       }
     }
     return sb.toString();
@@ -134,7 +136,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
         sb.append(l.get(j).toString());
       }
       if (j < l.size() - 1) {
-        sb.append(StringParser.TokenType.LIST_SEPARATOR.rendered());
+        sb.append(TokenType.LIST_SEPARATOR.rendered());
       }
     }
     sb.append("\n").append(indent(w + indent));
@@ -146,21 +148,21 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     for (int i = 0; i < names.size(); i++) {
       sb.append(names.get(i))
           .append(space)
-          .append(StringParser.TokenType.ASSIGN_SEPARATOR.rendered())
+          .append(TokenType.ASSIGN_SEPARATOR.rendered())
           .append(space);
       Object value = m.value(names.get(i));
       if (value instanceof List<?> l) {
-        sb.append(StringParser.TokenType.OPEN_LIST.rendered())
+        sb.append(TokenType.OPEN_LIST.rendered())
             .append(listContentToInlineString(l, space))
-            .append(StringParser.TokenType.CLOSED_LIST.rendered());
+            .append(TokenType.CLOSED_LIST.rendered());
       } else if (value instanceof ParamMap innerMap) {
         if (innerMap instanceof NamedParamMap namedParamMap) {
           sb.append(namedParamMap.getName())
-              .append(StringParser.TokenType.OPEN_CONTENT.rendered());
+              .append(TokenType.OPEN_CONTENT.rendered());
         }
         sb.append(mapContentToInlineString(innerMap, space));
         if (innerMap instanceof NamedParamMap) {
-          sb.append(StringParser.TokenType.CLOSED_CONTENT.rendered());
+          sb.append(TokenType.CLOSED_CONTENT.rendered());
         }
       } else if (value instanceof String) {
         sb.append(stringValue((String) value));
@@ -168,7 +170,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
         sb.append(value.toString());
       }
       if (i < names.size() - 1) {
-        sb.append(StringParser.TokenType.LIST_SEPARATOR.rendered()).append(space);
+        sb.append(TokenType.LIST_SEPARATOR.rendered()).append(space);
       }
     }
     return sb.toString();
@@ -188,18 +190,18 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
           .append(indent(w + indent))
           .append(names.get(i))
           .append(space)
-          .append(StringParser.TokenType.ASSIGN_SEPARATOR.rendered())
+          .append(TokenType.ASSIGN_SEPARATOR.rendered())
           .append(space);
       Object value = map.value(names.get(i));
       if (value instanceof List<?> l) {
-        sb.append(StringParser.TokenType.OPEN_LIST.rendered());
+        sb.append(TokenType.OPEN_LIST.rendered());
         String listContent = listContentToInlineString(l, space);
         if (l.isEmpty() || listContent.length() + currentLineLength(sb.toString()) < maxW) {
           sb.append(listContent);
         } else {
           listContentToMultilineString(sb, maxW, w, indent, space, l);
         }
-        sb.append(StringParser.TokenType.CLOSED_LIST.rendered());
+        sb.append(TokenType.CLOSED_LIST.rendered());
       } else if (value instanceof NamedParamMap m) {
         prettyToString(m, sb, maxW, w + indent, indent, space);
       } else if (value instanceof String) {
@@ -208,7 +210,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
         sb.append(value.toString());
       }
       if (i < names.size() - 1) {
-        sb.append(StringParser.TokenType.LIST_SEPARATOR.rendered());
+        sb.append(TokenType.LIST_SEPARATOR.rendered());
       }
     }
     sb.append("\n").append(indent(w));
@@ -230,14 +232,14 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     if (map instanceof NamedParamMap namedParamMap) {
       sb.append(namedParamMap.getName());
     }
-    sb.append(StringParser.TokenType.OPEN_CONTENT.rendered());
+    sb.append(TokenType.OPEN_CONTENT.rendered());
     String content = mapContentToInlineString(map, space);
     if (map.names().isEmpty() || content.length() + currentLineLength(sb.toString()) < maxW) {
       sb.append(content);
     } else {
       mapContentToMultilineString(sb, maxW, w, indent, space, map);
     }
-    sb.append(StringParser.TokenType.CLOSED_CONTENT.rendered());
+    sb.append(TokenType.CLOSED_CONTENT.rendered());
   }
 
   @Override

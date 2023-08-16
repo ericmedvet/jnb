@@ -19,7 +19,7 @@ package io.github.ericmedvet.jnb;
 import io.github.ericmedvet.jnb.core.MapNamedParamMap;
 import io.github.ericmedvet.jnb.core.NamedBuilder;
 import io.github.ericmedvet.jnb.core.Param;
-import io.github.ericmedvet.jnb.core.StringParser;
+import io.github.ericmedvet.jnb.core.parsing.StringParser;
 
 import java.util.List;
 

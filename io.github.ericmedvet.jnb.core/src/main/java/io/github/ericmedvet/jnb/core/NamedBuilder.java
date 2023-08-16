@@ -16,6 +16,8 @@
 
 package io.github.ericmedvet.jnb.core;
 
+import io.github.ericmedvet.jnb.core.parsing.StringParser;
+
 import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.function.Supplier;
@@ -23,7 +25,7 @@ import java.util.stream.Collectors;
 
 public class NamedBuilder<X> {
 
-  protected final static char NAME_SEPARATOR = '.';
+  public final static char NAME_SEPARATOR = '.';
   private final static NamedBuilder<Object> EMPTY = new NamedBuilder<>(Map.of());
   private final Map<String, Builder<? extends X>> builders;
 
