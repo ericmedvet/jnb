@@ -118,13 +118,6 @@ public class StringParser {
     return new MapNamedParamMap(eNode.name(), values);
   }
 
-  public static void main(String[] args) {
-    NamedParamMap m = StringParser.parse(
-        "person(name=eric;preferredDays=[mon;tue];age=44;pet=pet(name=\"simba\";legs=[1:2:10]))");
-    System.out.println(m.value("age", ParamMap.Type.INT));
-    System.out.println(m);
-  }
-
   private static <T> List<T> withAppended(List<T> ts, T t) {
     List<T> newTs = new ArrayList<>(ts);
     newTs.add(t);
