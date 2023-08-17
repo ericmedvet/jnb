@@ -187,110 +187,25 @@ public class NamedBuilder<X> {
       return map;
     }
     //fill map
-    SortedMap<String, Double> dMap = new TreeMap<>();
-    SortedMap<String, String> sMap = new TreeMap<>();
-    SortedMap<String, NamedParamMap> npmMap = new TreeMap<>();
-    SortedMap<String, List<Double>> dsMap = new TreeMap<>();
-    SortedMap<String, List<String>> ssMap = new TreeMap<>();
-    SortedMap<String, List<NamedParamMap>> npmsMap = new TreeMap<>();
+    Map<MapNamedParamMap.TypedKey, Object> values = new HashMap<>();
     for (DocumentedBuilder.ParamInfo p : builder.params()) {
       if (p.injection() != Param.Injection.NONE) {
         continue;
       }
-      switch (p.type()) {
-        case INT -> {
-          if (map.d(p.name()) != null) {
-            dMap.put(p.name(), map.d(p.name()));
-          } else {
-            if (p.defaultValue() instanceof Integer value) {
-              dMap.put(p.name(), value.doubleValue());
-            }
-          }
-        }
-        case DOUBLE -> {
-          if (map.d(p.name()) != null) {
-            dMap.put(p.name(), map.d(p.name()));
-          } else {
-            if (p.defaultValue() instanceof Double value) {
-              dMap.put(p.name(), value);
-            }
-          }
-        }
-        case STRING -> {
-          if (map.s(p.name()) != null) {
-            sMap.put(p.name(), map.s(p.name()));
-          } else {
-            if (p.defaultValue() instanceof String value) {
-              sMap.put(p.name(), value);
-            }
-          }
-        }
-        case ENUM, BOOLEAN -> {
-          if (map.s(p.name()) != null) {
-            sMap.put(p.name(), map.s(p.name()));
-          } else {
-            if (p.defaultValue() instanceof String value) {
-              sMap.put(p.name(), value.toLowerCase());
-            }
-          }
-        }
-        case NAMED_PARAM_MAP -> {
-          NamedParamMap innerMap = map.npm(p.name());
-          if (innerMap != null) {
-            innerMap = fillWithDefaults(innerMap);
-            npmMap.put(p.name(), fillWithDefaults(innerMap));
-          } else {
-            if (p.defaultValue() instanceof String value) {
-              npmMap.put(p.name(), fillWithDefaults(StringParser.parse(value)));
-            }
-          }
-        }
-        case INTS -> //noinspection unchecked
-            dsMap.put(
-                p.name(),
-                map.is(p.name(), (List<Integer>) p.defaultValue())
-                    .stream()
-                    .mapToDouble(i -> i)
-                    .boxed()
-                    .toList()
-            );
-        case DOUBLES -> //noinspection unchecked
-            dsMap.put(
-                p.name(),
-                map.ds(p.name(), (List<Double>) p.defaultValue())
-            );
-        case STRINGS -> //noinspection unchecked
-            ssMap.put(
-                p.name(),
-                map.ss(p.name(), (List<String>) p.defaultValue())
-            );
-        case BOOLEANS -> ssMap.put(
-            p.name(),
-            map.ss(p.name(), ((List<?>) p.defaultValue())
-                .stream()
-                .map(o -> o.toString().toLowerCase())
-                .toList())
-        );
-        case ENUMS -> ssMap.put(
-            p.name(),
-            map.ss(p.name(), ((List<?>) p.defaultValue())
-                .stream()
-                .map(o -> ((Enum<?>) o).name().toLowerCase())
-                .toList())
-        );
-        case NAMED_PARAM_MAPS -> //noinspection unchecked
-            npmsMap.put(
-                p.name(),
-                map.npms(p.name(), ((List<NamedParamMap>) p.defaultValue())
-                    .stream()
-                    .map(this::fillWithDefaults)
-                    .toList())
-            );
-        default -> {
-        }
+      @SuppressWarnings({"unchecked", "rawtypes"}) Object value = map.value(
+          p.name(),
+          p.type(),
+          (Class<Enum>) p.enumClass()
+      );
+      if (value == null) {
+        value = p.defaultValue();
       }
+      if (value instanceof NamedParamMap npm) {
+        value = fillWithDefaults(npm);
+      }
+      values.put(new MapNamedParamMap.TypedKey(p.name(), p.type()), value);
     }
-    return new MapNamedParamMap(map.getName(), dMap, sMap, npmMap, dsMap, ssMap, npmsMap);
+    return new MapNamedParamMap(map.getName(), values);
   }
 
 }

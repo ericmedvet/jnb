@@ -12,7 +12,7 @@ public class Main {
 
   private final static String S = """
       office(
-              head = person(name = "Mario Rossi"; pet = pet(booleans = [true]));
+              head = person(name = "Mario Rossi"; pet = pet(name = Fuffi; booleans = [true]));
               staff = + [
                 person(name = Alice; age = 33; nicknames = [Puce; "The Cice"]; gender = f);
                 person(name = Bob);
@@ -63,10 +63,10 @@ public class Main {
         .and(NamedBuilder.fromClass(Office.class))
         .and(NamedBuilder.fromClass(Person.class))
         .and(NamedBuilder.fromClass(Pet.class));
-    System.out.println(nb.build("person(name=eric;age=44;pet=pet(name=\"simba\";legs=[2]))"));
-    System.exit(0);
+    System.out.println(nb.build("person(name=eric;preferredDays=[mon;tue];age=44;pet=pet(name=\"simba\";legs=[2]))"));
+    //System.exit(0);
 
-    Office office = (Office) nb.build(S);
+    //Office office = (Office) nb.build(S);
     //System.out.println(office);
     //System.out.println(MapNamedParamMap.prettyToString(StringParser.parse("person(name = Eric; preferredDays = [mon; fri])")));
     //System.out.println(MapNamedParamMap.prettyToString(StringParser.parse("person(name = Andrew)")));

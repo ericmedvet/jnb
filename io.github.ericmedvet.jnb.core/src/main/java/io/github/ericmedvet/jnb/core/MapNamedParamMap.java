@@ -19,6 +19,7 @@ package io.github.ericmedvet.jnb.core;
 import io.github.ericmedvet.jnb.core.parsing.TokenType;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -27,54 +28,104 @@ import java.util.stream.IntStream;
  */
 public class MapNamedParamMap implements NamedParamMap, Formattable {
 
+  public record TypedKey(String name, Type type) implements Comparable<TypedKey> {
+    @Override
+    public int compareTo(TypedKey o) {
+      return name.compareTo(o.name);
+    }
+  }
+
   private final String name;
-  private final SortedMap<String, Double> dMap;
-  private final SortedMap<String, String> sMap;
-  private final SortedMap<String, NamedParamMap> npmMap;
-  private final SortedMap<String, List<Double>> dsMap;
-  private final SortedMap<String, List<String>> ssMap;
-  private final SortedMap<String, List<NamedParamMap>> npmsMap;
+  private final SortedMap<TypedKey, Object> values;
 
-  public MapNamedParamMap(
-      String name,
-      Map<String, Double> dMap,
-      Map<String, String> sMap,
-      Map<String, NamedParamMap> npmMap,
-      Map<String, List<Double>> dsMap,
-      Map<String, List<String>> ssMap,
-      Map<String, List<NamedParamMap>> npmsMap
-  ) {
+  public MapNamedParamMap(String name, Map<TypedKey, Object> values) {
     this.name = name;
-    this.dMap = new TreeMap<>(dMap);
-    this.sMap = new TreeMap<>(sMap);
-    this.npmMap = new TreeMap<>(npmMap);
-    this.dsMap = new TreeMap<>(dsMap);
-    this.ssMap = new TreeMap<>(ssMap);
-    this.npmsMap = new TreeMap<>(npmsMap);
+    this.values = new TreeMap<>();
+    for (Map.Entry<TypedKey, Object> e : values.entrySet()) {
+      if (e.getKey().type.equals(Type.INT)) {
+        this.values.put(new TypedKey(e.getKey().name, Type.DOUBLE), Double.valueOf(intValue(e.getValue())));
+      } else if (e.getKey().type.equals(Type.BOOLEAN)) {
+        this.values.put(new TypedKey(e.getKey().name, Type.STRING), booleanValue(e.getValue().toString()).toString());
+      } else if (e.getKey().type.equals(Type.ENUM)) {
+        this.values.put(new TypedKey(e.getKey().name, Type.STRING), ((Enum<?>)e.getValue()).name().toLowerCase());
+      } else if (e.getKey().type.equals(Type.INTS)) {
+        this.values.put(
+            new TypedKey(e.getKey().name, Type.DOUBLES),
+            checkList((List<?>) e.getValue(), MapNamedParamMap::intValue)
+        );
+      } else if (e.getKey().type.equals(Type.BOOLEANS)) {
+        this.values.put(
+            new TypedKey(e.getKey().name, Type.STRINGS),
+            checkList((List<?>) e.getValue(), b -> booleanValue(b.toString()).toString())
+        );
+      } else if (e.getKey().type.equals(Type.ENUMS)) {
+        this.values.put(
+            new TypedKey(e.getKey().name, Type.STRINGS),
+            checkList((List<?>) e.getValue(), v -> ((Enum<?>)v).name().toLowerCase())
+        );
+      } else {
+        this.values.put(e.getKey(), e.getValue());
+      }
+    }
   }
 
-  public SortedMap<String, Double> dMap() {
-    return dMap;
+  @Override
+  public <E extends Enum<E>> Object value(String n, Type type, Class<E> enumClass) {
+    return switch (type) {
+      case INT -> intValue(values.get(new TypedKey(n, Type.DOUBLE)));
+      case BOOLEAN -> booleanValue(values.get(new TypedKey(n, Type.STRING)));
+      case ENUM -> enumValue(values.get(new TypedKey(n, Type.STRING)), enumClass);
+      case INTS -> checkList((List<?>) values.get(new TypedKey(n, Type.DOUBLES)), MapNamedParamMap::intValue);
+      case BOOLEANS -> checkList((List<?>) values.get(new TypedKey(n, Type.STRINGS)), MapNamedParamMap::booleanValue);
+      case ENUMS -> checkList((List<?>) values.get(new TypedKey(n, Type.STRINGS)), s -> enumValue(s, enumClass));
+      default -> values.get(new TypedKey(n, type));
+    };
   }
 
-  public SortedMap<String, String> sMap() {
-    return sMap;
+  private static List<?> checkList(List<?> l, Function<?, ?> mapper) {
+    if (l == null) {
+      return null;
+    }
+    @SuppressWarnings({"rawtypes", "unchecked"}) List<?> mappedL = l.stream()
+        .map(i -> ((Function) mapper).apply(i))
+        .toList();
+    if (mappedL.stream().anyMatch(Objects::isNull)) {
+      return null;
+    }
+    return mappedL;
   }
 
-  public SortedMap<String, NamedParamMap> npmMap() {
-    return npmMap;
+  private static Integer intValue(Object o) {
+    if (o == null) {
+      return null;
+    }
+    if (o instanceof Number d) {
+      return d.intValue() != d.doubleValue() ? null : d.intValue();
+    }
+    return null;
   }
 
-  public SortedMap<String, List<Double>> dsMap() {
-    return dsMap;
+  private static Boolean booleanValue(Object o) {
+    if (o == null) {
+      return null;
+    }
+    if (o instanceof String s) {
+      if (!s.equals("true") && !s.equals("false")) {
+        return null;
+      }
+      return Boolean.valueOf(s);
+    }
+    return null;
   }
 
-  public SortedMap<String, List<String>> ssMap() {
-    return ssMap;
-  }
-
-  public SortedMap<String, List<NamedParamMap>> npmsMap() {
-    return npmsMap;
+  private static <E extends Enum<E>> E enumValue(Object o, Class<E> enumClass) {
+    if (o == null) {
+      return null;
+    }
+    if (o instanceof String s) {
+      return Enum.valueOf(enumClass, s.toUpperCase());
+    }
+    return null;
   }
 
   private static int currentLineLength(String s) {
@@ -242,82 +293,13 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     sb.append(TokenType.CLOSED_CONTENT.rendered());
   }
 
-  @Override
-  public Boolean b(String n) {
-    if (sMap.containsKey(n) &&
-        (sMap.get(n).equalsIgnoreCase(Boolean.TRUE.toString()) ||
-            sMap.get(n).equalsIgnoreCase(Boolean.FALSE.toString()))) {
-      return sMap.get(n).equalsIgnoreCase(Boolean.TRUE.toString());
-    }
-    return null;
-  }
-
   private static String stringValue(String value) {
     return value.matches("[A-Za-z][A-Za-z0-9_]*") ? value : ('"' + value + '"');
   }
 
   @Override
-  public Double d(String n) {
-    return dMap.get(n);
-  }
-
-  @Override
-  public List<Double> ds(String n) {
-    return dsMap.get(n);
-  }
-
-  @Override
-  public Integer i(String n) {
-    if (!dMap.containsKey(n)) {
-      return null;
-    }
-    double v = dMap.get(n);
-    return isInt(v) ? (int) v : null;
-  }
-
-  @Override
-  public List<Integer> is(String n) {
-    if (!dsMap.containsKey(n)) {
-      return null;
-    }
-    List<Double> vs = dsMap.get(n);
-    List<Integer> is = vs.stream().filter(MapNamedParamMap::isInt).map(Double::intValue).toList();
-    if (is.size() == vs.size()) {
-      return is;
-    }
-    return null;
-  }
-
-  @Override
   public Set<String> names() {
-    Set<String> names = new TreeSet<>();
-    names.addAll(dMap.keySet());
-    names.addAll(sMap.keySet());
-    names.addAll(npmMap.keySet());
-    names.addAll(dsMap.keySet());
-    names.addAll(ssMap.keySet());
-    names.addAll(npmsMap.keySet());
-    return names;
-  }
-
-  @Override
-  public NamedParamMap npm(String n) {
-    return npmMap.get(n);
-  }
-
-  @Override
-  public List<NamedParamMap> npms(String n) {
-    return npmsMap.containsKey(n) ? npmsMap.get(n).stream().toList() : null;
-  }
-
-  @Override
-  public String s(String n) {
-    return sMap.get(n);
-  }
-
-  @Override
-  public List<String> ss(String n) {
-    return ssMap.get(n);
+    return values.keySet().stream().map(k -> k.name).collect(Collectors.toSet());
   }
 
   @Override
@@ -325,15 +307,6 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     return name;
   }
 
-  @Override
-  public List<Boolean> bs(String n) {
-    if (!ssMap.containsKey(n) || !ssMap.get(n)
-        .stream()
-        .allMatch(s -> s.equalsIgnoreCase(Boolean.TRUE.toString()) || s.equalsIgnoreCase(Boolean.FALSE.toString()))) {
-      return null;
-    }
-    return ssMap.get(n).stream().map(s -> s.equalsIgnoreCase(Boolean.TRUE.toString())).toList();
-  }
 
   @Override
   public String toString() {

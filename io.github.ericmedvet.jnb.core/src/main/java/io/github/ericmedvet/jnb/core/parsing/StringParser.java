@@ -2,6 +2,7 @@ package io.github.ericmedvet.jnb.core.parsing;
 
 import io.github.ericmedvet.jnb.core.MapNamedParamMap;
 import io.github.ericmedvet.jnb.core.NamedParamMap;
+import io.github.ericmedvet.jnb.core.ParamMap;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -77,37 +78,51 @@ public class StringParser {
   }
 
   private static NamedParamMap from(ENode eNode) {
-    return new MapNamedParamMap(
-        eNode.name(),
-        eNode.child().children().stream()
-            .filter(n -> n.value() instanceof DNode)
-            .collect(Collectors.toMap(NPNode::name, n -> ((DNode) n.value()).value().doubleValue())),
-        eNode.child().children().stream()
-            .filter(n -> n.value() instanceof SNode)
-            .collect(Collectors.toMap(NPNode::name, n -> ((SNode) n.value()).value())),
-        eNode.child().children().stream()
-            .filter(n -> n.value() instanceof ENode)
-            .collect(Collectors.toMap(NPNode::name, n -> from((ENode) n.value()))),
-        eNode.child().children().stream()
-            .filter(n -> n.value() instanceof LDNode)
-            .collect(Collectors.toMap(
-                NPNode::name,
-                n -> ((LDNode) n.value()).child().children().stream().map(c -> c.value().doubleValue()).toList()
-            )),
-        eNode.child().children().stream()
-            .filter(n -> n.value() instanceof LSNode)
-            .collect(Collectors.toMap(
-                NPNode::name,
-                n -> ((LSNode) n.value()).child().children().stream().map(SNode::value).toList()
-            )),
-        eNode.child().children().stream()
-            .filter(n -> n.value() instanceof LENode)
-            .collect(Collectors.toMap(
-                NPNode::name,
-                n -> ((LENode) n.value()).child().children().stream().map(StringParser::from).toList()
-            ))
+    Map<MapNamedParamMap.TypedKey, Object> values = new HashMap<>();
+    eNode.child().children().stream()
+        .filter(n -> n.value() instanceof DNode)
+        .forEach(n -> values.put(
+            new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.DOUBLE),
+            ((DNode) n.value()).value().doubleValue()
+        ));
+    eNode.child().children().stream()
+        .filter(n -> n.value() instanceof SNode)
+        .forEach(n -> values.put(
+            new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.STRING),
+            ((SNode) n.value()).value()
+        ));
+    eNode.child().children().stream()
+        .filter(n -> n.value() instanceof ENode)
+        .forEach(n -> values.put(
+            new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.NAMED_PARAM_MAP),
+            from((ENode) n.value())
+        ));
+    eNode.child().children().stream()
+        .filter(n -> n.value() instanceof LDNode)
+        .forEach(n -> values.put(
+            new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.DOUBLES),
+            ((LDNode) n.value()).child.children().stream().map(c -> c.value().doubleValue()).toList()
+        ));
+    eNode.child().children().stream()
+        .filter(n -> n.value() instanceof LSNode)
+        .forEach(n -> values.put(
+            new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.STRINGS),
+            ((LSNode) n.value()).child().children().stream().map(SNode::value).toList()
+        ));
+    eNode.child().children().stream()
+        .filter(n -> n.value() instanceof LENode)
+        .forEach(n -> values.put(
+            new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.NAMED_PARAM_MAPS),
+            ((LENode) n.value()).child().children().stream().map(StringParser::from).toList()
+        ));
+    return new MapNamedParamMap(eNode.name(), values);
+  }
 
-    );
+  public static void main(String[] args) {
+    NamedParamMap m = StringParser.parse(
+        "person(name=eric;preferredDays=[mon;tue];age=44;pet=pet(name=\"simba\";legs=[1:2:10]))");
+    System.out.println(m.value("age", ParamMap.Type.INT));
+    System.out.println(m);
   }
 
   private static <T> List<T> withAppended(List<T> ts, T t) {
