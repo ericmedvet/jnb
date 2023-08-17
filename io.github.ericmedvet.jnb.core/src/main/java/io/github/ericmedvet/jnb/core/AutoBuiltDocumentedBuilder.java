@@ -43,14 +43,14 @@ public record AutoBuiltDocumentedBuilder<T>(
     if (type.equals(ParamMap.Type.BOOLEAN)) {
       return pa.dB();
     }
-    if (type.equals(ParamMap.Type.STRING) && !pa.dS().isEmpty()) {
+    if (type.equals(ParamMap.Type.STRING) && !pa.dS().equals(Param.UNDEFAULTED_STRING)) {
       return pa.dS();
     }
     if (type.equals(ParamMap.Type.ENUM) && !pa.dS().isEmpty()) {
       //noinspection rawtypes,unchecked
       return Enum.valueOf((Class) clazz, pa.dS().toUpperCase());
     }
-    if (type.equals(ParamMap.Type.NAMED_PARAM_MAP) && !pa.dNPM().isEmpty()) {
+    if (type.equals(ParamMap.Type.NAMED_PARAM_MAP) && !pa.dNPM().equals(Param.UNDEFAULTED_STRING)) {
       return StringParser.parse(pa.dNPM());
     }
     if (type.equals(ParamMap.Type.INTS)) {

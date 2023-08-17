@@ -29,6 +29,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.PARAMETER)
 public @interface Param {
 
+  String UNDEFAULTED_STRING = "UNDEFAULTED_STRING";
+
   enum Injection {NONE, MAP, MAP_WITH_DEFAULTS, BUILDER, INDEX}
 
   boolean dB() default false;
@@ -43,11 +45,11 @@ public @interface Param {
 
   int[] dIs() default {};
 
-  String dNPM() default "";
+  String dNPM() default UNDEFAULTED_STRING;
 
   String[] dNPMs() default {};
 
-  String dS() default "";
+  String dS() default UNDEFAULTED_STRING;
 
   String[] dSs() default {};
 
