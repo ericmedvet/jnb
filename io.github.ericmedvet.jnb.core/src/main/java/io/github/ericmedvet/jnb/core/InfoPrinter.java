@@ -28,10 +28,11 @@ import java.util.stream.Collectors;
 public class InfoPrinter {
 
   private static final int N_OF_COMPATIBILITY_ATTEMPTS = 10;
-  private static final Set<DocumentedBuilder.Type> EASY_TYPES = EnumSet.of(DocumentedBuilder.Type.BOOLEAN,
-      DocumentedBuilder.Type.DOUBLE,
-      DocumentedBuilder.Type.INT,
-      DocumentedBuilder.Type.STRING
+  private static final Set<ParamMap.Type> EASY_TYPES = EnumSet.of(
+      ParamMap.Type.BOOLEAN,
+      ParamMap.Type.DOUBLE,
+      ParamMap.Type.INT,
+      ParamMap.Type.STRING
   );
 
 
@@ -135,7 +136,7 @@ public class InfoPrinter {
     paramPairs.add(easyParamPairs(builder.params()));
     List<DocumentedBuilder.ParamInfo> npmParams = builder.params()
         .stream()
-        .filter(pi -> pi.type().equals(DocumentedBuilder.Type.NAMED_PARAM_MAP))
+        .filter(pi -> pi.type().equals(ParamMap.Type.NAMED_PARAM_MAP))
         .toList();
     if (!builderInfos.isEmpty() && !npmParams.isEmpty()) {
       //cartesian
@@ -236,7 +237,7 @@ public class InfoPrinter {
       //update compatibilities
       for (BuilderInfo builderInfo : buildableBuilders) {
         if (builderInfo.builder() instanceof DocumentedBuilder<?> builder) {
-          if (builder.params().stream().noneMatch(pi -> pi.type().equals(DocumentedBuilder.Type.NAMED_PARAM_MAP))) {
+          if (builder.params().stream().noneMatch(pi -> pi.type().equals(ParamMap.Type.NAMED_PARAM_MAP))) {
             continue;
           }
           List<List<ParamTriplet>> triplets = paramTriplets(builder, buildableBuilders);
@@ -254,7 +255,7 @@ public class InfoPrinter {
               nb.build(usage);
               builderInfo.compatibilities()
                   .stream()
-                  .filter(c -> c.paramInfo().type().equals(DocumentedBuilder.Type.NAMED_PARAM_MAP))
+                  .filter(c -> c.paramInfo().type().equals(ParamMap.Type.NAMED_PARAM_MAP))
                   .filter(c -> c.paramInfo().defaultValue() == null)
                   .forEach(c -> {
                     BuilderInfo cbi = paramTriplets.stream()

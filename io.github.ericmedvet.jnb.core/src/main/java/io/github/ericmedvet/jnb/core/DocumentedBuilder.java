@@ -22,32 +22,8 @@ import java.util.List;
  * @author "Eric Medvet" on 2022/08/12 for 2dmrsim
  */
 public interface DocumentedBuilder<T> extends Builder<T> {
-  enum Type {
-    INT("i"),
-    DOUBLE("d"),
-    STRING("s"),
-    BOOLEAN("b"),
-    ENUM("e"),
-    NAMED_PARAM_MAP("npm"),
-    INTS("i[]"),
-    DOUBLES("d[]"),
-    STRINGS("s[]"),
-    BOOLEANS("b[]"),
-    ENUMS("e[]"),
-    NAMED_PARAM_MAPS("npm[]");
-    private final String rendered;
-
-    Type(String rendered) {
-      this.rendered = rendered;
-    }
-
-    public String rendered() {
-      return rendered;
-    }
-  }
-
   record ParamInfo(
-      Type type,
+      ParamMap.Type type,
       Class<?> enumClass,
       String name,
       Object defaultValue,

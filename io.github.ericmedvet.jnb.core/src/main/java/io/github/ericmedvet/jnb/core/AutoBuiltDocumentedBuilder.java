@@ -33,89 +33,83 @@ public record AutoBuiltDocumentedBuilder<T>(
     List<ParamInfo> params,
     Builder<T> builder
 ) implements DocumentedBuilder<T> {
-  private static Object buildDefaultValue(Type type, Class<?> clazz, Param pa) {
-    if (type.equals(Type.INT) && pa.dI() != Integer.MIN_VALUE) {
+  private static Object buildDefaultValue(ParamMap.Type type, Class<?> clazz, Param pa) {
+    if (type.equals(ParamMap.Type.INT) && pa.dI() != Integer.MIN_VALUE) {
       return pa.dI();
     }
-    if (type.equals(Type.DOUBLE) && !Double.isNaN(pa.dD())) {
+    if (type.equals(ParamMap.Type.DOUBLE) && !Double.isNaN(pa.dD())) {
       return pa.dD();
     }
-    if (type.equals(Type.BOOLEAN)) {
+    if (type.equals(ParamMap.Type.BOOLEAN)) {
       return pa.dB();
     }
-    if (type.equals(Type.STRING) && !pa.dS().isEmpty()) {
+    if (type.equals(ParamMap.Type.STRING) && !pa.dS().isEmpty()) {
       return pa.dS();
     }
-    if (type.equals(Type.ENUM) && !pa.dS().isEmpty()) {
+    if (type.equals(ParamMap.Type.ENUM) && !pa.dS().isEmpty()) {
       //noinspection rawtypes,unchecked
       return Enum.valueOf((Class) clazz, pa.dS().toUpperCase());
     }
-    if (type.equals(Type.NAMED_PARAM_MAP) && !pa.dNPM().isEmpty()) {
+    if (type.equals(ParamMap.Type.NAMED_PARAM_MAP) && !pa.dNPM().isEmpty()) {
       return StringParser.parse(pa.dNPM());
     }
-    if (type.equals(Type.INTS)) {
+    if (type.equals(ParamMap.Type.INTS)) {
       return Arrays.stream(pa.dIs()).boxed().toList();
     }
-    if (type.equals(Type.DOUBLES)) {
+    if (type.equals(ParamMap.Type.DOUBLES)) {
       return Arrays.stream(pa.dDs()).boxed().toList();
     }
-    if (type.equals(Type.BOOLEANS)) {
+    if (type.equals(ParamMap.Type.BOOLEANS)) {
       List<Boolean> booleans = new ArrayList<>();
       for (boolean b : pa.dBs()) {
         booleans.add(b);
       }
       return Collections.unmodifiableList(booleans);
     }
-    if (type.equals(Type.STRINGS)) {
+    if (type.equals(ParamMap.Type.STRINGS)) {
       return List.of(pa.dSs());
     }
-    if (type.equals(Type.ENUMS)) {
+    if (type.equals(ParamMap.Type.ENUMS)) {
       //noinspection unchecked,rawtypes
       return Arrays.stream(pa.dSs()).map(s -> Enum.valueOf((Class) clazz, s.toUpperCase())).toList();
     }
-    if (type.equals(Type.NAMED_PARAM_MAPS)) {
+    if (type.equals(ParamMap.Type.NAMED_PARAM_MAPS)) {
       return Arrays.stream(pa.dNPMs()).map(StringParser::parse).toList();
     }
     return null;
   }
 
+  private static <E extends Enum<E>> Object buildOrDefaultParam(ParamInfo pi, ParamMap m) {
+    @SuppressWarnings({"rawtypes", "unchecked"}) Object value = m.value(pi.name(), pi.type(), (Class) pi.enumClass());
+    if (value != null) {
+      return value;
+    }
+    if (m.names().contains(pi.name())) {
+      throw new IllegalArgumentException("Wrong type for param \"%s\": \"%s\" is not %s".formatted(
+          pi.name(),
+          m.value(pi.name()),
+          pi.type().name()
+      ));
+    }
+    if (pi.defaultValue() != null) {
+      return pi.defaultValue();
+    }
+    throw new IllegalArgumentException("Unvalued undefaulted parameter \"%s\"".formatted(pi.name()));
+  }
+
   @SuppressWarnings("unchecked")
   private static Object buildParam(ParamInfo pi, ParamMap m, Parameter ap, NamedBuilder<Object> nb) {
     return switch (pi.type()) {
-      case INT -> pi.defaultValue() == null ? m.i(pi.name()) : m.i(pi.name(), (Integer) pi.defaultValue());
-      case DOUBLE -> pi.defaultValue() == null ? m.d(pi.name()) : m.d(pi.name(), (Double) pi.defaultValue());
-      case STRING -> pi.defaultValue() == null ? m.s(pi.name()) : m.s(pi.name(), (String) pi.defaultValue());
-      case BOOLEAN -> pi.defaultValue() == null ? m.b(pi.name()) : m.b(pi.name(), (Boolean) pi.defaultValue());
-      case ENUM -> //noinspection rawtypes
-          pi.defaultValue() == null ? m.e(pi.name(), (Class) pi.enumClass()) : m.e(
-              pi.name(),
-              (Class) pi.enumClass(),
-              (Enum) pi.defaultValue()
-          );
-      case NAMED_PARAM_MAP -> processNPM(pi.defaultValue() == null ? m.npm(pi.name()) : m.npm(
-          pi.name(),
-          (NamedParamMap) pi.defaultValue()
-      ), ap, nb, 0);
-      case INTS -> pi.defaultValue() == null ? m.is(pi.name()) : m.is(pi.name(), (List<Integer>) pi.defaultValue());
-      case DOUBLES -> pi.defaultValue() == null ? m.ds(pi.name()) : m.ds(pi.name(), (List<Double>) pi.defaultValue());
-      case STRINGS -> pi.defaultValue() == null ? m.ss(pi.name()) : m.ss(pi.name(), (List<String>) pi.defaultValue());
-      case BOOLEANS -> pi.defaultValue() == null ? m.bs(pi.name()) : m.bs(pi.name(), (List<Boolean>) pi.defaultValue());
-      case ENUMS -> //noinspection rawtypes
-          pi.defaultValue() == null ? m.es(pi.name(), (Class) pi.enumClass()) : m.es(
-              pi.name(),
-              (Class) pi.enumClass(),
-              (List) pi.defaultValue()
-          );
-      case NAMED_PARAM_MAPS -> {
-        if (pi.defaultValue() == null) {
-          yield m.npms(pi.name());
-        }
-        List<NamedParamMap> npms = m.npms(pi.name(), (List<NamedParamMap>) pi.defaultValue());
-        yield IntStream.range(0, npms.size())
-            .mapToObj(i -> processNPM(npms.get(i), ap, nb, i))
-            .toList();
-      }
+      case NAMED_PARAM_MAP -> processNPM((NamedParamMap) buildOrDefaultParam(pi, m), ap, nb, 0);
+      case NAMED_PARAM_MAPS -> processNPMs((List<NamedParamMap>) buildOrDefaultParam(pi, m), ap, nb);
+      default -> buildOrDefaultParam(pi, m);
     };
+  }
+
+  private static List<Object> processNPMs(List<NamedParamMap> npms, Parameter ap, NamedBuilder<Object> nb) {
+    return IntStream.range(0, npms.size())
+        .mapToObj(i -> processNPM(npms.get(i), ap, nb, i))
+        .toList();
   }
 
   public static AutoBuiltDocumentedBuilder<Object> from(Executable executable) {
@@ -240,50 +234,50 @@ public record AutoBuiltDocumentedBuilder<T>(
     String name = paramAnnotation.value();
     if (parameter.getType().equals(Integer.class) || parameter.getType().equals(Integer.TYPE)) {
       return new ParamInfo(
-          Type.INT,
+          ParamMap.Type.INT,
           null,
           name,
-          buildDefaultValue(Type.INT, Integer.class, paramAnnotation),
+          buildDefaultValue(ParamMap.Type.INT, Integer.class, paramAnnotation),
           paramAnnotation.injection(),
           parameter.getParameterizedType()
       );
     }
     if (parameter.getType().equals(Double.class) || parameter.getType().equals(Double.TYPE)) {
       return new ParamInfo(
-          Type.DOUBLE,
+          ParamMap.Type.DOUBLE,
           null,
           name,
-          buildDefaultValue(Type.DOUBLE, Double.class, paramAnnotation),
+          buildDefaultValue(ParamMap.Type.DOUBLE, Double.class, paramAnnotation),
           paramAnnotation.injection(),
           parameter.getParameterizedType()
       );
     }
     if (parameter.getType().equals(String.class)) {
       return new ParamInfo(
-          Type.STRING,
+          ParamMap.Type.STRING,
           null,
           name,
-          buildDefaultValue(Type.STRING, String.class, paramAnnotation),
+          buildDefaultValue(ParamMap.Type.STRING, String.class, paramAnnotation),
           paramAnnotation.injection(),
           parameter.getParameterizedType()
       );
     }
     if (parameter.getType().equals(Boolean.class) || parameter.getType().equals(Boolean.TYPE)) {
       return new ParamInfo(
-          Type.BOOLEAN,
+          ParamMap.Type.BOOLEAN,
           null,
           name,
-          buildDefaultValue(Type.BOOLEAN, Boolean.class, paramAnnotation),
+          buildDefaultValue(ParamMap.Type.BOOLEAN, Boolean.class, paramAnnotation),
           paramAnnotation.injection(),
           parameter.getParameterizedType()
       );
     }
     if (parameter.getType().isEnum()) {
       return new ParamInfo(
-          Type.ENUM,
+          ParamMap.Type.ENUM,
           parameter.getType(),
           name,
-          buildDefaultValue(Type.ENUM, parameter.getType(), paramAnnotation),
+          buildDefaultValue(ParamMap.Type.ENUM, parameter.getType(), paramAnnotation),
           paramAnnotation.injection(),
           parameter.getParameterizedType()
       );
@@ -292,10 +286,10 @@ public record AutoBuiltDocumentedBuilder<T>(
         .equals(List.class) && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
       if (parameterizedType.getActualTypeArguments()[0].equals(Integer.class)) {
         return new ParamInfo(
-            Type.INTS,
+            ParamMap.Type.INTS,
             null,
             name,
-            buildDefaultValue(Type.INTS, Integer.class, paramAnnotation),
+            buildDefaultValue(ParamMap.Type.INTS, Integer.class, paramAnnotation),
             paramAnnotation.injection(),
             parameter.getParameterizedType()
         );
@@ -305,10 +299,10 @@ public record AutoBuiltDocumentedBuilder<T>(
         .equals(List.class) && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
       if (parameterizedType.getActualTypeArguments()[0].equals(Double.class)) {
         return new ParamInfo(
-            Type.DOUBLES,
+            ParamMap.Type.DOUBLES,
             null,
             name,
-            buildDefaultValue(Type.DOUBLES, Double.class, paramAnnotation),
+            buildDefaultValue(ParamMap.Type.DOUBLES, Double.class, paramAnnotation),
             paramAnnotation.injection(),
             parameter.getParameterizedType()
         );
@@ -318,10 +312,10 @@ public record AutoBuiltDocumentedBuilder<T>(
         .equals(List.class) && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
       if (parameterizedType.getActualTypeArguments()[0].equals(String.class)) {
         return new ParamInfo(
-            Type.STRINGS,
+            ParamMap.Type.STRINGS,
             null,
             name,
-            buildDefaultValue(Type.STRINGS, String.class, paramAnnotation),
+            buildDefaultValue(ParamMap.Type.STRINGS, String.class, paramAnnotation),
             paramAnnotation.injection(),
             parameter.getParameterizedType()
         );
@@ -331,10 +325,10 @@ public record AutoBuiltDocumentedBuilder<T>(
         .equals(List.class) && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
       if (parameterizedType.getActualTypeArguments()[0].equals(Boolean.class)) {
         return new ParamInfo(
-            Type.BOOLEANS,
+            ParamMap.Type.BOOLEANS,
             null,
             name,
-            buildDefaultValue(Type.BOOLEANS, Boolean.class, paramAnnotation),
+            buildDefaultValue(ParamMap.Type.BOOLEANS, Boolean.class, paramAnnotation),
             paramAnnotation.injection(),
             parameter.getParameterizedType()
         );
@@ -352,10 +346,10 @@ public record AutoBuiltDocumentedBuilder<T>(
       }
       if (clazz.isEnum()) {
         return new ParamInfo(
-            Type.ENUMS,
+            ParamMap.Type.ENUMS,
             clazz,
             name,
-            buildDefaultValue(Type.ENUMS, clazz, paramAnnotation),
+            buildDefaultValue(ParamMap.Type.ENUMS, clazz, paramAnnotation),
             paramAnnotation.injection(),
             parameter.getParameterizedType()
         );
@@ -365,10 +359,10 @@ public record AutoBuiltDocumentedBuilder<T>(
         .equals(List.class) && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
       if (parameterizedType.getActualTypeArguments()[0].equals(NamedParamMap.class)) {
         return new ParamInfo(
-            Type.NAMED_PARAM_MAPS,
+            ParamMap.Type.NAMED_PARAM_MAPS,
             null,
             name,
-            buildDefaultValue(Type.NAMED_PARAM_MAPS, NamedParamMap.class, paramAnnotation),
+            buildDefaultValue(ParamMap.Type.NAMED_PARAM_MAPS, NamedParamMap.class, paramAnnotation),
             paramAnnotation.injection(),
             parameter.getParameterizedType()
         );
@@ -377,19 +371,19 @@ public record AutoBuiltDocumentedBuilder<T>(
     if (parameter.getType()
         .equals(List.class) && parameter.getParameterizedType() instanceof ParameterizedType) {
       return new ParamInfo(
-          Type.NAMED_PARAM_MAPS,
+          ParamMap.Type.NAMED_PARAM_MAPS,
           null,
           name,
-          buildDefaultValue(Type.NAMED_PARAM_MAPS, Object.class, paramAnnotation),
+          buildDefaultValue(ParamMap.Type.NAMED_PARAM_MAPS, Object.class, paramAnnotation),
           paramAnnotation.injection(),
           parameter.getParameterizedType()
       );
     }
     return new ParamInfo(
-        Type.NAMED_PARAM_MAP,
+        ParamMap.Type.NAMED_PARAM_MAP,
         null,
         name,
-        buildDefaultValue(Type.NAMED_PARAM_MAP, Object.class, paramAnnotation),
+        buildDefaultValue(ParamMap.Type.NAMED_PARAM_MAP, Object.class, paramAnnotation),
         paramAnnotation.injection(),
         parameter.getParameterizedType()
     );

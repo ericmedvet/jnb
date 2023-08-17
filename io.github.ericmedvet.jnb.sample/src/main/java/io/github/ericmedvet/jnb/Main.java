@@ -63,7 +63,8 @@ public class Main {
         .and(NamedBuilder.fromClass(Office.class))
         .and(NamedBuilder.fromClass(Person.class))
         .and(NamedBuilder.fromClass(Pet.class));
-    System.out.println(nb.build("person(age=44)kk"));
+    System.out.println(nb.build("person(name=eric;age=44;pet=pet(name=\"simba\";legs=[2]))"));
+    System.exit(0);
 
     Office office = (Office) nb.build(S);
     //System.out.println(office);
