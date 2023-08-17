@@ -10,10 +10,10 @@ import java.util.regex.Pattern;
  * @author "Eric Medvet" on 2023/08/16 for jnb
  */
 public enum TokenType {
-  NUM("\\s*-?[0-9]+(\\.[0-9]+)?\\s*", ""),
-  I_NUM("\\s*[0-9]+?\\s*", ""),
-  STRING("\\s*([A-Za-z][A-Za-z0-9_]*)|(\"[^\"]+\")\\s*", ""),
-  NAME("\\s*[A-Za-z][" + NamedBuilder.NAME_SEPARATOR + "A-Za-z0-9_]*\\s*", ""),
+  NUM("\\s*-?[0-9]+(\\.[0-9]+)?\\s*", "0.0"),
+  I_NUM("\\s*[0-9]+?\\s*", "0"),
+  STRING("\\s*([A-Za-z][A-Za-z0-9_]*)|(\"[^\"]+\")\\s*", "a"),
+  NAME("\\s*[A-Za-z][" + NamedBuilder.NAME_SEPARATOR + "A-Za-z0-9_]*\\s*", "a.a"),
   OPEN_CONTENT("\\s*\\(\\s*", "("),
   CLOSED_CONTENT("\\s*\\)\\s*", ")"),
   ASSIGN_SEPARATOR("\\s*=\\s*", "="),
