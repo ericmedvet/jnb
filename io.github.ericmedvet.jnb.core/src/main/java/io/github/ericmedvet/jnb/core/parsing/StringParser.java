@@ -33,22 +33,7 @@ public class StringParser {
 
   record SSNode(Token token, List<SNode> children) implements Node {}
 
-  private record Call(int i, Class<? extends Node> nodeClass, TokenType tokenType, Token token) {
-    public String toPrettyString(String s) {
-      int start = Math.max(0, i - CONTEXT_SIZE);
-      int end = Math.min(s.length(), i + CONTEXT_SIZE);
-      return "%s %sfound @%d in `%s`[%d:%s]".formatted(
-          Objects.isNull(nodeClass) ? ("`" + tokenType.rendered() + "`") : nodeClass.getSimpleName(),
-          Objects.isNull(token) ? "not " : "",
-          i,
-          s.substring(Objects.isNull(token) ? start : token.start(), Objects.isNull(token) ? end : token.end())
-              .replaceAll("[\\n\\r]", "¶")
-              .replaceAll("\\s\\s+", "␣"),
-          start,
-          Objects.isNull(token) ? "..." : token.end()
-      );
-    }
-  }
+  private record Call(int i, Class<? extends Node> nodeClass, TokenType tokenType, Token token) {}
 
   private final String s;
   private final List<Call> calls;
@@ -225,13 +210,20 @@ public class StringParser {
 
   private Optional<DSNode> parseDS(int i) {
     List<DNode> nodes = new ArrayList<>();
-    nodes.add(parse(i, DNode.class).orElseThrow());
-    while (true) {
-      Optional<Token> sepT = parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
-      if (sepT.isEmpty()) {
-        break;
+    try {
+      nodes.add(parse(i, DNode.class).orElseThrow());
+      while (true) {
+        Optional<Token> sepT = parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
+        if (sepT.isEmpty()) {
+          break;
+        }
+        nodes.add(parse(sepT.get().end(), DNode.class).orElseThrow());
       }
-      nodes.add(parse(sepT.get().end(), DNode.class).orElseThrow());
+    } catch (RuntimeException e) {
+      if (nodes.isEmpty()) {
+        return Optional.of(new DSNode(new Token(i, i), List.of()));
+      }
+      throw e;
     }
     return Optional.of(new DSNode(
         new Token(i, nodes.isEmpty() ? i : nodes.get(nodes.size() - 1).token().end()),
@@ -253,13 +245,20 @@ public class StringParser {
 
   private Optional<ESNode> parseES(int i) {
     List<ENode> nodes = new ArrayList<>();
-    nodes.add(parse(i, ENode.class).orElseThrow());
-    while (true) {
-      Optional<Token> sepT = parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
-      if (sepT.isEmpty()) {
-        break;
+    try {
+      nodes.add(parse(i, ENode.class).orElseThrow());
+      while (true) {
+        Optional<Token> sepT = parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
+        if (sepT.isEmpty()) {
+          break;
+        }
+        nodes.add(parse(sepT.get().end(), ENode.class).orElseThrow());
       }
-      nodes.add(parse(sepT.get().end(), ENode.class).orElseThrow());
+    } catch (RuntimeException e) {
+      if (nodes.isEmpty()) {
+        return Optional.of(new ESNode(new Token(i, i), List.of()));
+      }
+      throw e;
     }
     return Optional.of(new ESNode(new Token(
         i,
@@ -472,13 +471,20 @@ public class StringParser {
 
   private Optional<NPSNode> parseNPS(int i) {
     List<NPNode> nodes = new ArrayList<>();
-    nodes.add(parse(i, NPNode.class).orElseThrow());
-    while (true) {
-      Optional<Token> ot = parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
-      if (ot.isEmpty()) {
-        break;
+    try {
+      nodes.add(parse(i, NPNode.class).orElseThrow());
+      while (true) {
+        Optional<Token> ot = parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
+        if (ot.isEmpty()) {
+          break;
+        }
+        nodes.add(parse(ot.get().end(), NPNode.class).orElseThrow());
       }
-      nodes.add(parse(ot.get().end(), NPNode.class).orElseThrow());
+    } catch (RuntimeException e) {
+      if (nodes.isEmpty()) {
+        return Optional.of(new NPSNode(new Token(i, i), List.of()));
+      }
+      throw e;
     }
     return Optional.of(new NPSNode(
         new Token(i, nodes.isEmpty() ? i : nodes.get(nodes.size() - 1).token().end()),
@@ -495,13 +501,20 @@ public class StringParser {
 
   private Optional<SSNode> parseSS(int i) {
     List<SNode> nodes = new ArrayList<>();
-    nodes.add(parse(i, SNode.class).orElseThrow());
-    while (true) {
-      Optional<Token> sepT = parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
-      if (sepT.isEmpty()) {
-        break;
+    try {
+      nodes.add(parse(i, SNode.class).orElseThrow());
+      while (true) {
+        Optional<Token> sepT = parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
+        if (sepT.isEmpty()) {
+          break;
+        }
+        nodes.add(parse(sepT.get().end(), SNode.class).orElseThrow());
       }
-      nodes.add(parse(sepT.get().end(), SNode.class).orElseThrow());
+    } catch (RuntimeException e) {
+      if (nodes.isEmpty()) {
+        return Optional.of(new SSNode(new Token(i, i), List.of()));
+      }
+      throw e;
     }
     return Optional.of(new SSNode(
         new Token(i, nodes.isEmpty() ? i : nodes.get(nodes.size() - 1).token().end()),
