@@ -36,15 +36,15 @@ public class StringParser {
     public String toPrettyString(String s) {
       int start = Math.max(0, i - CONTEXT_SIZE);
       int end = Math.min(s.length(), i + CONTEXT_SIZE);
-      return "%s %sfound @%d in [%d:%s]`%s`".formatted(
+      return "%s %sfound @%d in `%s`[%d:%s]".formatted(
           Objects.isNull(nodeClass) ? ("`" + tokenType.rendered() + "`") : nodeClass.getSimpleName(),
           Objects.isNull(token) ? "not " : "",
           i,
-          start,
-          Objects.isNull(token) ? "..." : token.end(),
           s.substring(Objects.isNull(token) ? start : token.start(), Objects.isNull(token) ? end : token.end())
               .replaceAll("[\\n\\r]", "¶")
-              .replaceAll("\\s\\s+", "␣")
+              .replaceAll("\\s\\s+", "␣"),
+          start,
+          Objects.isNull(token) ? "..." : token.end()
       );
     }
   }
@@ -59,7 +59,21 @@ public class StringParser {
 
   public static NamedParamMap parse(String s) {
     StringParser stringParser = new StringParser(s);
-    return from(stringParser.parse(0, ENode.class).orElseThrow());
+    ENode eNode = stringParser.parse(0, ENode.class).orElseThrow();
+    if (eNode.token.end() != s.length()) {
+      int start = Math.max(0, eNode.token.end() - CONTEXT_SIZE);
+      int end = Math.min(s.length(), eNode.token.end() + CONTEXT_SIZE);
+      throw new IllegalArgumentException("Unexpected trailing content `%s` @%d `%s`[%d:%s]".formatted(
+          s.substring(eNode.token.end(), eNode.token.end() + 1),
+          eNode.token.end(),
+          s.substring(start, end)
+              .replaceAll("[\\n\\r]", "¶")
+              .replaceAll("\\s\\s+", "␣"),
+          start,
+          end
+      ));
+    }
+    return from(eNode);
   }
 
   private static NamedParamMap from(ENode eNode) {
@@ -136,7 +150,7 @@ public class StringParser {
             end,
             Objects.isNull(lastSuccessfullCall.tokenType) ? lastSuccessfullCall.nodeClass.getSimpleName() :
                 "`%s`".formatted(
-                lastSuccessfullCall.tokenType.rendered()),
+                    lastSuccessfullCall.tokenType.rendered()),
             lastSuccessfullCall.i,
             s.substring(lastSuccessfullCall.token.start(), lastSuccessfullCall.token.end())
                 .replaceAll("[\\n\\r]", "¶")
