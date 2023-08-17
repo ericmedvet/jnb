@@ -38,6 +38,10 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
   private final String name;
   private final SortedMap<TypedKey, Object> values;
 
+  public SortedMap<TypedKey, Object> getValues() {
+    return values;
+  }
+
   public MapNamedParamMap(String name, Map<TypedKey, Object> values) {
     this.name = name;
     this.values = new TreeMap<>();
