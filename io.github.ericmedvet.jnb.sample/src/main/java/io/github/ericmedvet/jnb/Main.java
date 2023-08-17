@@ -1,8 +1,10 @@
 package io.github.ericmedvet.jnb;
 
+import io.github.ericmedvet.jnb.core.MapNamedParamMap;
 import io.github.ericmedvet.jnb.core.NamedBuilder;
 import io.github.ericmedvet.jnb.core.Param;
 import io.github.ericmedvet.jnb.core.ParamMap;
+import io.github.ericmedvet.jnb.core.parsing.StringParser;
 
 import java.util.List;
 
@@ -61,15 +63,15 @@ public class Main {
         .and(NamedBuilder.fromClass(Office.class))
         .and(NamedBuilder.fromClass(Person.class))
         .and(NamedBuilder.fromClass(Pet.class));
-    System.out.println(nb.build("person(name=Eric;age=44)"));
+    System.out.println(nb.build("person(age=44)"));
 
     Office office = (Office) nb.build(S);
-    System.out.println(office);
+    //System.out.println(office);
     //System.out.println(MapNamedParamMap.prettyToString(StringParser.parse("person(name = Eric; preferredDays = [mon; fri])")));
     //System.out.println(MapNamedParamMap.prettyToString(StringParser.parse("person(name = Andrew)")));
     //System.out.println(MapNamedParamMap.prettyToString(nb.fillWithDefaults(StringParser.parse("person(name = Andrew)")), Integer.MAX_VALUE));
     //System.out.println(nb.fillWithDefaults(StringParser.parse("person(name = Andrew)")));
     //System.out.println(MapNamedParamMap.prettyToString(StringParser.parse(S)));
-    //System.out.println(MapNamedParamMap.prettyToString(namedBuilder.fillWithDefaults(StringParser.parse(S))));
+    System.out.println(MapNamedParamMap.prettyToString(nb.fillWithDefaults(StringParser.parse(S))));
   }
 }

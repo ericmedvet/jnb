@@ -192,10 +192,10 @@ public record AutoBuiltDocumentedBuilder<T>(
                 );
               } catch (RuntimeException e) {
                 throw new BuilderException(String.format(
-                    "Cannot build param %s for %s: %s",
+                    "Cannot build param \"%s\" for \"%s\": %s",
                     paramInfos.get(j).name(),
                     finalName,
-                    e
+                    e.getMessage()
                 ), e);
               }
             }

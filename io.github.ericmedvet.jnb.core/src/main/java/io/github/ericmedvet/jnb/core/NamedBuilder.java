@@ -101,6 +101,9 @@ public class NamedBuilder<X> {
 
   @SuppressWarnings("unchecked")
   public <T extends X> T build(NamedParamMap map, Supplier<T> defaultSupplier, int index) throws BuilderException {
+    if (map == null) {
+      throw new BuilderException("Null input map");
+    }
     if (!builders.containsKey(map.getName())) {
       if (defaultSupplier != null) {
         return defaultSupplier.get();
@@ -120,7 +123,7 @@ public class NamedBuilder<X> {
       if (defaultSupplier != null) {
         return defaultSupplier.get();
       }
-      throw new BuilderException(String.format("Cannot build %s: %s", map.getName(), e), e);
+      throw e;
     }
   }
 
@@ -272,7 +275,7 @@ public class NamedBuilder<X> {
             p.name(),
             map.ss(p.name(), ((List<?>) p.defaultValue())
                 .stream()
-                .map(o -> ((Enum<?>)o).name().toLowerCase())
+                .map(o -> ((Enum<?>) o).name().toLowerCase())
                 .toList())
         );
         case NAMED_PARAM_MAPS -> //noinspection unchecked
