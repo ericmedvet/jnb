@@ -46,7 +46,7 @@ public record AutoBuiltDocumentedBuilder<T>(
     if (type.equals(ParamMap.Type.STRING) && !pa.dS().equals(Param.UNDEFAULTED_STRING)) {
       return pa.dS();
     }
-    if (type.equals(ParamMap.Type.ENUM) && !pa.dS().isEmpty()) {
+    if (type.equals(ParamMap.Type.ENUM) && !pa.dS().equals(Param.UNDEFAULTED_STRING)) {
       //noinspection rawtypes,unchecked
       return Enum.valueOf((Class) clazz, pa.dS().toUpperCase());
     }
