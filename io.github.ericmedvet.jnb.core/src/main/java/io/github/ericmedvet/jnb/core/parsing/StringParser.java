@@ -119,38 +119,45 @@ public class StringParser {
         .filter(c -> c.token == null)
         .filter(c -> c.i == lastErrorIndex)
         .toList();
-    Call lastSuccessfullCall = calls.stream()
+    Optional<Call> oLastSuccessfullCall = calls.stream()
         .filter(c -> c.token != null)
         .filter(c -> c.token.end() == lastErrorIndex)
-        .max(Comparator.comparingInt(c -> c.token.length()))
-        .orElseThrow();
+        .max(Comparator.comparingInt(c -> c.token.length()));
     int start = Math.max(0, lastErrorIndex - CONTEXT_SIZE);
     int end = Math.min(lastErrorIndex + CONTEXT_SIZE, s.length());
-    return new IllegalArgumentException(
-        "Syntax error: `%s` found instead of %s @%d in `%s`[%d:%d]; last successful match: %s @%d `%s`[%d:%d]".formatted(
-            s.substring(lastErrorIndex, lastErrorIndex + 1)
-                .replaceAll("[\\n\\r]", "¶")
-                .replaceAll("\\s\\s+", "␣"),
-            lastErrorCalls.stream()
-                .map(c -> Objects.isNull(c.tokenType) ? c.nodeClass.getSimpleName() :
-                    "`%s`".formatted(c.tokenType.rendered()))
-                .collect(Collectors.joining(" or ")),
-            lastErrorIndex,
-            s.substring(start, end)
-                .replaceAll("[\\n\\r]", "¶")
-                .replaceAll("\\s\\s+", "␣"),
-            start,
-            end,
-            Objects.isNull(lastSuccessfullCall.tokenType) ? lastSuccessfullCall.nodeClass.getSimpleName() :
-                "`%s`".formatted(
-                    lastSuccessfullCall.tokenType.rendered()),
-            lastSuccessfullCall.i,
-            s.substring(lastSuccessfullCall.token.start(), lastSuccessfullCall.token.end())
-                .replaceAll("[\\n\\r]", "¶")
-                .replaceAll("\\s\\s+", "␣"),
-            lastSuccessfullCall.token.start(),
-            lastSuccessfullCall.token.end()
-        ));
+    String msg = ("Syntax error: `%s` found instead of %s @%d in `%s`[%d:%d]").formatted(
+        cleanSubstring(s, lastErrorIndex, lastErrorIndex + 1),
+        lastErrorCalls.stream()
+            .map(c -> Objects.isNull(c.tokenType) ? c.nodeClass.getSimpleName() :
+                "`%s`".formatted(c.tokenType.rendered()))
+            .collect(Collectors.joining(" or ")),
+        lastErrorIndex,
+        cleanSubstring(s, start, end),
+        start,
+        end
+    );
+    if (oLastSuccessfullCall.isPresent()) {
+      Call lastSuccessfullCall = oLastSuccessfullCall.get();
+      msg = msg + "; last successful match: %s @%d `%s`[%d:%d]".formatted(
+          Objects.isNull(lastSuccessfullCall.tokenType) ? lastSuccessfullCall.nodeClass.getSimpleName() :
+              "`%s`".formatted(
+                  lastSuccessfullCall.tokenType.rendered()),
+          lastSuccessfullCall.i,
+          cleanSubstring(s, lastSuccessfullCall.token.start(), lastSuccessfullCall.token.end()),
+          lastSuccessfullCall.token.start(),
+          lastSuccessfullCall.token.end()
+      );
+    }
+    return new IllegalArgumentException(msg);
+  }
+
+  private static String cleanSubstring(String s, int start, int end) {
+    if (s.isEmpty()) {
+      return "";
+    }
+    return s.substring(start, end)
+        .replaceAll("[\\n\\r]", "¶")
+        .replaceAll("\\s\\s+", "␣");
   }
 
   private <N extends Node> Optional<N> parse(int i, Class<N> nodeClass) {
