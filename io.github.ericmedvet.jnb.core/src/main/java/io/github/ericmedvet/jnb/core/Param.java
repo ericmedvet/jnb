@@ -24,14 +24,19 @@ import java.lang.annotation.Target;
 /**
  * @author "Eric Medvet" on 2022/08/12 for 2dmrsim
  */
-
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.PARAMETER)
 public @interface Param {
 
   String UNDEFAULTED_STRING = "UNDEFAULTED_STRING";
 
-  enum Injection {NONE, MAP, MAP_WITH_DEFAULTS, BUILDER, INDEX}
+  enum Injection {
+    NONE,
+    MAP,
+    MAP_WITH_DEFAULTS,
+    BUILDER,
+    INDEX
+  }
 
   boolean dB() default false;
 

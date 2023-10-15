@@ -20,7 +20,6 @@ import io.github.ericmedvet.jnb.core.MapNamedParamMap;
 import io.github.ericmedvet.jnb.core.NamedBuilder;
 import io.github.ericmedvet.jnb.core.Param;
 import io.github.ericmedvet.jnb.core.parsing.StringParser;
-
 import java.util.List;
 
 public class Starter {
@@ -28,14 +27,12 @@ public class Starter {
   public record Office(
       @Param("roomNumbers") List<Integer> roomNumbers,
       @Param("head") Person head,
-      @Param("staff") List<Person> staff
-  ) {}
+      @Param("staff") List<Person> staff) {}
 
   public record Person(
       @Param("name") String name,
       @Param("age") int age,
-      @Param("nicknames") List<String> nicknames
-  ) {}
+      @Param("nicknames") List<String> nicknames) {}
 
   public static class Persons {
     public static Person old(@Param("name") String name) {
@@ -48,7 +45,8 @@ public class Starter {
   }
 
   public static void main(String[] args) {
-    String description = """
+    String description =
+        """
         office(
           head = person(name = "Mario Rossi"; age = 43);
           staff = + [
@@ -59,10 +57,11 @@ public class Starter {
           roomNumbers = [202:1:205] \s
         )
         """;
-    NamedBuilder<?> namedBuilder = NamedBuilder.empty()
-        .and(NamedBuilder.fromClass(Office.class))
-        .and(NamedBuilder.fromClass(Person.class))
-        .and(List.of("persons", "p"), NamedBuilder.fromUtilityClass(Persons.class));
+    NamedBuilder<?> namedBuilder =
+        NamedBuilder.empty()
+            .and(NamedBuilder.fromClass(Office.class))
+            .and(NamedBuilder.fromClass(Person.class))
+            .and(List.of("persons", "p"), NamedBuilder.fromUtilityClass(Persons.class));
     Office office = (Office) namedBuilder.build(description);
     System.out.println(office);
     System.out.printf("The head's name is: %s%n", office.head().name());

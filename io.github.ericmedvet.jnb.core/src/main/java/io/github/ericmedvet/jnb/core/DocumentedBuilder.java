@@ -28,16 +28,14 @@ public interface DocumentedBuilder<T> extends Builder<T> {
       String name,
       Object defaultValue,
       Param.Injection injection,
-      java.lang.reflect.Type javaType
-  ) {
+      java.lang.reflect.Type javaType) {
     @Override
     public String toString() {
       return String.format(
           "%s = %s%s",
           injection.equals(Param.Injection.NONE) ? name : injection.toString().toLowerCase(),
           type.rendered(),
-          defaultValue == null ? "" : ("{" + defaultValue + "}")
-      );
+          defaultValue == null ? "" : ("{" + defaultValue + "}"));
     }
   }
 
@@ -46,5 +44,4 @@ public interface DocumentedBuilder<T> extends Builder<T> {
   String name();
 
   List<ParamInfo> params();
-
 }

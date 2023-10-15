@@ -17,7 +17,6 @@
 package io.github.ericmedvet.jnb.core;
 
 import io.github.ericmedvet.jnb.core.parsing.TokenType;
-
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -47,26 +46,28 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     this.values = new TreeMap<>();
     for (Map.Entry<TypedKey, Object> e : values.entrySet()) {
       if (e.getKey().type.equals(Type.INT)) {
-        this.values.put(new TypedKey(e.getKey().name, Type.DOUBLE), Double.valueOf(intValue(e.getValue())));
+        this.values.put(
+            new TypedKey(e.getKey().name, Type.DOUBLE), Double.valueOf(intValue(e.getValue())));
       } else if (e.getKey().type.equals(Type.BOOLEAN)) {
-        this.values.put(new TypedKey(e.getKey().name, Type.STRING), booleanValue(e.getValue().toString()).toString());
+        this.values.put(
+            new TypedKey(e.getKey().name, Type.STRING),
+            booleanValue(e.getValue().toString()).toString());
       } else if (e.getKey().type.equals(Type.ENUM)) {
-        this.values.put(new TypedKey(e.getKey().name, Type.STRING), ((Enum<?>)e.getValue()).name().toLowerCase());
+        this.values.put(
+            new TypedKey(e.getKey().name, Type.STRING),
+            ((Enum<?>) e.getValue()).name().toLowerCase());
       } else if (e.getKey().type.equals(Type.INTS)) {
         this.values.put(
             new TypedKey(e.getKey().name, Type.DOUBLES),
-            checkList((List<?>) e.getValue(), MapNamedParamMap::intValue)
-        );
+            checkList((List<?>) e.getValue(), MapNamedParamMap::intValue));
       } else if (e.getKey().type.equals(Type.BOOLEANS)) {
         this.values.put(
             new TypedKey(e.getKey().name, Type.STRINGS),
-            checkList((List<?>) e.getValue(), b -> booleanValue(b.toString()).toString())
-        );
+            checkList((List<?>) e.getValue(), b -> booleanValue(b.toString()).toString()));
       } else if (e.getKey().type.equals(Type.ENUMS)) {
         this.values.put(
             new TypedKey(e.getKey().name, Type.STRINGS),
-            checkList((List<?>) e.getValue(), v -> ((Enum<?>)v).name().toLowerCase())
-        );
+            checkList((List<?>) e.getValue(), v -> ((Enum<?>) v).name().toLowerCase()));
       } else {
         this.values.put(e.getKey(), e.getValue());
       }
@@ -79,9 +80,12 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
       case INT -> intValue(values.get(new TypedKey(n, Type.DOUBLE)));
       case BOOLEAN -> booleanValue(values.get(new TypedKey(n, Type.STRING)));
       case ENUM -> enumValue(values.get(new TypedKey(n, Type.STRING)), enumClass);
-      case INTS -> checkList((List<?>) values.get(new TypedKey(n, Type.DOUBLES)), MapNamedParamMap::intValue);
-      case BOOLEANS -> checkList((List<?>) values.get(new TypedKey(n, Type.STRINGS)), MapNamedParamMap::booleanValue);
-      case ENUMS -> checkList((List<?>) values.get(new TypedKey(n, Type.STRINGS)), s -> enumValue(s, enumClass));
+      case INTS -> checkList(
+          (List<?>) values.get(new TypedKey(n, Type.DOUBLES)), MapNamedParamMap::intValue);
+      case BOOLEANS -> checkList(
+          (List<?>) values.get(new TypedKey(n, Type.STRINGS)), MapNamedParamMap::booleanValue);
+      case ENUMS -> checkList(
+          (List<?>) values.get(new TypedKey(n, Type.STRINGS)), s -> enumValue(s, enumClass));
       default -> values.get(new TypedKey(n, type));
     };
   }
@@ -90,9 +94,8 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     if (l == null) {
       return null;
     }
-    @SuppressWarnings({"rawtypes", "unchecked"}) List<?> mappedL = l.stream()
-        .map(i -> ((Function) mapper).apply(i))
-        .toList();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    List<?> mappedL = l.stream().map(i -> ((Function) mapper).apply(i)).toList();
     if (mappedL.stream().anyMatch(Objects::isNull)) {
       return null;
     }
@@ -150,8 +153,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     for (int j = 0; j < l.size(); j++) {
       if (l.get(j) instanceof ParamMap m) {
         if (m instanceof NamedParamMap namedParamMap) {
-          sb.append(namedParamMap.getName())
-              .append(TokenType.OPEN_CONTENT.rendered());
+          sb.append(namedParamMap.getName()).append(TokenType.OPEN_CONTENT.rendered());
         }
         sb.append(mapContentToInlineString(m, space));
         if (m instanceof NamedParamMap) {
@@ -172,13 +174,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
   }
 
   private static void listContentToMultilineString(
-      StringBuilder sb,
-      int maxW,
-      int w,
-      int indent,
-      String space,
-      List<?> l
-  ) {
+      StringBuilder sb, int maxW, int w, int indent, String space, List<?> l) {
     for (int j = 0; j < l.size(); j++) {
       sb.append("\n").append(indent(w + indent + indent));
       if (l.get(j) instanceof NamedParamMap m) {
@@ -212,8 +208,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
             .append(TokenType.CLOSED_LIST.rendered());
       } else if (value instanceof ParamMap innerMap) {
         if (innerMap instanceof NamedParamMap namedParamMap) {
-          sb.append(namedParamMap.getName())
-              .append(TokenType.OPEN_CONTENT.rendered());
+          sb.append(namedParamMap.getName()).append(TokenType.OPEN_CONTENT.rendered());
         }
         sb.append(mapContentToInlineString(innerMap, space));
         if (innerMap instanceof NamedParamMap) {
@@ -232,13 +227,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
   }
 
   private static void mapContentToMultilineString(
-      StringBuilder sb,
-      int maxW,
-      int w,
-      int indent,
-      String space,
-      ParamMap map
-  ) {
+      StringBuilder sb, int maxW, int w, int indent, String space, ParamMap map) {
     List<String> names = new ArrayList<>(map.names());
     for (int i = 0; i < names.size(); i++) {
       sb.append("\n")
@@ -282,8 +271,9 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     return sb.toString();
   }
 
-  public static void prettyToString(ParamMap map, StringBuilder sb, int maxW, int w, int indent, String space) {
-    //iterate
+  public static void prettyToString(
+      ParamMap map, StringBuilder sb, int maxW, int w, int indent, String space) {
+    // iterate
     if (map instanceof NamedParamMap namedParamMap) {
       sb.append(namedParamMap.getName());
     }
@@ -310,7 +300,6 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
   public String getName() {
     return name;
   }
-
 
   @Override
   public String toString() {
