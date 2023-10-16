@@ -5,9 +5,6 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * @author "Eric Medvet" on 2023/08/16 for jnb
- */
 public enum TokenType {
   NUM("\\s*-?[0-9]+(\\.[0-9]+)?\\s*", "0.0"),
   I_NUM("\\s*[0-9]+?\\s*", "0"),
