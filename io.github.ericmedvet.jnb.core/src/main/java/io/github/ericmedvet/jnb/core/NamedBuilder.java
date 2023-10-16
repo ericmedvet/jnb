@@ -17,7 +17,6 @@
 package io.github.ericmedvet.jnb.core;
 
 import io.github.ericmedvet.jnb.core.parsing.StringParser;
-
 import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.function.Supplier;
@@ -25,8 +24,8 @@ import java.util.stream.Collectors;
 
 public class NamedBuilder<X> {
 
-  public final static char NAME_SEPARATOR = '.';
-  private final static NamedBuilder<Object> EMPTY = new NamedBuilder<>(Map.of());
+  public static final char NAME_SEPARATOR = '.';
+  private static final NamedBuilder<Object> EMPTY = new NamedBuilder<>(Map.of());
   private final Map<String, Builder<? extends X>> builders;
 
   private NamedBuilder(Map<String, Builder<? extends X>> builders) {
@@ -41,22 +40,21 @@ public class NamedBuilder<X> {
   public static <C> NamedBuilder<C> fromClass(Class<? extends C> c) {
     List<Constructor<?>> constructors = Arrays.stream(c.getConstructors()).toList();
     if (constructors.size() > 1) {
-      constructors = constructors.stream()
-          .filter(constructor -> constructor.getAnnotation(BuilderMethod.class) != null)
-          .toList();
+      constructors =
+          constructors.stream()
+              .filter(constructor -> constructor.getAnnotation(BuilderMethod.class) != null)
+              .toList();
     }
     if (constructors.size() != 1) {
-      throw new IllegalArgumentException(String.format(
-          "Cannot build named builder from class %s that has %d!=1 constructors",
-          c.getSimpleName(),
-          c.getConstructors().length
-      ));
+      throw new IllegalArgumentException(
+          String.format(
+              "Cannot build named builder from class %s that has %d!=1 constructors",
+              c.getSimpleName(), c.getConstructors().length));
     }
-    DocumentedBuilder<C> builder = (DocumentedBuilder<C>) AutoBuiltDocumentedBuilder.from(constructors.get(0));
+    DocumentedBuilder<C> builder =
+        (DocumentedBuilder<C>) AutoBuiltDocumentedBuilder.from(constructors.get(0));
     if (builder != null) {
-      return new NamedBuilder<>(Map.of(
-          builder.name(), builder
-      ));
+      return new NamedBuilder<>(Map.of(builder.name(), builder));
     } else {
       return (NamedBuilder<C>) empty();
     }
@@ -64,21 +62,23 @@ public class NamedBuilder<X> {
 
   @SuppressWarnings("unused")
   public static NamedBuilder<Object> fromUtilityClass(Class<?> c) {
-    return new NamedBuilder<>(Arrays.stream(c.getMethods())
-        .map(AutoBuiltDocumentedBuilder::from)
-        .filter(Objects::nonNull)
-        .collect(Collectors.toMap(DocumentedBuilder::name, b -> b)));
+    return new NamedBuilder<>(
+        Arrays.stream(c.getMethods())
+            .map(AutoBuiltDocumentedBuilder::from)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toMap(DocumentedBuilder::name, b -> b)));
   }
 
   public static String prettyToString(NamedBuilder<?> namedBuilder, boolean newLine) {
     return namedBuilder.builders.entrySet().stream()
-        .map(e -> {
-          String s = e.getKey();
-          if (e.getValue() instanceof DocumentedBuilder<?> db) {
-            s = s + db;
-          }
-          return s;
-        })
+        .map(
+            e -> {
+              String s = e.getKey();
+              if (e.getValue() instanceof DocumentedBuilder<?> db) {
+                s = s + db;
+              }
+              return s;
+            })
         .collect(Collectors.joining(newLine ? "\n" : "; "));
   }
 
@@ -89,9 +89,10 @@ public class NamedBuilder<X> {
   public NamedBuilder<X> and(List<String> prefixes, NamedBuilder<? extends X> namedBuilder) {
     Map<String, Builder<? extends X>> allBuilders = new HashMap<>(builders);
     prefixes.forEach(
-        prefix -> namedBuilder.builders
-            .forEach((k, v) -> allBuilders.put(prefix.isEmpty() ? k : (prefix + NAME_SEPARATOR + k), v))
-    );
+        prefix ->
+            namedBuilder.builders.forEach(
+                (k, v) ->
+                    allBuilders.put(prefix.isEmpty() ? k : (prefix + NAME_SEPARATOR + k), v)));
     return new NamedBuilder<>(allBuilders);
   }
 
@@ -100,7 +101,8 @@ public class NamedBuilder<X> {
   }
 
   @SuppressWarnings("unchecked")
-  public <T extends X> T build(NamedParamMap map, Supplier<T> defaultSupplier, int index) throws BuilderException {
+  public <T extends X> T build(NamedParamMap map, Supplier<T> defaultSupplier, int index)
+      throws BuilderException {
     if (map == null) {
       throw new BuilderException("Null input map");
     }
@@ -108,14 +110,14 @@ public class NamedBuilder<X> {
       if (defaultSupplier != null) {
         return defaultSupplier.get();
       }
-      throw new BuilderException(String.format(
-          "No builder for %s: closest matches are %s",
-          map.getName(),
-          builders.keySet().stream()
-              .sorted((Comparator.comparing(s -> distance(s, map.getName()))))
-              .limit(3)
-              .collect(Collectors.joining(", "))
-      ));
+      throw new BuilderException(
+          String.format(
+              "No builder for %s: closest matches are %s",
+              map.getName(),
+              builders.keySet().stream()
+                  .sorted((Comparator.comparing(s -> distance(s, map.getName()))))
+                  .limit(3)
+                  .collect(Collectors.joining(", "))));
     }
     try {
       return (T) builders.get(map.getName()).build(map, this, index);
@@ -127,9 +129,9 @@ public class NamedBuilder<X> {
     }
   }
 
-
   @SuppressWarnings("unused")
-  public <T extends X> T build(String mapString, Supplier<T> defaultSupplier) throws BuilderException {
+  public <T extends X> T build(String mapString, Supplier<T> defaultSupplier)
+      throws BuilderException {
     return build(StringParser.parse(mapString), defaultSupplier, 0);
   }
 
@@ -186,17 +188,14 @@ public class NamedBuilder<X> {
     if (!(builders.get(map.getName()) instanceof DocumentedBuilder<?> builder)) {
       return map;
     }
-    //fill map
+    // fill map
     Map<MapNamedParamMap.TypedKey, Object> values = new HashMap<>();
     for (DocumentedBuilder.ParamInfo p : builder.params()) {
       if (p.injection() != Param.Injection.NONE) {
         continue;
       }
-      @SuppressWarnings({"unchecked", "rawtypes"}) Object value = map.value(
-          p.name(),
-          p.type(),
-          (Class<Enum>) p.enumClass()
-      );
+      @SuppressWarnings({"unchecked", "rawtypes"})
+      Object value = map.value(p.name(), p.type(), (Class<Enum>) p.enumClass());
       if (value == null) {
         value = p.defaultValue();
       }
@@ -207,5 +206,4 @@ public class NamedBuilder<X> {
     }
     return new MapNamedParamMap(map.getName(), values);
   }
-
 }

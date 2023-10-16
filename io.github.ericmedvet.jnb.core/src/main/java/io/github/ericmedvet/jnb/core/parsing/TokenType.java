@@ -1,7 +1,6 @@
 package io.github.ericmedvet.jnb.core.parsing;
 
 import io.github.ericmedvet.jnb.core.NamedBuilder;
-
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

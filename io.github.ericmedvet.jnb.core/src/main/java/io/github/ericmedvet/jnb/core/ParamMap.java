@@ -17,7 +17,6 @@
 package io.github.ericmedvet.jnb.core;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -198,14 +197,18 @@ public interface ParamMap {
   <E extends Enum<E>> Object value(String n, Type type, Class<E> enumClass);
 
   default Object value(String n) {
-    return Arrays.stream(Type.values()).map(t -> value(n, t)).filter(Objects::nonNull).findFirst().orElse(null);
+    return Arrays.stream(Type.values())
+        .map(t -> value(n, t))
+        .filter(Objects::nonNull)
+        .findFirst()
+        .orElse(null);
   }
 
   default Object value(String n, Type type) {
     if (type.equals(Type.ENUM) || type.equals(Type.ENUMS)) {
-      throw new IllegalArgumentException("Cannot obtain enum(s) type for \"%s\" without enum class".formatted(n));
+      throw new IllegalArgumentException(
+          "Cannot obtain enum(s) type for \"%s\" without enum class".formatted(n));
     }
     return value(n, type, null);
   }
-
 }
