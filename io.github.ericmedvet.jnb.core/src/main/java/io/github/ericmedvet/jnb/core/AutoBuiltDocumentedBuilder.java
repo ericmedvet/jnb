@@ -77,6 +77,7 @@ public record AutoBuiltDocumentedBuilder<T>(
     return null;
   }
 
+  @SuppressWarnings("unused")
   private static <E extends Enum<E>> Object buildOrDefaultParam(ParamInfo pi, ParamMap m) {
     @SuppressWarnings({"rawtypes", "unchecked"})
     Object value = m.value(pi.name(), pi.type(), (Class) pi.enumClass());
