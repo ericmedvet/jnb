@@ -19,10 +19,7 @@
  */
 package io.github.ericmedvet.jnb;
 
-import io.github.ericmedvet.jnb.core.MapNamedParamMap;
-import io.github.ericmedvet.jnb.core.NamedBuilder;
-import io.github.ericmedvet.jnb.core.Param;
-import io.github.ericmedvet.jnb.core.ParamMap;
+import io.github.ericmedvet.jnb.core.*;
 import io.github.ericmedvet.jnb.core.parsing.StringParser;
 import java.util.List;
 
@@ -106,7 +103,7 @@ public class Main {
     System.out.println(
         nb.build(
             "person(name=eric;preferredDays=[mon;tue];age=44;pet=pet(name=\"simba\";legs=[2]))"));
-    System.exit(0);
+    //System.exit(0);
 
     // Office office = (Office) nb.build(S);
     // System.out.println(office);
@@ -117,6 +114,9 @@ public class Main {
     // System.out.println(MapNamedParamMap.prettyToString(nb.fillWithDefaults(StringParser.parse("person(name = Andrew)")), Integer.MAX_VALUE));
     // System.out.println(nb.fillWithDefaults(StringParser.parse("person(name = Andrew)")));
     // System.out.println(MapNamedParamMap.prettyToString(StringParser.parse(S)));
-    System.out.println(MapNamedParamMap.prettyToString(nb.fillWithDefaults(StringParser.parse(S))));
+    //System.out.println(MapNamedParamMap.prettyToString(nb.fillWithDefaults(StringParser.parse(S))));
+
+    InfoPrinter infoPrinter = new InfoPrinter();
+    infoPrinter.print(nb, System.out);
   }
 }

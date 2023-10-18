@@ -27,7 +27,11 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public record AutoBuiltDocumentedBuilder<T>(
-    String name, java.lang.reflect.Type builtType, List<ParamInfo> params, Builder<T> builder)
+    String name,
+    java.lang.reflect.Type builtType,
+    List<ParamInfo> params,
+    Executable origin,
+    Builder<T> builder)
     implements DocumentedBuilder<T> {
   private static Object buildDefaultValue(ParamMap.Type type, Class<?> clazz, Param pa) {
     if (type.equals(ParamMap.Type.INT) && pa.dI() != Integer.MIN_VALUE) {
@@ -162,6 +166,7 @@ public record AutoBuiltDocumentedBuilder<T>(
         finalName,
         buildType,
         paramInfos,
+        executable,
         (ParamMap map, NamedBuilder<?> namedBuilder, int index) -> {
           Object[] params = new Object[paramInfos.size() + (hasNamedBuilder ? 1 : 0)];
           if (hasNamedBuilder) {

@@ -19,6 +19,7 @@
  */
 package io.github.ericmedvet.jnb.core;
 
+import java.lang.reflect.Executable;
 import java.util.List;
 
 public interface DocumentedBuilder<T> extends Builder<T> {
@@ -44,4 +45,6 @@ public interface DocumentedBuilder<T> extends Builder<T> {
   String name();
 
   List<ParamInfo> params();
+
+  Executable origin();
 }
