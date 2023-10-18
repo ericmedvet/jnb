@@ -43,8 +43,7 @@ public class InfoPrinter {
       int packageHeadingLevel,
       int builderHeadingLevel,
       boolean shortenFQNs,
-      boolean computeCompatibilities
-  ) {
+      boolean computeCompatibilities) {
     this.packageHeadingLevel = packageHeadingLevel;
     this.builderHeadingLevel = builderHeadingLevel;
     this.shortenFQNs = shortenFQNs;
@@ -59,8 +58,7 @@ public class InfoPrinter {
       SortedSet<Name> names,
       Builder<?> builder,
       List<ParamCompatibility> compatibilities,
-      SortedSet<String> workingUsages
-  ) {
+      SortedSet<String> workingUsages) {
     public Name longestName() {
       return names().stream()
           .max(Comparator.comparingInt(n -> n.fullName().length()))
@@ -115,8 +113,7 @@ public class InfoPrinter {
   record PackageInfo(SortedSet<String> names, List<BuilderInfo> builderInfos) {}
 
   record ParamCompatibility(
-      DocumentedBuilder.ParamInfo paramInfo, List<BuilderInfo> builderInfos
-  ) {}
+      DocumentedBuilder.ParamInfo paramInfo, List<BuilderInfo> builderInfos) {}
 
   record ParamTriplet(String name, String value, BuilderInfo builderInfo) {}
 
@@ -135,8 +132,7 @@ public class InfoPrinter {
                       case BOOLEAN -> "false";
                       default -> throw new IllegalStateException("Unexpected value: " + pi.type());
                     },
-                    null
-                ))
+                    null))
         .toList();
   }
 
@@ -145,8 +141,7 @@ public class InfoPrinter {
   }
 
   private static List<List<ParamTriplet>> paramTriplets(
-      DocumentedBuilder<?> builder, List<BuilderInfo> builderInfos
-  ) {
+      DocumentedBuilder<?> builder, List<BuilderInfo> builderInfos) {
     List<List<ParamTriplet>> paramPairs = new ArrayList<>();
     // easy case
     paramPairs.add(easyParamPairs(builder.params()));
@@ -165,8 +160,7 @@ public class InfoPrinter {
               new ParamTriplet(
                   npmParams.get(i).name(),
                   builderInfos.get(indexes[i]).workingUsages().first(),
-                  builderInfos.get(indexes[i])
-              ));
+                  builderInfos.get(indexes[i])));
         }
         indexes[0] = indexes[0] + 1;
         for (int i = 0; i < indexes.length; i++) {
@@ -214,9 +208,7 @@ public class InfoPrinter {
                     new TreeSet<>(),
                     builder,
                     Collections.unmodifiableList(compatibilities),
-                    new TreeSet<>()
-                )
-            );
+                    new TreeSet<>()));
             mainName = new Name(fullName);
           }
           aliasesMap.get(mainName).names.add(new Name(fullName));
@@ -233,8 +225,7 @@ public class InfoPrinter {
             nOfAttempts,
             N_OF_COMPATIBILITY_ATTEMPTS,
             buildableBuilders.size(),
-            aliasesMap.values().size() - buildableBuilders.size()
-        );
+            aliasesMap.values().size() - buildableBuilders.size());
         for (BuilderInfo bi : aliasesMap.values()) {
           if (bi.workingUsages().isEmpty()) {
             if (bi.builder() instanceof DocumentedBuilder<?> builder) {
@@ -249,8 +240,7 @@ public class InfoPrinter {
                               bi.shortestName().fullName(),
                               paramTriplets.stream()
                                   .map(pp -> "%s=%s".formatted(pp.name(), pp.value()))
-                                  .collect(Collectors.joining(";"))
-                          );
+                                  .collect(Collectors.joining(";")));
                   nb.build(usage);
                   bi.workingUsages().add(usage);
                   buildableBuilders.add(bi);
@@ -273,8 +263,7 @@ public class InfoPrinter {
           List<List<ParamTriplet>> triplets = paramTriplets(builder, buildableBuilders);
           System.out.printf(
               "Compatibility for %s with %d cases%n",
-              builderInfo.shortestName().fullName(), triplets.size()
-          );
+              builderInfo.shortestName().fullName(), triplets.size());
           for (List<ParamTriplet> paramTriplets : triplets) {
             try {
               String usage =
@@ -283,8 +272,7 @@ public class InfoPrinter {
                           builderInfo.shortestName().fullName(),
                           paramTriplets.stream()
                               .map(pt -> "%s=%s".formatted(pt.name(), pt.value()))
-                              .collect(Collectors.joining(";"))
-                      );
+                              .collect(Collectors.joining(";")));
               nb.build(usage);
               builderInfo.compatibilities().stream()
                   .filter(c -> c.paramInfo().type().equals(ParamMap.Type.NAMED_PARAM_MAP))
@@ -347,8 +335,7 @@ public class InfoPrinter {
               builderInfo -> {
                 ps.printf(
                     "%s Builder `%s()`%n",
-                    heading(builderHeadingLevel), builderInfo.longestName().fullName()
-                );
+                    heading(builderHeadingLevel), builderInfo.longestName().fullName());
                 ps.println();
                 if (builderInfo.builder() instanceof DocumentedBuilder<?> documentedBuilder) {
                   if (documentedBuilder.params().stream()
@@ -363,8 +350,7 @@ public class InfoPrinter {
                         documentedBuilder.params().stream()
                             .filter(p -> p.injection().equals(Param.Injection.NONE))
                             .map(DocumentedBuilder.ParamInfo::name)
-                            .collect(Collectors.joining("; "))
-                    );
+                            .collect(Collectors.joining("; ")));
                     ps.println();
                     // table with args
                     if (computeCompatibilities) {
@@ -389,8 +375,7 @@ public class InfoPrinter {
                             compatibility.builderInfos().stream()
                                 .sorted(Comparator.comparing(bi -> bi.shortestName().fullName()))
                                 .map(bi -> "`%s()`".formatted(bi.shortestName().fullName()))
-                                .collect(Collectors.joining("<br>"))
-                        );
+                                .collect(Collectors.joining("<br>")));
                       }
                     }
                   }
@@ -401,8 +386,7 @@ public class InfoPrinter {
                       documentedBuilder.origin().getName(),
                       ProjectInfoProvider.of(documentedBuilder.origin().getDeclaringClass())
                           .map(" from %s"::formatted)
-                          .orElse("")
-                  );
+                          .orElse(""));
                 } else {
                   // signature
                   ps.printf(
