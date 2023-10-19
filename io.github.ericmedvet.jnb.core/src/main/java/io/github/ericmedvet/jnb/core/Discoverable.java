@@ -27,5 +27,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
 public @interface Discoverable {
-  String prefix() default "";
+  String[] prefixes() default {};
+
+  String prefixTemplate() default "";
 }

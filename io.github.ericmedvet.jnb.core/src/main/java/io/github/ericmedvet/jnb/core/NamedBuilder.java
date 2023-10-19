@@ -21,16 +21,23 @@ package io.github.ericmedvet.jnb.core;
 
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
+import io.github.classgraph.ClassMemberInfo;
 import io.github.classgraph.ScanResult;
 import io.github.ericmedvet.jnb.core.parsing.StringParser;
 import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class NamedBuilder<X> {
 
+  private static final Logger L = Logger.getLogger(NamedBuilder.class.getName());
+
   public static final char NAME_SEPARATOR = '.';
+  public static final char PREFIX_SEPARATOR = '|';
   private static final NamedBuilder<Object> EMPTY = new NamedBuilder<>(Map.of());
   private final Map<String, Builder<? extends X>> builders;
 
@@ -50,12 +57,59 @@ public class NamedBuilder<X> {
           scanResult
               .getAllClasses()
               .filter(classInfo -> classInfo.hasAnnotation(Discoverable.class))) {
-        if (classInfo.hasAnnotation(Discoverable.class)) {
-          nb = nb.and(NamedBuilder.fromClass(classInfo.loadClass()));
+        String[] prefixes =
+            (String[])
+                classInfo
+                    .getAnnotationInfo(Discoverable.class)
+                    .getParameterValues()
+                    .getValue("prefixes");
+        String prefixTemplate =
+            (String)
+                classInfo
+                    .getAnnotationInfo(Discoverable.class)
+                    .getParameterValues()
+                    .getValue("prefixTemplate");
+        if (prefixes.length > 0 && !prefixTemplate.isEmpty()) {
+          L.warning(
+              "Both prefixes and prefixTemplate are set for discoverable class %s: using prefixes %s"
+                  .formatted(classInfo.getName(), Arrays.toString(prefixes)));
+        } else if (prefixes.length == 0 && !prefixTemplate.isEmpty()) {
+          List<List<String>> tokens =
+              Arrays.stream(prefixTemplate.split(Pattern.quote("" + NAME_SEPARATOR)))
+                  .map(t -> Arrays.stream(t.split(Pattern.quote("" + PREFIX_SEPARATOR))).toList())
+                  .toList();
+          prefixes =
+              flatTokens(tokens).stream()
+                  .map(l -> String.join("" + NAME_SEPARATOR, l))
+                  .toArray(String[]::new);
+        }
+        if (classInfo.getDeclaredConstructorInfo().stream().noneMatch(ClassMemberInfo::isPublic)) {
+          nb =
+              nb.and(
+                  Arrays.stream(prefixes).toList(),
+                  NamedBuilder.fromUtilityClass(classInfo.loadClass()));
+        } else {
+          nb =
+              nb.and(
+                  Arrays.stream(prefixes).toList(), NamedBuilder.fromClass(classInfo.loadClass()));
         }
       }
     }
     return nb;
+  }
+
+  private static List<List<String>> flatTokens(List<List<String>> tokens) {
+    if (tokens.size() == 1) {
+      return tokens.get(0).stream().map(List::of).toList();
+    }
+    return tokens.get(0).stream()
+        .map(
+            t ->
+                flatTokens(tokens.subList(1, tokens.size())).stream()
+                    .map(l -> Stream.concat(Stream.of(t), l.stream()).toList())
+                    .toList())
+        .flatMap(Collection::stream)
+        .toList();
   }
 
   @SuppressWarnings({"unchecked", "unused"})
@@ -109,6 +163,9 @@ public class NamedBuilder<X> {
   }
 
   public NamedBuilder<X> and(List<String> prefixes, NamedBuilder<? extends X> namedBuilder) {
+    if (prefixes.isEmpty()) {
+      return and(namedBuilder);
+    }
     Map<String, Builder<? extends X>> allBuilders = new HashMap<>(builders);
     prefixes.forEach(
         prefix ->
