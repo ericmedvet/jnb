@@ -58,7 +58,9 @@ public class ProjectInfoProvider {
                 new ProjectInfo(
                     properties.getProperty("name") == null ? "" : properties.getProperty("name"),
                     new ProjectInfo.Version(majorVersion, minorVersion, patchVersion),
-                    properties.getProperty("name") == null ? "" : properties.getProperty("name")));
+                    properties.getProperty("build.timestamp") == null
+                        ? ""
+                        : properties.getProperty("build.timestamp")));
           } catch (IOException e) {
             // info props not found: ignore
             return Optional.empty();
