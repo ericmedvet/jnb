@@ -19,6 +19,9 @@
  */
 package io.github.ericmedvet.jnb.core;
 
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfo;
+import io.github.classgraph.ScanResult;
 import io.github.ericmedvet.jnb.core.parsing.StringParser;
 import java.lang.reflect.Constructor;
 import java.util.*;
@@ -37,6 +40,22 @@ public class NamedBuilder<X> {
 
   public static NamedBuilder<Object> empty() {
     return EMPTY;
+  }
+
+  public static NamedBuilder<Object> fromDiscovery(String... packageNames) {
+    NamedBuilder<Object> nb = NamedBuilder.empty();
+    try (ScanResult scanResult =
+        new ClassGraph().enableAllInfo().acceptPackages(packageNames).scan()) {
+      for (ClassInfo classInfo :
+          scanResult
+              .getAllClasses()
+              .filter(classInfo -> classInfo.hasAnnotation(Discoverable.class))) {
+        if (classInfo.hasAnnotation(Discoverable.class)) {
+          nb = nb.and(NamedBuilder.fromClass(classInfo.loadClass()));
+        }
+      }
+    }
+    return nb;
   }
 
   @SuppressWarnings({"unchecked", "unused"})

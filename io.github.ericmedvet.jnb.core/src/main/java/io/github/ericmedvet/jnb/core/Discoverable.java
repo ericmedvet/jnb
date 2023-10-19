@@ -17,10 +17,15 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-module io.github.ericmedvet.jnb.core {
-  requires java.logging;
-  requires io.github.classgraph;
+package io.github.ericmedvet.jnb.core;
 
-  exports io.github.ericmedvet.jnb.core;
-  exports io.github.ericmedvet.jnb.core.parsing;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE})
+public @interface Discoverable {
+  String prefix() default "";
 }

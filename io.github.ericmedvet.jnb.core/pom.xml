@@ -15,4 +15,12 @@
     <artifactId>jnb.core</artifactId>
     <packaging>jar</packaging>
 
+    <dependencies>
+        <dependency>
+            <groupId>io.github.classgraph</groupId>
+            <artifactId>classgraph</artifactId>
+            <version>4.8.161</version>
+        </dependency>
+    </dependencies>
+
 </project>
