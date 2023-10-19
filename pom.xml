@@ -41,7 +41,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jdk.version>17</jdk.version>
-        <revision>1.1.9-SNAPSHOT</revision>
+        <revision>1.2.0</revision>
     </properties>
     <dependencies>
     </dependencies>
