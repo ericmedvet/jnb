@@ -19,10 +19,7 @@
  */
 package io.github.ericmedvet.jnb;
 
-import io.github.ericmedvet.jnb.core.Discoverable;
-import io.github.ericmedvet.jnb.core.MapNamedParamMap;
-import io.github.ericmedvet.jnb.core.NamedBuilder;
-import io.github.ericmedvet.jnb.core.Param;
+import io.github.ericmedvet.jnb.core.*;
 import io.github.ericmedvet.jnb.core.parsing.StringParser;
 import java.util.List;
 
@@ -67,6 +64,9 @@ public class Starter {
             )
             """;
     NamedBuilder<?> namedBuilder = NamedBuilder.fromDiscovery("io.github.ericmedvet");
+
+    new InfoPrinter().print(namedBuilder, System.out);
+
     Office office = (Office) namedBuilder.build(description);
     System.out.println(office);
     System.out.printf("The head's name is: %s%n", office.head().name());

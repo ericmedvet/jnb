@@ -20,6 +20,7 @@
 package io.github.ericmedvet.jnb.core;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -39,8 +40,11 @@ public class ProjectInfoProvider {
         clazz,
         c -> {
           Properties properties = new Properties();
-          try {
-            properties.load(c.getClassLoader().getResourceAsStream("project-info.props"));
+          try (InputStream resource = c.getResourceAsStream("/project-info.props")) {
+            if (resource == null) {
+              return Optional.empty();
+            }
+            properties.load(resource);
             String majorVersion = "";
             String minorVersion = "";
             String patchVersion = "";
