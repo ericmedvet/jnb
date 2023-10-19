@@ -20,6 +20,7 @@
 package io.github.ericmedvet.jnb.core;
 
 import java.io.PrintStream;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -383,7 +384,7 @@ public class InfoPrinter {
                   ps.printf(
                       "Produces %s; built from `%s()`%s%n",
                       shortenJavaTypeName(documentedBuilder.builtType()),
-                      documentedBuilder.origin().getName(),
+                      executableName(documentedBuilder.origin()),
                       ProjectInfoProvider.of(documentedBuilder.origin().getDeclaringClass())
                           .map(" by %s"::formatted)
                           .orElse(""));
@@ -395,6 +396,15 @@ public class InfoPrinter {
                 ps.println();
               });
     }
+  }
+
+  private static String executableName(Executable e) {
+    String className = e.getDeclaringClass().getName();
+    String name = e.getName();
+    if (name.equals(className)) {
+      return name;
+    }
+    return className + "." + name;
   }
 
   private String shortenJavaTypeName(Type javaType) {
