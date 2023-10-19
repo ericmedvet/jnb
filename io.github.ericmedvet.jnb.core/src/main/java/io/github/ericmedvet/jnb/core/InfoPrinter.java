@@ -385,7 +385,7 @@ public class InfoPrinter {
                       shortenJavaTypeName(documentedBuilder.builtType()),
                       documentedBuilder.origin().getName(),
                       ProjectInfoProvider.of(documentedBuilder.origin().getDeclaringClass())
-                          .map(" from %s"::formatted)
+                          .map(" by %s"::formatted)
                           .orElse(""));
                 } else {
                   // signature
