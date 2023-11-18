@@ -67,14 +67,13 @@ public class StringParser {
     if (eNode.token.end() != s.length()) {
       int start = Math.max(0, eNode.token.end() - CONTEXT_SIZE);
       int end = Math.min(s.length(), eNode.token.end() + CONTEXT_SIZE);
-      throw new IllegalArgumentException(
-          "Unexpected trailing content `%s` @%d `%s`[%d:%s]"
-              .formatted(
-                  s.substring(eNode.token.end(), eNode.token.end() + 1),
-                  eNode.token.end(),
-                  s.substring(start, end).replaceAll("[\\n\\r]", "¶").replaceAll("\\s\\s+", "␣"),
-                  start,
-                  end));
+      throw new IllegalArgumentException("Unexpected trailing content `%s` @%d `%s`[%d:%s]"
+          .formatted(
+              s.substring(eNode.token.end(), eNode.token.end() + 1),
+              eNode.token.end(),
+              s.substring(start, end).replaceAll("[\\n\\r]", "¶").replaceAll("\\s\\s+", "␣"),
+              start,
+              end));
     }
     return from(eNode);
   }
@@ -83,48 +82,39 @@ public class StringParser {
     Map<MapNamedParamMap.TypedKey, Object> values = new HashMap<>();
     eNode.child().children().stream()
         .filter(n -> n.value() instanceof DNode)
-        .forEach(
-            n ->
-                values.put(
-                    new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.DOUBLE),
-                    ((DNode) n.value()).value().doubleValue()));
+        .forEach(n -> values.put(
+            new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.DOUBLE),
+            ((DNode) n.value()).value().doubleValue()));
     eNode.child().children().stream()
         .filter(n -> n.value() instanceof SNode)
-        .forEach(
-            n ->
-                values.put(
-                    new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.STRING),
-                    ((SNode) n.value()).value()));
+        .forEach(n -> values.put(
+            new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.STRING), ((SNode) n.value()).value()));
     eNode.child().children().stream()
         .filter(n -> n.value() instanceof ENode)
-        .forEach(
-            n ->
-                values.put(
-                    new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.NAMED_PARAM_MAP),
-                    from((ENode) n.value())));
+        .forEach(n -> values.put(
+            new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.NAMED_PARAM_MAP), from((ENode) n.value())));
     eNode.child().children().stream()
         .filter(n -> n.value() instanceof LDNode)
-        .forEach(
-            n ->
-                values.put(
-                    new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.DOUBLES),
-                    ((LDNode) n.value())
-                        .child.children().stream().map(c -> c.value().doubleValue()).toList()));
+        .forEach(n -> values.put(
+            new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.DOUBLES),
+            ((LDNode) n.value())
+                .child.children().stream()
+                    .map(c -> c.value().doubleValue())
+                    .toList()));
     eNode.child().children().stream()
         .filter(n -> n.value() instanceof LSNode)
-        .forEach(
-            n ->
-                values.put(
-                    new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.STRINGS),
-                    ((LSNode) n.value()).child().children().stream().map(SNode::value).toList()));
+        .forEach(n -> values.put(
+            new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.STRINGS),
+            ((LSNode) n.value())
+                .child().children().stream().map(SNode::value).toList()));
     eNode.child().children().stream()
         .filter(n -> n.value() instanceof LENode)
-        .forEach(
-            n ->
-                values.put(
-                    new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.NAMED_PARAM_MAPS),
-                    ((LENode) n.value())
-                        .child().children().stream().map(StringParser::from).toList()));
+        .forEach(n -> values.put(
+            new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.NAMED_PARAM_MAPS),
+            ((LENode) n.value())
+                .child().children().stream()
+                    .map(StringParser::from)
+                    .toList()));
     return new MapNamedParamMap(eNode.name(), values);
   }
 
@@ -135,46 +125,46 @@ public class StringParser {
   }
 
   private IllegalArgumentException buildException() {
-    int lastErrorIndex =
-        calls.stream().filter(c -> c.token == null).mapToInt(c -> c.i).max().orElseThrow();
-    List<Call> lastErrorCalls =
-        calls.stream().filter(c -> c.token == null).filter(c -> c.i == lastErrorIndex).toList();
-    Optional<Call> oLastSuccessfullCall =
-        calls.stream()
-            .filter(c -> c.token != null)
-            .filter(c -> c.token.end() == lastErrorIndex)
-            .max(Comparator.comparingInt(c -> c.token.length()));
+    int lastErrorIndex = calls.stream()
+        .filter(c -> c.token == null)
+        .mapToInt(c -> c.i)
+        .max()
+        .orElseThrow();
+    List<Call> lastErrorCalls = calls.stream()
+        .filter(c -> c.token == null)
+        .filter(c -> c.i == lastErrorIndex)
+        .toList();
+    Optional<Call> oLastSuccessfullCall = calls.stream()
+        .filter(c -> c.token != null)
+        .filter(c -> c.token.end() == lastErrorIndex)
+        .max(Comparator.comparingInt(c -> c.token.length()));
     int start = Math.max(0, lastErrorIndex - CONTEXT_SIZE);
     int end = Math.min(lastErrorIndex + CONTEXT_SIZE, s.length());
-    String msg =
-        ("Syntax error: `%s` found instead of %s @%d in `%s`[%d:%d]")
-            .formatted(
-                cleanSubstring(s, lastErrorIndex, lastErrorIndex + 1),
-                lastErrorCalls.stream()
-                    .map(
-                        c ->
-                            Objects.isNull(c.tokenType)
-                                ? c.nodeClass.getSimpleName()
-                                : "`%s`".formatted(c.tokenType.rendered()))
-                    .collect(Collectors.joining(" or ")),
-                lastErrorIndex,
-                cleanSubstring(s, start, end),
-                start,
-                end);
+    String msg = ("Syntax error: `%s` found instead of %s @%d in `%s`[%d:%d]")
+        .formatted(
+            cleanSubstring(s, lastErrorIndex, lastErrorIndex + 1),
+            lastErrorCalls.stream()
+                .map(c -> Objects.isNull(c.tokenType)
+                    ? c.nodeClass.getSimpleName()
+                    : "`%s`".formatted(c.tokenType.rendered()))
+                .collect(Collectors.joining(" or ")),
+            lastErrorIndex,
+            cleanSubstring(s, start, end),
+            start,
+            end);
     if (oLastSuccessfullCall.isPresent()) {
       Call lastSuccessfullCall = oLastSuccessfullCall.get();
-      msg =
-          msg
-              + "; last successful match: %s @%d `%s`[%d:%d]"
-                  .formatted(
-                      Objects.isNull(lastSuccessfullCall.tokenType)
-                          ? lastSuccessfullCall.nodeClass.getSimpleName()
-                          : "`%s`".formatted(lastSuccessfullCall.tokenType.rendered()),
-                      lastSuccessfullCall.i,
-                      cleanSubstring(
-                          s, lastSuccessfullCall.token.start(), lastSuccessfullCall.token.end()),
-                      lastSuccessfullCall.token.start(),
-                      lastSuccessfullCall.token.end());
+      msg = msg
+          + "; last successful match: %s @%d `%s`[%d:%d]"
+              .formatted(
+                  Objects.isNull(lastSuccessfullCall.tokenType)
+                      ? lastSuccessfullCall.nodeClass.getSimpleName()
+                      : "`%s`".formatted(lastSuccessfullCall.tokenType.rendered()),
+                  lastSuccessfullCall.i,
+                  cleanSubstring(
+                      s, lastSuccessfullCall.token.start(), lastSuccessfullCall.token.end()),
+                  lastSuccessfullCall.token.start(),
+                  lastSuccessfullCall.token.end());
     }
     return new IllegalArgumentException(msg);
   }
@@ -212,8 +202,7 @@ public class StringParser {
       } else if (nodeClass.equals(SSNode.class)) {
         oNode = parseSS(i);
       } else {
-        throw new IllegalArgumentException(
-            "Unknown node type %s".formatted(nodeClass.getSimpleName()));
+        throw new IllegalArgumentException("Unknown node type %s".formatted(nodeClass.getSimpleName()));
       }
       if (oNode.isPresent()) {
         calls.add(new Call(i, nodeClass, null, oNode.get().token()));
@@ -244,8 +233,7 @@ public class StringParser {
     try {
       nodes.add(parse(i, DNode.class).orElseThrow());
       while (true) {
-        Optional<Token> sepT =
-            parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
+        Optional<Token> sepT = parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
         if (sepT.isEmpty()) {
           break;
         }
@@ -257,18 +245,22 @@ public class StringParser {
       }
       throw e;
     }
-    return Optional.of(
-        new DSNode(
-            new Token(i, nodes.isEmpty() ? i : nodes.get(nodes.size() - 1).token().end()), nodes));
+    return Optional.of(new DSNode(
+        new Token(
+            i,
+            nodes.isEmpty()
+                ? i
+                : nodes.get(nodes.size() - 1).token().end()),
+        nodes));
   }
 
   private Optional<ENode> parseE(int i) {
     Token tName = parse(i, TokenType.NAME).orElseThrow();
     Token tOpenPar = parse(tName.end(), TokenType.OPEN_CONTENT).orElseThrow();
     NPSNode npsNode = parse(tOpenPar.end(), NPSNode.class).orElseThrow();
-    Token tClosedPar = parse(npsNode.token().end(), TokenType.CLOSED_CONTENT).orElseThrow();
-    return Optional.of(
-        new ENode(new Token(tName.start(), tClosedPar.end()), npsNode, tName.trimmedContent(s)));
+    Token tClosedPar =
+        parse(npsNode.token().end(), TokenType.CLOSED_CONTENT).orElseThrow();
+    return Optional.of(new ENode(new Token(tName.start(), tClosedPar.end()), npsNode, tName.trimmedContent(s)));
   }
 
   private Optional<ESNode> parseES(int i) {
@@ -276,8 +268,7 @@ public class StringParser {
     try {
       nodes.add(parse(i, ENode.class).orElseThrow());
       while (true) {
-        Optional<Token> sepT =
-            parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
+        Optional<Token> sepT = parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
         if (sepT.isEmpty()) {
           break;
         }
@@ -289,9 +280,13 @@ public class StringParser {
       }
       throw e;
     }
-    return Optional.of(
-        new ESNode(
-            new Token(i, nodes.isEmpty() ? i : nodes.get(nodes.size() - 1).token().end()), nodes));
+    return Optional.of(new ESNode(
+        new Token(
+            i,
+            nodes.isEmpty()
+                ? i
+                : nodes.get(nodes.size() - 1).token().end()),
+        nodes));
   }
 
   private Optional<LDNode> parseLD(int i) {
@@ -299,9 +294,11 @@ public class StringParser {
     try {
       Token openT = parse(i, TokenType.OPEN_LIST).orElseThrow();
       DNode minDNode = parse(openT.end(), DNode.class).orElseThrow();
-      Token sep1 = parse(minDNode.token().end(), TokenType.INTERVAL_SEPARATOR).orElseThrow();
+      Token sep1 =
+          parse(minDNode.token().end(), TokenType.INTERVAL_SEPARATOR).orElseThrow();
       DNode stepDNode = parse(sep1.end(), DNode.class).orElseThrow();
-      Token sep2 = parse(stepDNode.token().end(), TokenType.INTERVAL_SEPARATOR).orElseThrow();
+      Token sep2 =
+          parse(stepDNode.token().end(), TokenType.INTERVAL_SEPARATOR).orElseThrow();
       DNode maxDNode = parse(sep2.end(), DNode.class).orElseThrow();
       Token closedT = parse(maxDNode.token().end(), TokenType.CLOSED_LIST).orElseThrow();
       double min = minDNode.value().doubleValue();
@@ -314,12 +311,13 @@ public class StringParser {
       }
       List<DNode> dNodes = new ArrayList<>();
       for (double v = min; v <= max; v = v + step) {
-        dNodes.add(new DNode(new Token(minDNode.token().start(), maxDNode.token().start()), v));
+        dNodes.add(new DNode(
+            new Token(minDNode.token().start(), maxDNode.token().start()), v));
       }
-      return Optional.of(
-          new LDNode(
-              new Token(openT.start(), closedT.end()),
-              new DSNode(new Token(minDNode.token().start(), maxDNode.token().start()), dNodes)));
+      return Optional.of(new LDNode(
+          new Token(openT.start(), closedT.end()),
+          new DSNode(
+              new Token(minDNode.token().start(), maxDNode.token().start()), dNodes)));
     } catch (RuntimeException e) {
       // ignore
     }
@@ -341,7 +339,8 @@ public class StringParser {
     try {
       Token openT = parse(i, TokenType.OPEN_CONTENT).orElseThrow();
       NPNode npNode = parse(openT.end(), NPNode.class).orElseThrow();
-      Token closedT = parse(npNode.token().end(), TokenType.CLOSED_CONTENT).orElseThrow();
+      Token closedT =
+          parse(npNode.token().end(), TokenType.CLOSED_CONTENT).orElseThrow();
       Token jointT = parse(closedT.end(), TokenType.LIST_JOIN).orElseThrow();
       LENode outerLENode = parse(jointT.end(), LENode.class).orElseThrow();
       // do cartesian product
@@ -351,57 +350,55 @@ public class StringParser {
         if (npNode.value() instanceof DNode
             || npNode.value() instanceof SNode
             || npNode.value() instanceof ENode) {
-          eNodes.add(
-              new ENode(
-                  originalENode.token(),
-                  new NPSNode(
-                      originalENode.child().token(),
-                      withAppended(originalENode.child().children(), npNode)),
-                  originalENode.name()));
+          eNodes.add(new ENode(
+              originalENode.token(),
+              new NPSNode(
+                  originalENode.child().token(),
+                  withAppended(originalENode.child().children(), npNode)),
+              originalENode.name()));
         } else {
           if (npNode.value() instanceof LDNode ldNode) {
             for (DNode dNode : ldNode.child().children()) {
-              eNodes.add(
-                  new ENode(
-                      originalENode.token(),
-                      new NPSNode(
-                          originalENode.child().token(),
-                          withAppended(
-                              originalENode.child().children(),
-                              new NPNode(ldNode.token(), npNode.name(), dNode))),
-                      originalENode.name()));
+              eNodes.add(new ENode(
+                  originalENode.token(),
+                  new NPSNode(
+                      originalENode.child().token(),
+                      withAppended(
+                          originalENode.child().children(),
+                          new NPNode(ldNode.token(), npNode.name(), dNode))),
+                  originalENode.name()));
             }
           } else if (npNode.value() instanceof LSNode lsNode) {
             for (SNode sNode : lsNode.child().children()) {
-              eNodes.add(
-                  new ENode(
-                      originalENode.token(),
-                      new NPSNode(
-                          originalENode.child().token(),
-                          withAppended(
-                              originalENode.child().children(),
-                              new NPNode(lsNode.token(), npNode.name(), sNode))),
-                      originalENode.name()));
+              eNodes.add(new ENode(
+                  originalENode.token(),
+                  new NPSNode(
+                      originalENode.child().token(),
+                      withAppended(
+                          originalENode.child().children(),
+                          new NPNode(lsNode.token(), npNode.name(), sNode))),
+                  originalENode.name()));
             }
           } else if (npNode.value() instanceof LENode leNode) {
             for (ENode eNode : leNode.child().children()) {
-              eNodes.add(
-                  new ENode(
-                      originalENode.token(),
-                      new NPSNode(
-                          originalENode.child().token(),
-                          withAppended(
-                              originalENode.child().children(),
-                              new NPNode(leNode.token(), npNode.name(), eNode))),
-                      originalENode.name()));
+              eNodes.add(new ENode(
+                  originalENode.token(),
+                  new NPSNode(
+                      originalENode.child().token(),
+                      withAppended(
+                          originalENode.child().children(),
+                          new NPNode(leNode.token(), npNode.name(), eNode))),
+                  originalENode.name()));
             }
           }
         }
       }
-      return Optional.of(
-          new LENode(
-              new Token(openT.start(), outerLENode.token().end()),
-              new ESNode(new Token(npNode.token().start(), outerLENode.token().end()), eNodes)));
+      return Optional.of(new LENode(
+          new Token(openT.start(), outerLENode.token().end()),
+          new ESNode(
+              new Token(
+                  npNode.token().start(), outerLENode.token().end()),
+              eNodes)));
     } catch (RuntimeException e) {
       // ignore
     }
@@ -416,12 +413,13 @@ public class StringParser {
       for (int j = 0; j < mult; j++) {
         eNodes.addAll(originalLENode.child().children());
       }
-      return Optional.of(
-          new LENode(
-              new Token(multToken.start(), originalLENode.token().end()),
-              new ESNode(
-                  new Token(originalLENode.token().start(), originalLENode.token().end()),
-                  eNodes)));
+      return Optional.of(new LENode(
+          new Token(multToken.start(), originalLENode.token().end()),
+          new ESNode(
+              new Token(
+                  originalLENode.token().start(),
+                  originalLENode.token().end()),
+              eNodes)));
     } catch (RuntimeException e) {
       // ignore
     }
@@ -429,15 +427,16 @@ public class StringParser {
     try {
       Token firstConcatT = parse(i, TokenType.LIST_CONCAT).orElseThrow();
       LENode firstLENode = parse(firstConcatT.end(), LENode.class).orElseThrow();
-      Token secondConcatT = parse(firstLENode.token().end(), TokenType.LIST_CONCAT).orElseThrow();
+      Token secondConcatT =
+          parse(firstLENode.token().end(), TokenType.LIST_CONCAT).orElseThrow();
       LENode secondLENode = parse(secondConcatT.end(), LENode.class).orElseThrow();
       // concat
       List<ENode> eNodes = new ArrayList<>(firstLENode.child().children());
       eNodes.addAll(secondLENode.child().children());
-      return Optional.of(
-          new LENode(
-              new Token(firstConcatT.start(), secondLENode.token().end()),
-              new ESNode(new Token(firstConcatT.start(), secondLENode.token().end()), eNodes)));
+      return Optional.of(new LENode(
+          new Token(firstConcatT.start(), secondLENode.token().end()),
+          new ESNode(
+              new Token(firstConcatT.start(), secondLENode.token().end()), eNodes)));
     } catch (RuntimeException e) {
       // ignore
     }
@@ -475,8 +474,7 @@ public class StringParser {
       }
     }
     Node value = oNode.orElseThrow();
-    return Optional.of(
-        new NPNode(new Token(tName.start(), value.token().end()), tName.trimmedContent(s), value));
+    return Optional.of(new NPNode(new Token(tName.start(), value.token().end()), tName.trimmedContent(s), value));
   }
 
   private Optional<NPSNode> parseNPS(int i) {
@@ -484,8 +482,7 @@ public class StringParser {
     try {
       nodes.add(parse(i, NPNode.class).orElseThrow());
       while (true) {
-        Optional<Token> ot =
-            parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
+        Optional<Token> ot = parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
         if (ot.isEmpty()) {
           break;
         }
@@ -497,9 +494,13 @@ public class StringParser {
       }
       throw e;
     }
-    return Optional.of(
-        new NPSNode(
-            new Token(i, nodes.isEmpty() ? i : nodes.get(nodes.size() - 1).token().end()), nodes));
+    return Optional.of(new NPSNode(
+        new Token(
+            i,
+            nodes.isEmpty()
+                ? i
+                : nodes.get(nodes.size() - 1).token().end()),
+        nodes));
   }
 
   private Optional<SNode> parseS(int i) {
@@ -511,8 +512,7 @@ public class StringParser {
     try {
       nodes.add(parse(i, SNode.class).orElseThrow());
       while (true) {
-        Optional<Token> sepT =
-            parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
+        Optional<Token> sepT = parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
         if (sepT.isEmpty()) {
           break;
         }
@@ -524,8 +524,12 @@ public class StringParser {
       }
       throw e;
     }
-    return Optional.of(
-        new SSNode(
-            new Token(i, nodes.isEmpty() ? i : nodes.get(nodes.size() - 1).token().end()), nodes));
+    return Optional.of(new SSNode(
+        new Token(
+            i,
+            nodes.isEmpty()
+                ? i
+                : nodes.get(nodes.size() - 1).token().end()),
+        nodes));
   }
 }

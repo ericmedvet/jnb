@@ -50,20 +50,20 @@ public interface ParamMap {
   }
 
   /*default <E extends Enum<E>> Object value(String n, Type type, Class<E> enumClass) {
-    return switch (type) {
-      case INT -> i(n);
-      case DOUBLE -> d(n);
-      case BOOLEAN -> b(n);
-      case STRING -> s(n);
-      case ENUM -> e(n, enumClass);
-      case NAMED_PARAM_MAP -> npm(n);
-      case INTS -> is(n);
-      case DOUBLES -> ds(n);
-      case BOOLEANS -> bs(n);
-      case STRINGS -> ss(n);
-      case ENUMS -> es(n, enumClass);
-      case NAMED_PARAM_MAPS -> npms(n);
-    };
+  return switch (type) {
+  case INT -> i(n);
+  case DOUBLE -> d(n);
+  case BOOLEAN -> b(n);
+  case STRING -> s(n);
+  case ENUM -> e(n, enumClass);
+  case NAMED_PARAM_MAP -> npm(n);
+  case INTS -> is(n);
+  case DOUBLES -> ds(n);
+  case BOOLEANS -> bs(n);
+  case STRINGS -> ss(n);
+  case ENUMS -> es(n, enumClass);
+  case NAMED_PARAM_MAPS -> npms(n);
+  };
   }*/
   Set<String> names();
 
@@ -79,8 +79,7 @@ public interface ParamMap {
 
   default Object value(String n, Type type) {
     if (type.equals(Type.ENUM) || type.equals(Type.ENUMS)) {
-      throw new IllegalArgumentException(
-          "Cannot obtain enum(s) type for \"%s\" without enum class".formatted(n));
+      throw new IllegalArgumentException("Cannot obtain enum(s) type for \"%s\" without enum class".formatted(n));
     }
     return value(n, type, null);
   }

@@ -54,44 +54,31 @@ public class NamedBuilder<X> {
     try (ScanResult scanResult =
         new ClassGraph().enableAllInfo().acceptPackages(packageNames).scan()) {
       for (ClassInfo classInfo :
-          scanResult
-              .getAllClasses()
-              .filter(classInfo -> classInfo.hasAnnotation(Discoverable.class))) {
-        String[] prefixes =
-            (String[])
-                classInfo
-                    .getAnnotationInfo(Discoverable.class)
-                    .getParameterValues()
-                    .getValue("prefixes");
-        String prefixTemplate =
-            (String)
-                classInfo
-                    .getAnnotationInfo(Discoverable.class)
-                    .getParameterValues()
-                    .getValue("prefixTemplate");
+          scanResult.getAllClasses().filter(classInfo -> classInfo.hasAnnotation(Discoverable.class))) {
+        String[] prefixes = (String[]) classInfo
+            .getAnnotationInfo(Discoverable.class)
+            .getParameterValues()
+            .getValue("prefixes");
+        String prefixTemplate = (String) classInfo
+            .getAnnotationInfo(Discoverable.class)
+            .getParameterValues()
+            .getValue("prefixTemplate");
         if (prefixes.length > 0 && !prefixTemplate.isEmpty()) {
-          L.warning(
-              "Both prefixes and prefixTemplate are set for discoverable class %s: using prefixes %s"
-                  .formatted(classInfo.getName(), Arrays.toString(prefixes)));
+          L.warning("Both prefixes and prefixTemplate are set for discoverable class %s: using prefixes %s"
+              .formatted(classInfo.getName(), Arrays.toString(prefixes)));
         } else if (prefixes.length == 0 && !prefixTemplate.isEmpty()) {
-          List<List<String>> tokens =
-              Arrays.stream(prefixTemplate.split(Pattern.quote("" + NAME_SEPARATOR)))
-                  .map(t -> Arrays.stream(t.split(Pattern.quote("" + PREFIX_SEPARATOR))).toList())
-                  .toList();
-          prefixes =
-              flatTokens(tokens).stream()
-                  .map(l -> String.join("" + NAME_SEPARATOR, l))
-                  .toArray(String[]::new);
+          List<List<String>> tokens = Arrays.stream(prefixTemplate.split(Pattern.quote("" + NAME_SEPARATOR)))
+              .map(t -> Arrays.stream(t.split(Pattern.quote("" + PREFIX_SEPARATOR)))
+                  .toList())
+              .toList();
+          prefixes = flatTokens(tokens).stream()
+              .map(l -> String.join("" + NAME_SEPARATOR, l))
+              .toArray(String[]::new);
         }
         if (classInfo.getDeclaredConstructorInfo().stream().noneMatch(ClassMemberInfo::isPublic)) {
-          nb =
-              nb.and(
-                  Arrays.stream(prefixes).toList(),
-                  NamedBuilder.fromUtilityClass(classInfo.loadClass()));
+          nb = nb.and(Arrays.stream(prefixes).toList(), NamedBuilder.fromUtilityClass(classInfo.loadClass()));
         } else {
-          nb =
-              nb.and(
-                  Arrays.stream(prefixes).toList(), NamedBuilder.fromClass(classInfo.loadClass()));
+          nb = nb.and(Arrays.stream(prefixes).toList(), NamedBuilder.fromClass(classInfo.loadClass()));
         }
       }
     }
@@ -103,11 +90,9 @@ public class NamedBuilder<X> {
       return tokens.get(0).stream().map(List::of).toList();
     }
     return tokens.get(0).stream()
-        .map(
-            t ->
-                flatTokens(tokens.subList(1, tokens.size())).stream()
-                    .map(l -> Stream.concat(Stream.of(t), l.stream()).toList())
-                    .toList())
+        .map(t -> flatTokens(tokens.subList(1, tokens.size())).stream()
+            .map(l -> Stream.concat(Stream.of(t), l.stream()).toList())
+            .toList())
         .flatMap(Collection::stream)
         .toList();
   }
@@ -116,19 +101,16 @@ public class NamedBuilder<X> {
   public static <C> NamedBuilder<C> fromClass(Class<? extends C> c) {
     List<Constructor<?>> constructors = Arrays.stream(c.getConstructors()).toList();
     if (constructors.size() > 1) {
-      constructors =
-          constructors.stream()
-              .filter(constructor -> constructor.getAnnotation(BuilderMethod.class) != null)
-              .toList();
+      constructors = constructors.stream()
+          .filter(constructor -> constructor.getAnnotation(BuilderMethod.class) != null)
+          .toList();
     }
     if (constructors.size() != 1) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Cannot build named builder from class %s that has %d!=1 constructors",
-              c.getSimpleName(), c.getConstructors().length));
+      throw new IllegalArgumentException(String.format(
+          "Cannot build named builder from class %s that has %d!=1 constructors",
+          c.getSimpleName(), c.getConstructors().length));
     }
-    DocumentedBuilder<C> builder =
-        (DocumentedBuilder<C>) AutoBuiltDocumentedBuilder.from(constructors.get(0));
+    DocumentedBuilder<C> builder = (DocumentedBuilder<C>) AutoBuiltDocumentedBuilder.from(constructors.get(0));
     if (builder != null) {
       return new NamedBuilder<>(Map.of(builder.name(), builder));
     } else {
@@ -138,23 +120,21 @@ public class NamedBuilder<X> {
 
   @SuppressWarnings("unused")
   public static NamedBuilder<Object> fromUtilityClass(Class<?> c) {
-    return new NamedBuilder<>(
-        Arrays.stream(c.getMethods())
-            .map(AutoBuiltDocumentedBuilder::from)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toMap(DocumentedBuilder::name, b -> b)));
+    return new NamedBuilder<>(Arrays.stream(c.getMethods())
+        .map(AutoBuiltDocumentedBuilder::from)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toMap(DocumentedBuilder::name, b -> b)));
   }
 
   public static String prettyToString(NamedBuilder<?> namedBuilder, boolean newLine) {
     return namedBuilder.builders.entrySet().stream()
-        .map(
-            e -> {
-              String s = e.getKey();
-              if (e.getValue() instanceof DocumentedBuilder<?> db) {
-                s = s + db;
-              }
-              return s;
-            })
+        .map(e -> {
+          String s = e.getKey();
+          if (e.getValue() instanceof DocumentedBuilder<?> db) {
+            s = s + db;
+          }
+          return s;
+        })
         .collect(Collectors.joining(newLine ? "\n" : "; "));
   }
 
@@ -167,11 +147,8 @@ public class NamedBuilder<X> {
       return and(namedBuilder);
     }
     Map<String, Builder<? extends X>> allBuilders = new HashMap<>(builders);
-    prefixes.forEach(
-        prefix ->
-            namedBuilder.builders.forEach(
-                (k, v) ->
-                    allBuilders.put(prefix.isEmpty() ? k : (prefix + NAME_SEPARATOR + k), v)));
+    prefixes.forEach(prefix -> namedBuilder.builders.forEach(
+        (k, v) -> allBuilders.put(prefix.isEmpty() ? k : (prefix + NAME_SEPARATOR + k), v)));
     return new NamedBuilder<>(allBuilders);
   }
 
@@ -180,8 +157,7 @@ public class NamedBuilder<X> {
   }
 
   @SuppressWarnings("unchecked")
-  public <T extends X> T build(NamedParamMap map, Supplier<T> defaultSupplier, int index)
-      throws BuilderException {
+  public <T extends X> T build(NamedParamMap map, Supplier<T> defaultSupplier, int index) throws BuilderException {
     if (map == null) {
       throw new BuilderException("Null input map");
     }
@@ -189,14 +165,13 @@ public class NamedBuilder<X> {
       if (defaultSupplier != null) {
         return defaultSupplier.get();
       }
-      throw new BuilderException(
-          String.format(
-              "No builder for %s: closest matches are %s",
-              map.getName(),
-              builders.keySet().stream()
-                  .sorted((Comparator.comparing(s -> distance(s, map.getName()))))
-                  .limit(3)
-                  .collect(Collectors.joining(", "))));
+      throw new BuilderException(String.format(
+          "No builder for %s: closest matches are %s",
+          map.getName(),
+          builders.keySet().stream()
+              .sorted((Comparator.comparing(s -> distance(s, map.getName()))))
+              .limit(3)
+              .collect(Collectors.joining(", "))));
     }
     try {
       return (T) builders.get(map.getName()).build(map, this, index);
@@ -209,8 +184,7 @@ public class NamedBuilder<X> {
   }
 
   @SuppressWarnings("unused")
-  public <T extends X> T build(String mapString, Supplier<T> defaultSupplier)
-      throws BuilderException {
+  public <T extends X> T build(String mapString, Supplier<T> defaultSupplier) throws BuilderException {
     return build(StringParser.parse(mapString), defaultSupplier, 0);
   }
 

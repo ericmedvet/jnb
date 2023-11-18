@@ -27,11 +27,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public record AutoBuiltDocumentedBuilder<T>(
-    String name,
-    java.lang.reflect.Type builtType,
-    List<ParamInfo> params,
-    Executable origin,
-    Builder<T> builder)
+    String name, java.lang.reflect.Type builtType, List<ParamInfo> params, Executable origin, Builder<T> builder)
     implements DocumentedBuilder<T> {
   private static Object buildDefaultValue(ParamMap.Type type, Class<?> clazz, Param pa) {
     if (type.equals(ParamMap.Type.INT) && pa.dI() != Integer.MIN_VALUE) {
@@ -89,30 +85,25 @@ public record AutoBuiltDocumentedBuilder<T>(
       return value;
     }
     if (m.names().contains(pi.name())) {
-      throw new IllegalArgumentException(
-          "Wrong type for param \"%s\": \"%s\" is not %s"
-              .formatted(pi.name(), m.value(pi.name()), pi.type().name()));
+      throw new IllegalArgumentException("Wrong type for param \"%s\": \"%s\" is not %s"
+          .formatted(pi.name(), m.value(pi.name()), pi.type().name()));
     }
     if (pi.defaultValue() != null) {
       return pi.defaultValue();
     }
-    throw new IllegalArgumentException(
-        "Unvalued undefaulted parameter \"%s\"".formatted(pi.name()));
+    throw new IllegalArgumentException("Unvalued undefaulted parameter \"%s\"".formatted(pi.name()));
   }
 
   @SuppressWarnings("unchecked")
-  private static Object buildParam(
-      ParamInfo pi, ParamMap m, Parameter ap, NamedBuilder<Object> nb) {
+  private static Object buildParam(ParamInfo pi, ParamMap m, Parameter ap, NamedBuilder<Object> nb) {
     return switch (pi.type()) {
       case NAMED_PARAM_MAP -> processNPM((NamedParamMap) buildOrDefaultParam(pi, m), ap, nb, 0);
-      case NAMED_PARAM_MAPS -> processNPMs(
-          (List<NamedParamMap>) buildOrDefaultParam(pi, m), ap, nb);
+      case NAMED_PARAM_MAPS -> processNPMs((List<NamedParamMap>) buildOrDefaultParam(pi, m), ap, nb);
       default -> buildOrDefaultParam(pi, m);
     };
   }
 
-  private static List<Object> processNPMs(
-      List<NamedParamMap> npms, Parameter ap, NamedBuilder<Object> nb) {
+  private static List<Object> processNPMs(List<NamedParamMap> npms, Parameter ap, NamedBuilder<Object> nb) {
     return IntStream.range(0, npms.size())
         .mapToObj(i -> processNPM(npms.get(i), ap, nb, i))
         .toList();
@@ -130,22 +121,19 @@ public record AutoBuiltDocumentedBuilder<T>(
       return null;
     }
     // check if has NamedBuilder parameter at the beginning
-    boolean hasNamedBuilder =
-        executable.getParameters().length > 0
-            && executable.getParameters()[0].getType().equals(NamedBuilder.class);
+    boolean hasNamedBuilder = executable.getParameters().length > 0
+        && executable.getParameters()[0].getType().equals(NamedBuilder.class);
     // find parameters
-    List<ParamInfo> paramInfos =
-        Arrays.stream(executable.getParameters())
-            .map(AutoBuiltDocumentedBuilder::from)
-            .filter(Objects::nonNull)
-            .toList();
+    List<ParamInfo> paramInfos = Arrays.stream(executable.getParameters())
+        .map(AutoBuiltDocumentedBuilder::from)
+        .filter(Objects::nonNull)
+        .toList();
     if (paramInfos.size() != executable.getParameters().length - (hasNamedBuilder ? 1 : 0)) {
-      l.warning(
-          String.format(
-              "Cannot process method %s(): %d on %d params are not valid",
-              executable.getName(),
-              executable.getParameters().length - (hasNamedBuilder ? 1 : 0) - paramInfos.size(),
-              executable.getParameters().length - (hasNamedBuilder ? 1 : 0)));
+      l.warning(String.format(
+          "Cannot process method %s(): %d on %d params are not valid",
+          executable.getName(),
+          executable.getParameters().length - (hasNamedBuilder ? 1 : 0) - paramInfos.size(),
+          executable.getParameters().length - (hasNamedBuilder ? 1 : 0)));
       return null;
     }
     // wrap and return
@@ -156,7 +144,8 @@ public record AutoBuiltDocumentedBuilder<T>(
       name = method.getName();
     } else {
       buildType = ((Constructor<?>) executable).getDeclaringClass();
-      name = toLowerCamelCase(((Constructor<?>) executable).getDeclaringClass().getSimpleName());
+      name = toLowerCamelCase(
+          ((Constructor<?>) executable).getDeclaringClass().getSimpleName());
     }
     if (builderMethodAnnotation != null && !builderMethodAnnotation.value().isEmpty()) {
       name = builderMethodAnnotation.value();
@@ -187,12 +176,9 @@ public record AutoBuiltDocumentedBuilder<T>(
             } else {
               try {
                 //noinspection unchecked
-                params[k] =
-                    buildParam(
-                        paramInfos.get(j),
-                        map,
-                        executable.getParameters()[k],
-                        (NamedBuilder<Object>) namedBuilder);
+                params[k] = buildParam(
+                    paramInfos.get(j), map, executable.getParameters()[k], (NamedBuilder<Object>)
+                        namedBuilder);
               } catch (RuntimeException e) {
                 throw new BuilderException(
                     String.format(
@@ -210,9 +196,8 @@ public record AutoBuiltDocumentedBuilder<T>(
               .toList()
               .forEach(exceedingParamNames::remove);
           if (!exceedingParamNames.isEmpty()) {
-            l.warning(
-                String.format(
-                    "Exceeding parameters while building %s: %s", finalName, exceedingParamNames));
+            l.warning(String.format(
+                "Exceeding parameters while building %s: %s", finalName, exceedingParamNames));
           }
           try {
             if (executable instanceof Method method) {
@@ -220,8 +205,7 @@ public record AutoBuiltDocumentedBuilder<T>(
             }
             return ((Constructor<?>) executable).newInstance(params);
           } catch (IllegalAccessException | InvocationTargetException | InstantiationException e) {
-            throw new BuilderException(
-                String.format("Cannot invoke %s: %s", executable.getName(), e), e);
+            throw new BuilderException(String.format("Cannot invoke %s: %s", executable.getName(), e), e);
           }
         });
   }
@@ -369,8 +353,7 @@ public record AutoBuiltDocumentedBuilder<T>(
             parameter.getParameterizedType());
       }
     }
-    if (parameter.getType().equals(List.class)
-        && parameter.getParameterizedType() instanceof ParameterizedType) {
+    if (parameter.getType().equals(List.class) && parameter.getParameterizedType() instanceof ParameterizedType) {
       return new ParamInfo(
           ParamMap.Type.NAMED_PARAM_MAPS,
           null,
@@ -388,8 +371,7 @@ public record AutoBuiltDocumentedBuilder<T>(
         parameter.getParameterizedType());
   }
 
-  private static Object processNPM(
-      NamedParamMap npm, Parameter actualParameter, NamedBuilder<Object> nb, int index) {
+  private static Object processNPM(NamedParamMap npm, Parameter actualParameter, NamedBuilder<Object> nb, int index) {
     if (actualParameter.getType().equals(NamedParamMap.class)) {
       return npm;
     }
@@ -407,9 +389,6 @@ public record AutoBuiltDocumentedBuilder<T>(
 
   @Override
   public String toString() {
-    return "("
-        + params.stream().map(ParamInfo::toString).collect(Collectors.joining("; "))
-        + ") -> "
-        + builtType;
+    return "(" + params.stream().map(ParamInfo::toString).collect(Collectors.joining("; ")) + ") -> " + builtType;
   }
 }

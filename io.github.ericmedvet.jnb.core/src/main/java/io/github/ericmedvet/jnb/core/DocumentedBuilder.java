@@ -34,7 +34,9 @@ public interface DocumentedBuilder<T> extends Builder<T> {
     public String toString() {
       return String.format(
           "%s = %s%s",
-          injection.equals(Param.Injection.NONE) ? name : injection.toString().toLowerCase(),
+          injection.equals(Param.Injection.NONE)
+              ? name
+              : injection.toString().toLowerCase(),
           type.rendered(),
           defaultValue == null ? "" : ("{" + defaultValue + "}"));
     }

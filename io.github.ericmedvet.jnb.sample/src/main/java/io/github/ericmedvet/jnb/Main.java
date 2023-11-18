@@ -26,16 +26,16 @@ public class Main {
 
   private static final String S =
       """
-      office(
-              head = person(name = "Mario Rossi"; pet = pet(name = Fuffi; booleans = [true]));
-              staff = + [
-                person(name = Alice; age = 33; nicknames = [Puce; "The Cice"]; gender = f);
-                person(name = Bob);
-                person(name = Charlie; age = 38)
-              ] + [person(name = Dane; age = 28)];
-              roomNumbers = [202:1:205]
-            )
-      """;
+office(
+head = person(name = "Mario Rossi"; pet = pet(name = Fuffi; booleans = [true]));
+staff = + [
+person(name = Alice; age = 33; nicknames = [Puce; "The Cice"]; gender = f);
+person(name = Bob);
+person(name = Charlie; age = 38)
+] + [person(name = Dane; age = 28)];
+roomNumbers = [202:1:205]
+)
+""";
 
   public enum DayOfWeek {
     MON,
@@ -94,14 +94,12 @@ public class Main {
           List<Boolean> booleans) {}
 
   public static void main(String[] args) {
-    NamedBuilder<?> nb =
-        NamedBuilder.empty()
-            .and(NamedBuilder.fromClass(Office.class))
-            .and(NamedBuilder.fromClass(Person.class))
-            .and(NamedBuilder.fromClass(Pet.class));
+    NamedBuilder<?> nb = NamedBuilder.empty()
+        .and(NamedBuilder.fromClass(Office.class))
+        .and(NamedBuilder.fromClass(Person.class))
+        .and(NamedBuilder.fromClass(Pet.class));
     System.out.println(
-        nb.build(
-            "person(name=eric;preferredDays=[mon;tue];age=44;pet=pet(name=\"simba\";legs=[2]))"));
+        nb.build("person(name=eric;preferredDays=[mon;tue];age=44;pet=pet(name=\"simba\";legs=[2]))"));
     // System.exit(0);
 
     // Office office = (Office) nb.build(S);
@@ -110,7 +108,8 @@ public class Main {
     // preferredDays = [mon; fri])")));
     // System.out.println(MapNamedParamMap.prettyToString(StringParser.parse("person(name =
     // Andrew)")));
-    // System.out.println(MapNamedParamMap.prettyToString(nb.fillWithDefaults(StringParser.parse("person(name = Andrew)")), Integer.MAX_VALUE));
+    // System.out.println(MapNamedParamMap.prettyToString(nb.fillWithDefaults(StringParser.parse("person(name =
+    // Andrew)")), Integer.MAX_VALUE));
     // System.out.println(nb.fillWithDefaults(StringParser.parse("person(name = Andrew)")));
     // System.out.println(MapNamedParamMap.prettyToString(StringParser.parse(S)));
     // System.out.println(MapNamedParamMap.prettyToString(nb.fillWithDefaults(StringParser.parse(S))));

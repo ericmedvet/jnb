@@ -46,8 +46,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     this.values = new TreeMap<>();
     for (Map.Entry<TypedKey, Object> e : values.entrySet()) {
       if (e.getKey().type.equals(Type.INT)) {
-        this.values.put(
-            new TypedKey(e.getKey().name, Type.DOUBLE), Double.valueOf(intValue(e.getValue())));
+        this.values.put(new TypedKey(e.getKey().name, Type.DOUBLE), Double.valueOf(intValue(e.getValue())));
       } else if (e.getKey().type.equals(Type.BOOLEAN)) {
         this.values.put(
             new TypedKey(e.getKey().name, Type.STRING),
@@ -63,11 +62,14 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
       } else if (e.getKey().type.equals(Type.BOOLEANS)) {
         this.values.put(
             new TypedKey(e.getKey().name, Type.STRINGS),
-            checkList((List<?>) e.getValue(), b -> booleanValue(b.toString()).toString()));
+            checkList((List<?>) e.getValue(), b -> booleanValue(b.toString())
+                .toString()));
       } else if (e.getKey().type.equals(Type.ENUMS)) {
         this.values.put(
             new TypedKey(e.getKey().name, Type.STRINGS),
-            checkList((List<?>) e.getValue(), v -> ((Enum<?>) v).name().toLowerCase()));
+            checkList(
+                (List<?>) e.getValue(),
+                v -> ((Enum<?>) v).name().toLowerCase()));
       } else {
         this.values.put(e.getKey(), e.getValue());
       }
@@ -80,12 +82,10 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
       case INT -> intValue(values.get(new TypedKey(n, Type.DOUBLE)));
       case BOOLEAN -> booleanValue(values.get(new TypedKey(n, Type.STRING)));
       case ENUM -> enumValue(values.get(new TypedKey(n, Type.STRING)), enumClass);
-      case INTS -> checkList(
-          (List<?>) values.get(new TypedKey(n, Type.DOUBLES)), MapNamedParamMap::intValue);
+      case INTS -> checkList((List<?>) values.get(new TypedKey(n, Type.DOUBLES)), MapNamedParamMap::intValue);
       case BOOLEANS -> checkList(
           (List<?>) values.get(new TypedKey(n, Type.STRINGS)), MapNamedParamMap::booleanValue);
-      case ENUMS -> checkList(
-          (List<?>) values.get(new TypedKey(n, Type.STRINGS)), s -> enumValue(s, enumClass));
+      case ENUMS -> checkList((List<?>) values.get(new TypedKey(n, Type.STRINGS)), s -> enumValue(s, enumClass));
       default -> values.get(new TypedKey(n, type));
     };
   }
@@ -271,8 +271,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     return sb.toString();
   }
 
-  public static void prettyToString(
-      ParamMap map, StringBuilder sb, int maxW, int w, int indent, String space) {
+  public static void prettyToString(ParamMap map, StringBuilder sb, int maxW, int w, int indent, String space) {
     // iterate
     if (map instanceof NamedParamMap namedParamMap) {
       sb.append(namedParamMap.getName());

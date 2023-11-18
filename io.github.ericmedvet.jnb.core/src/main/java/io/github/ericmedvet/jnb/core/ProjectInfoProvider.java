@@ -36,39 +36,36 @@ public class ProjectInfoProvider {
   private ProjectInfoProvider() {}
 
   public static Optional<ProjectInfo> of(Class<?> clazz) {
-    return CACHE.computeIfAbsent(
-        clazz,
-        c -> {
-          Properties properties = new Properties();
-          try (InputStream resource = c.getResourceAsStream("/project-info.props")) {
-            if (resource == null) {
-              return Optional.empty();
-            }
-            properties.load(resource);
-            String majorVersion = "";
-            String minorVersion = "";
-            String patchVersion = "";
-            if (properties.getProperty("version") != null) {
-              String[] versionTokens = properties.getProperty("version").split("\\.");
-              majorVersion = versionTokens[0];
-              if (versionTokens.length > 1) {
-                minorVersion = versionTokens[1];
-              }
-              if (versionTokens.length > 2) {
-                patchVersion = versionTokens[2];
-              }
-            }
-            return Optional.of(
-                new ProjectInfo(
-                    properties.getProperty("name") == null ? "" : properties.getProperty("name"),
-                    new ProjectInfo.Version(majorVersion, minorVersion, patchVersion),
-                    properties.getProperty("build.timestamp") == null
-                        ? ""
-                        : properties.getProperty("build.timestamp")));
-          } catch (IOException e) {
-            // info props not found: ignore
-            return Optional.empty();
+    return CACHE.computeIfAbsent(clazz, c -> {
+      Properties properties = new Properties();
+      try (InputStream resource = c.getResourceAsStream("/project-info.props")) {
+        if (resource == null) {
+          return Optional.empty();
+        }
+        properties.load(resource);
+        String majorVersion = "";
+        String minorVersion = "";
+        String patchVersion = "";
+        if (properties.getProperty("version") != null) {
+          String[] versionTokens = properties.getProperty("version").split("\\.");
+          majorVersion = versionTokens[0];
+          if (versionTokens.length > 1) {
+            minorVersion = versionTokens[1];
           }
-        });
+          if (versionTokens.length > 2) {
+            patchVersion = versionTokens[2];
+          }
+        }
+        return Optional.of(new ProjectInfo(
+            properties.getProperty("name") == null ? "" : properties.getProperty("name"),
+            new ProjectInfo.Version(majorVersion, minorVersion, patchVersion),
+            properties.getProperty("build.timestamp") == null
+                ? ""
+                : properties.getProperty("build.timestamp")));
+      } catch (IOException e) {
+        // info props not found: ignore
+        return Optional.empty();
+      }
+    });
   }
 }
