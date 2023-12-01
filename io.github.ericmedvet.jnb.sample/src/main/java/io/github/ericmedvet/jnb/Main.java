@@ -20,6 +20,8 @@
 package io.github.ericmedvet.jnb;
 
 import io.github.ericmedvet.jnb.core.*;
+import io.github.ericmedvet.jnb.core.parsing.StringParser;
+
 import java.util.List;
 
 public class Main {
@@ -116,5 +118,6 @@ roomNumbers = [202:1:205]
 
     InfoPrinter infoPrinter = new InfoPrinter();
     infoPrinter.print(nb, System.out);
+
   }
 }
