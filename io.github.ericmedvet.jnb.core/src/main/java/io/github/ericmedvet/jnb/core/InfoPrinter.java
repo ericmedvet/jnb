@@ -51,69 +51,6 @@ public class InfoPrinter {
     this(PACKAGE_HEADING_LEVEL, BUILDER_HEADING_LEVEL, true, false);
   }
 
-  record BuilderInfo(
-      SortedSet<Name> names,
-      Builder<?> builder,
-      List<ParamCompatibility> compatibilities,
-      SortedSet<String> workingUsages) {
-    public Name longestName() {
-      return names().stream()
-          .max(Comparator.comparingInt(n -> n.fullName().length()))
-          .orElseThrow();
-    }
-
-    public Name shortestName() {
-      return names().stream()
-          .min(Comparator.comparingInt(n -> n.fullName().length()))
-          .orElseThrow();
-    }
-  }
-
-  record Name(String packageName, String simpleName) implements Comparable<Name> {
-    public Name(String fullName) {
-      this(packageName(fullName), simpleName(fullName));
-    }
-
-    public static String packageName(String fullName) {
-      String sep = "" + NamedBuilder.NAME_SEPARATOR;
-      List<String> pieces =
-          Arrays.stream(fullName.split(Pattern.quote(sep))).toList();
-      String packageName = "";
-      if (pieces.size() > 1) {
-        packageName = String.join(sep, pieces.subList(0, pieces.size() - 1));
-      }
-      return packageName;
-    }
-
-    public static String simpleName(String fullName) {
-      String sep = "" + NamedBuilder.NAME_SEPARATOR;
-      String[] pieces = fullName.split(Pattern.quote(sep));
-      return pieces[pieces.length - 1];
-    }
-
-    @Override
-    public int compareTo(Name o) {
-      if (o.packageName.equals(packageName)) {
-        return simpleName.compareTo(o.simpleName);
-      }
-      return packageName.compareTo(o.packageName);
-    }
-
-    public String fullName() {
-      String n = simpleName;
-      if (!packageName.isEmpty()) {
-        n = packageName + NamedBuilder.NAME_SEPARATOR + simpleName;
-      }
-      return n;
-    }
-  }
-
-  record PackageInfo(SortedSet<String> names, List<BuilderInfo> builderInfos) {}
-
-  record ParamCompatibility(DocumentedBuilder.ParamInfo paramInfo, List<BuilderInfo> builderInfos) {}
-
-  record ParamTriplet(String name, String value, BuilderInfo builderInfo) {}
-
   private static List<ParamTriplet> easyParamPairs(List<DocumentedBuilder.ParamInfo> builder) {
     return builder.stream()
         .filter(pi -> pi.defaultValue() == null)
@@ -171,6 +108,25 @@ public class InfoPrinter {
       }
     }
     return paramPairs;
+  }
+
+  private static String defaultValueString(ParamCompatibility compatibility) {
+    if (compatibility.paramInfo.defaultValue() != null) {
+      return "`%s`".formatted(compatibility.paramInfo().defaultValue());
+    }
+    if (compatibility.paramInfo.interpolationString() != null) {
+      return "interpolate `%s`".formatted(compatibility.paramInfo().interpolationString());
+    }
+    return "";
+  }
+
+  private static String executableName(Executable e) {
+    String className = e.getDeclaringClass().getName();
+    String name = e.getName();
+    if (name.equals(className)) {
+      return name;
+    }
+    return className + "." + name;
   }
 
   @SuppressWarnings("unused")
@@ -355,14 +311,7 @@ public class InfoPrinter {
                             + "%n",
                         compatibility.paramInfo().name(),
                         compatibility.paramInfo().type().rendered(),
-                        Objects.isNull(compatibility
-                                .paramInfo()
-                                .defaultValue())
-                            ? ""
-                            : "`%s`"
-                                .formatted(compatibility
-                                    .paramInfo()
-                                    .defaultValue()),
+                        defaultValueString(compatibility),
                         shortenJavaTypeName(compatibility
                             .paramInfo()
                             .javaType()),
@@ -396,15 +345,6 @@ public class InfoPrinter {
     }
   }
 
-  private static String executableName(Executable e) {
-    String className = e.getDeclaringClass().getName();
-    String name = e.getName();
-    if (name.equals(className)) {
-      return name;
-    }
-    return className + "." + name;
-  }
-
   private String shortenJavaTypeName(Type javaType) {
     String typeName = javaType.getTypeName().replace("<", "&lt;").replace(">", "&gt;");
     if (!shortenFQNs) {
@@ -414,4 +354,67 @@ public class InfoPrinter {
         typeName.replaceAll("([a-z][a-zA-Z0-9_.]+)\\.([a-zA-Z0-9$]+)", "<abbr title=\"$0\">$2</abbr>");
     return "<code>%s</code>".formatted(abbrName);
   }
+
+  record BuilderInfo(
+      SortedSet<Name> names,
+      Builder<?> builder,
+      List<ParamCompatibility> compatibilities,
+      SortedSet<String> workingUsages) {
+    public Name longestName() {
+      return names().stream()
+          .max(Comparator.comparingInt(n -> n.fullName().length()))
+          .orElseThrow();
+    }
+
+    public Name shortestName() {
+      return names().stream()
+          .min(Comparator.comparingInt(n -> n.fullName().length()))
+          .orElseThrow();
+    }
+  }
+
+  record Name(String packageName, String simpleName) implements Comparable<Name> {
+    public Name(String fullName) {
+      this(packageName(fullName), simpleName(fullName));
+    }
+
+    public static String packageName(String fullName) {
+      String sep = "" + NamedBuilder.NAME_SEPARATOR;
+      List<String> pieces =
+          Arrays.stream(fullName.split(Pattern.quote(sep))).toList();
+      String packageName = "";
+      if (pieces.size() > 1) {
+        packageName = String.join(sep, pieces.subList(0, pieces.size() - 1));
+      }
+      return packageName;
+    }
+
+    public static String simpleName(String fullName) {
+      String sep = "" + NamedBuilder.NAME_SEPARATOR;
+      String[] pieces = fullName.split(Pattern.quote(sep));
+      return pieces[pieces.length - 1];
+    }
+
+    @Override
+    public int compareTo(Name o) {
+      if (o.packageName.equals(packageName)) {
+        return simpleName.compareTo(o.simpleName);
+      }
+      return packageName.compareTo(o.packageName);
+    }
+
+    public String fullName() {
+      String n = simpleName;
+      if (!packageName.isEmpty()) {
+        n = packageName + NamedBuilder.NAME_SEPARATOR + simpleName;
+      }
+      return n;
+    }
+  }
+
+  record PackageInfo(SortedSet<String> names, List<BuilderInfo> builderInfos) {}
+
+  record ParamCompatibility(DocumentedBuilder.ParamInfo paramInfo, List<BuilderInfo> builderInfos) {}
+
+  record ParamTriplet(String name, String value, BuilderInfo builderInfo) {}
 }

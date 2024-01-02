@@ -60,5 +60,7 @@ public @interface Param {
 
   Injection injection() default Injection.NONE;
 
+  String iS() default UNDEFAULTED_STRING;
+
   String value();
 }

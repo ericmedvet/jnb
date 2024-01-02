@@ -19,6 +19,7 @@
  */
 package io.github.ericmedvet.jnb.core;
 
+import io.github.ericmedvet.jnb.core.ParamMap.Type;
 import java.lang.reflect.Executable;
 import java.util.List;
 
@@ -28,17 +29,22 @@ public interface DocumentedBuilder<T> extends Builder<T> {
       Class<?> enumClass,
       String name,
       Object defaultValue,
+      String interpolationString,
       Param.Injection injection,
       java.lang.reflect.Type javaType) {
     @Override
     public String toString() {
+      String defaultValueString = defaultValue != null ? defaultValue.toString() : "";
+      if (type.equals(Type.STRING) && interpolationString != null && defaultValueString.isEmpty()) {
+        defaultValueString = interpolationString;
+      }
       return String.format(
           "%s = %s%s",
           injection.equals(Param.Injection.NONE)
               ? name
               : injection.toString().toLowerCase(),
           type.rendered(),
-          defaultValue == null ? "" : ("{" + defaultValue + "}"));
+          defaultValueString.isEmpty() ? "" : ("[" + defaultValueString + "]"));
     }
   }
 
