@@ -19,6 +19,7 @@
  */
 package io.github.ericmedvet.jnb.core;
 
+import io.github.ericmedvet.jnb.core.Param.Injection;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
@@ -93,5 +94,24 @@ public class Interpolator {
     }
     sb.append(format, c, format.length());
     return sb.toString();
+  }
+
+  public record Person(
+      @Param("name") String name,
+      @Param(value = "pet", dNPM = "pet(name=Simba)") Pet pet,
+      @Param(value = "petName", iS = "{pet.name}") String petName,
+      @Param(value = "map", injection = Injection.MAP_WITH_DEFAULTS) ParamMap map) {}
+
+  public record Pet(@Param("name") String name) {}
+
+  public static void main(String[] args) {
+    NamedBuilder<?> nb =
+        NamedBuilder.empty().and(NamedBuilder.fromClass(Person.class)).and(NamedBuilder.fromClass(Pet.class));
+    Person p1 = (Person) nb.build("person(name=Eric)");
+    Person p2 = (Person) nb.build("person(name=Lorena;petName=Gass)");
+    System.out.println(p1);
+    System.out.println(p2);
+    System.out.println(interpolate("{name} loves {petName}", p2.map()));
+    System.out.println(interpolate("{name} loves {petName}", p1.map()));
   }
 }

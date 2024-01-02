@@ -71,6 +71,7 @@ public interface ParamMap {
 
   default Object value(String n) {
     return Arrays.stream(Type.values())
+        .filter(t -> !(t.equals(Type.ENUM) || t.equals(Type.ENUMS)))
         .map(t -> value(n, t))
         .filter(Objects::nonNull)
         .findFirst()

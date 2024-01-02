@@ -28,6 +28,7 @@ import java.util.stream.IntStream;
 public class MapNamedParamMap implements NamedParamMap, Formattable {
 
   public record TypedKey(String name, Type type) implements Comparable<TypedKey> {
+
     @Override
     public int compareTo(TypedKey o) {
       return name.compareTo(o.name);
@@ -217,7 +218,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
       } else if (value instanceof String) {
         sb.append(stringValue((String) value));
       } else {
-        sb.append(value.toString());
+        sb.append(value == null ? null : value.toString());
       }
       if (i < names.size() - 1) {
         sb.append(TokenType.LIST_SEPARATOR.rendered()).append(space);
