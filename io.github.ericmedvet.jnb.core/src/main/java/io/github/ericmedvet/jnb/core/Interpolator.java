@@ -53,8 +53,7 @@ public class Interpolator {
     if (keyPieces.size() == 1) {
       return paramMap.value(keyPieces.get(0));
     }
-    NamedParamMap namedParamMap = (NamedParamMap) paramMap.value(keyPieces.get(0),
-        ParamMap.Type.NAMED_PARAM_MAP);
+    NamedParamMap namedParamMap = (NamedParamMap) paramMap.value(keyPieces.get(0), ParamMap.Type.NAMED_PARAM_MAP);
     if (namedParamMap == null) {
       return null;
     }
@@ -102,33 +101,31 @@ public class Interpolator {
       @Param("name") String name,
       @Param(value = "pet", dNPM = "pet(name=Simba)") Pet pet,
       @Param(value = "petName", iS = "{pet.name}") String petName,
-      @Param(value = "map", injection = Injection.MAP_WITH_DEFAULTS) ParamMap map) {
+      @Param(value = "map", injection = Injection.MAP_WITH_DEFAULTS) ParamMap map) {}
 
-  }
+  public record Pet(@Param("name") String name, @Param(value = "nLegs", dI = 4) int nLegs) {}
 
-  public record Pet(@Param("name") String name) {
-
-  }
-
-  public record Place(@Param("owner") Person owner,
-                      @Param(value = "map", injection = Injection.MAP_WITH_DEFAULTS) ParamMap map) {
-
-  }
+  public record Place(
+      @Param("owner") Person owner,
+      @Param(value = "map", injection = Injection.MAP_WITH_DEFAULTS) ParamMap map) {}
 
   public static void main(String[] args) {
-    NamedBuilder<?> nb =
-        NamedBuilder.empty()
-            .and(NamedBuilder.fromClass(Place.class))
-            .and(NamedBuilder.fromClass(Person.class))
-            .and(NamedBuilder.fromClass(Pet.class));
+    NamedBuilder<?> nb = NamedBuilder.empty()
+        .and(NamedBuilder.fromClass(Place.class))
+        .and(NamedBuilder.fromClass(Person.class))
+        .and(NamedBuilder.fromClass(Pet.class));
     Person p1 = (Person) nb.build("person(name=Eric)");
     Person p2 = (Person) nb.build("person(name=Lorena;petName=Gass)");
     Place place = (Place) nb.build("place(owner=person(name=Boss))");
     System.out.println(p1);
     System.out.println(p2);
+    System.out.println(place);
     System.out.println(interpolate("{name} loves {petName}", p2.map()));
     System.out.println(interpolate("{name} loves {petName}", p1.map()));
-    System.out.println(interpolate("{owner.petName}'s lover owns the place",
-        place.map()));
+    System.out.println(interpolate("{owner.petName}'s lover owns the place", place.map()));
+
+    System.out.println(nb.fillWithDefaults(StringParser.parse("person(name=Eric)")));
+    System.out.println(nb.fillWithDefaults(StringParser.parse("place(owner=person(name=Boss))")));
+    System.out.println(nb.fillWithDefaults((NamedParamMap) place.map()));
   }
 }

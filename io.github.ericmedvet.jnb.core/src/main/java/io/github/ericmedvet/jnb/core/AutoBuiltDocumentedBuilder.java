@@ -240,7 +240,7 @@ public record AutoBuiltDocumentedBuilder<T>(
           null,
           name,
           buildDefaultValue(ParamMap.Type.INT, Integer.class, paramAnnotation),
-          "",
+          null,
           paramAnnotation.injection(),
           parameter.getParameterizedType());
     }
@@ -250,7 +250,7 @@ public record AutoBuiltDocumentedBuilder<T>(
           null,
           name,
           buildDefaultValue(ParamMap.Type.DOUBLE, Double.class, paramAnnotation),
-          "",
+          null,
           paramAnnotation.injection(),
           parameter.getParameterizedType());
     }
@@ -270,7 +270,7 @@ public record AutoBuiltDocumentedBuilder<T>(
           null,
           name,
           buildDefaultValue(ParamMap.Type.BOOLEAN, Boolean.class, paramAnnotation),
-          "",
+          null,
           paramAnnotation.injection(),
           parameter.getParameterizedType());
     }
@@ -280,7 +280,7 @@ public record AutoBuiltDocumentedBuilder<T>(
           parameter.getType(),
           name,
           buildDefaultValue(ParamMap.Type.ENUM, parameter.getType(), paramAnnotation),
-          "",
+          null,
           paramAnnotation.injection(),
           parameter.getParameterizedType());
     }
@@ -292,7 +292,7 @@ public record AutoBuiltDocumentedBuilder<T>(
             null,
             name,
             buildDefaultValue(ParamMap.Type.INTS, Integer.class, paramAnnotation),
-            "",
+            null,
             paramAnnotation.injection(),
             parameter.getParameterizedType());
       }
@@ -305,7 +305,7 @@ public record AutoBuiltDocumentedBuilder<T>(
             null,
             name,
             buildDefaultValue(ParamMap.Type.DOUBLES, Double.class, paramAnnotation),
-            "",
+            null,
             paramAnnotation.injection(),
             parameter.getParameterizedType());
       }
@@ -318,7 +318,7 @@ public record AutoBuiltDocumentedBuilder<T>(
             null,
             name,
             buildDefaultValue(ParamMap.Type.STRINGS, String.class, paramAnnotation),
-            "",
+            null,
             paramAnnotation.injection(),
             parameter.getParameterizedType());
       }
@@ -331,7 +331,7 @@ public record AutoBuiltDocumentedBuilder<T>(
             null,
             name,
             buildDefaultValue(ParamMap.Type.BOOLEANS, Boolean.class, paramAnnotation),
-            "",
+            null,
             paramAnnotation.injection(),
             parameter.getParameterizedType());
       }
@@ -352,7 +352,7 @@ public record AutoBuiltDocumentedBuilder<T>(
             clazz,
             name,
             buildDefaultValue(ParamMap.Type.ENUMS, clazz, paramAnnotation),
-            "",
+            null,
             paramAnnotation.injection(),
             parameter.getParameterizedType());
       }
@@ -365,7 +365,7 @@ public record AutoBuiltDocumentedBuilder<T>(
             null,
             name,
             buildDefaultValue(ParamMap.Type.NAMED_PARAM_MAPS, NamedParamMap.class, paramAnnotation),
-            "",
+            null,
             paramAnnotation.injection(),
             parameter.getParameterizedType());
       }
@@ -376,7 +376,7 @@ public record AutoBuiltDocumentedBuilder<T>(
           null,
           name,
           buildDefaultValue(ParamMap.Type.NAMED_PARAM_MAPS, Object.class, paramAnnotation),
-          "",
+          null,
           paramAnnotation.injection(),
           parameter.getParameterizedType());
     }
@@ -385,7 +385,7 @@ public record AutoBuiltDocumentedBuilder<T>(
         null,
         name,
         buildDefaultValue(ParamMap.Type.NAMED_PARAM_MAP, Object.class, paramAnnotation),
-        "",
+        null,
         paramAnnotation.injection(),
         parameter.getParameterizedType());
   }
