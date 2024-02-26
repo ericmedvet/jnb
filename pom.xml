@@ -28,6 +28,7 @@
 
   <modules>
     <module>io.github.ericmedvet.jnb.core</module>
+    <module>io.github.ericmedvet.jnb.datastructure</module>
     <module>io.github.ericmedvet.jnb.sample</module>
   </modules>
 

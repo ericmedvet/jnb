@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * jnb-core
+ * jnb-datastructure
  * %%
  * Copyright (C) 2023 - 2024 Eric Medvet
  * %%
@@ -17,18 +17,6 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package io.github.ericmedvet.jnb.core.parsing;
-
-public record Token(int start, int end) {
-  public String trimmedContent(String s) {
-    return s.substring(start, end).trim();
-  }
-
-  public String trimmedUnquotedContent(String s) {
-    return trimmedContent(s).replaceAll("\"", "");
-  }
-
-  public int length() {
-    return end - start;
-  }
+module io.github.ericmedvet.jnb.datastructure {
+  exports io.github.ericmedvet.jnb.datastructure;
 }
