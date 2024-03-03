@@ -47,7 +47,7 @@ public interface FormattedFunction<T, R> extends Function<T, R> {
   }
 
   static <T, R> FormattedFunction<T, R> from(Function<T, R> f) {
-    if (f instanceof FormattedFunction<T,R> ff) {
+    if (f instanceof FormattedFunction<T, R> ff) {
       return ff;
     }
     return from(f, UNFORMATTED_FORMAT);
