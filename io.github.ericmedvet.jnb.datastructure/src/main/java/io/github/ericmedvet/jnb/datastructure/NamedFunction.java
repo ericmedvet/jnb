@@ -46,6 +46,13 @@ public interface NamedFunction<T, R> extends Function<T, R> {
     };
   }
 
+  static <T, R> NamedFunction<T, R> from(Function<T, R> f) {
+    if (f instanceof NamedFunction<T,R> nf) {
+      return nf;
+    }
+    return from(f, UNNAMED_NAME);
+  }
+
   static String name(Function<?, ?> f) {
     if (f instanceof NamedFunction<?, ?> nf) {
       return nf.name();
