@@ -53,6 +53,11 @@ public interface NamedFunction<T, R> extends Function<T, R> {
     return from(f, UNNAMED_NAME);
   }
 
+  static <X, I, O, Y> NamedFunction<X, Y> from(
+      Function<X, I> beforeF, Function<I, O> f, Function<O, Y> afterF, String name) {
+    return NamedFunction.from(f, name).compose(beforeF).andThen(afterF);
+  }
+
   static String name(Function<?, ?> f) {
     if (f instanceof NamedFunction<?, ?> nf) {
       return nf.name();
