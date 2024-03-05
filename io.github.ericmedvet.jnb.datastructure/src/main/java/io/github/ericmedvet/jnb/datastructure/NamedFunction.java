@@ -43,6 +43,11 @@ public interface NamedFunction<T, R> extends Function<T, R> {
       public R apply(T t) {
         return f.apply(t);
       }
+
+      @Override
+      public String toString() {
+        return "%s".formatted(name);
+      }
     };
   }
 
