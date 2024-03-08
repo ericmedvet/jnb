@@ -47,14 +47,6 @@ public interface FormattedNamedFunction<T, R> extends NamedFunction<T, R>, Forma
     };
   }
 
-  static <X, I, O, Y> FormattedNamedFunction<X, Y> from(
-      Function<X, I> beforeF, Function<I, O> f, Function<O, Y> afterF, String format, String name) {
-    return FormattedNamedFunction.from(f, format, name)
-        .compose(beforeF)
-        .andThen(afterF)
-        .reformatted(format);
-  }
-
   static <T, R> FormattedNamedFunction<T, R> from(Function<T, R> f) {
     return from(f, FormattedFunction.format(f), NamedFunction.name(f));
   }

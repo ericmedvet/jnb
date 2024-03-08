@@ -51,14 +51,6 @@ public interface FormattedFunction<T, R> extends Function<T, R> {
     };
   }
 
-  static <X, I, O, Y> FormattedFunction<X, Y> from(
-      Function<X, I> beforeF, Function<I, O> f, Function<O, Y> afterF, String format) {
-    return FormattedFunction.from(f, format)
-        .compose(beforeF)
-        .andThen(afterF)
-        .reformatted(format);
-  }
-
   static <T, R> FormattedFunction<T, R> from(Function<T, R> f) {
     if (f instanceof FormattedFunction<T, R> ff) {
       return ff;
