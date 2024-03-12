@@ -22,12 +22,15 @@ package io.github.ericmedvet.jnb.buildable;
 import io.github.ericmedvet.jnb.core.Discoverable;
 import io.github.ericmedvet.jnb.core.Param;
 import io.github.ericmedvet.jnb.datastructure.FormattedNamedFunction;
+import io.github.ericmedvet.jnb.datastructure.Grid;
+import io.github.ericmedvet.jnb.datastructure.GridUtils;
 import io.github.ericmedvet.jnb.datastructure.NamedFunction;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
@@ -49,21 +52,36 @@ public class Functions {
   }
 
   @SuppressWarnings("unused")
-  public static <X> NamedFunction<X, String> toBase64(
-      @Param(value = "of", dNPM = "f.identity()") Function<X, Object> beforeF,
-      @Param(value = "format", dS = "%s") String format) {
-    Function<Object, String> f = x -> {
-      try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-          ObjectOutputStream oos = new ObjectOutputStream(baos)) {
-        oos.writeObject(x);
-        oos.flush();
-        return Base64.getEncoder().encodeToString(baos.toByteArray());
-      } catch (Throwable t) {
-        L.warning("Cannot serialize  due to %s".formatted(t));
-        return "not-serializable";
-      }
-    };
-    return FormattedNamedFunction.from(f, format, "to.base64").compose(beforeF);
+  public static <X, T, R> NamedFunction<X, Collection<R>> each(
+      @Param("mapF") Function<T, R> mapF,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<T>> beforeF) {
+    Function<Collection<T>, Collection<R>> f = ts -> ts.stream().map(mapF).toList();
+    return NamedFunction.from(f, "each[%s]".formatted(NamedFunction.name(mapF)))
+        .compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  public static <X> FormattedNamedFunction<X, Integer> gridCount(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Grid<?>> beforeF,
+      @Param(value = "format", dS = "%2d") String format) {
+    Function<Grid<?>, Integer> f = g -> GridUtils.count(g, Objects::nonNull);
+    return FormattedNamedFunction.from(f, format, "grid.count").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  public static <X> FormattedNamedFunction<X, Integer> gridH(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Grid<?>> beforeF,
+      @Param(value = "format", dS = "%2d") String format) {
+    Function<Grid<?>, Integer> f = Grid::h;
+    return FormattedNamedFunction.from(f, format, "grid.h").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  public static <X> FormattedNamedFunction<X, Integer> gridW(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Grid<?>> beforeF,
+      @Param(value = "format", dS = "%2d") String format) {
+    Function<Grid<?>, Integer> f = Grid::w;
+    return FormattedNamedFunction.from(f, format, "grid.w").compose(beforeF);
   }
 
   @SuppressWarnings("unused")
@@ -81,26 +99,6 @@ public class Functions {
   }
 
   @SuppressWarnings("unused")
-  public static <X, C extends Comparable<C>> FormattedNamedFunction<X, C> min(
-      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<C>> beforeF,
-      @Param(value = "format", dS = "%s") String format) {
-    Function<Collection<C>, C> f =
-        cs -> cs.stream().min(Comparable::compareTo).orElseThrow();
-    return FormattedNamedFunction.from(f, format, "min").compose(beforeF);
-  }
-
-  @SuppressWarnings("unused")
-  public static <X, C extends Comparable<C>> FormattedNamedFunction<X, C> percentile(
-      @Param("p") double p,
-      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<C>> beforeF,
-      @Param(value = "format", dS = "%s") String format) {
-    Function<Collection<C>, C> f = cs ->
-        cs.stream().sorted().toList().get((int) Math.min(cs.size() - 1, Math.max(0, cs.size() * p / 100d)));
-    return FormattedNamedFunction.from(f, format, "percentile[%02.0f]".formatted(p))
-        .compose(beforeF);
-  }
-
-  @SuppressWarnings("unused")
   public static <X, C extends Comparable<C>> FormattedNamedFunction<X, C> median(
       @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<C>> beforeF,
       @Param(value = "format", dS = "%s") String format) {
@@ -110,12 +108,12 @@ public class Functions {
   }
 
   @SuppressWarnings("unused")
-  public static <X, T, R> NamedFunction<X, Collection<R>> each(
-      @Param("mapF") Function<T, R> mapF,
-      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<T>> beforeF) {
-    Function<Collection<T>, Collection<R>> f = ts -> ts.stream().map(mapF).toList();
-    return NamedFunction.from(f, "each[%s]".formatted(NamedFunction.name(mapF)))
-        .compose(beforeF);
+  public static <X, C extends Comparable<C>> FormattedNamedFunction<X, C> min(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<C>> beforeF,
+      @Param(value = "format", dS = "%s") String format) {
+    Function<Collection<C>, C> f =
+        cs -> cs.stream().min(Comparable::compareTo).orElseThrow();
+    return FormattedNamedFunction.from(f, format, "min").compose(beforeF);
   }
 
   @SuppressWarnings("unused")
@@ -142,6 +140,34 @@ public class Functions {
   }
 
   @SuppressWarnings("unused")
+  public static <X, C extends Comparable<C>> FormattedNamedFunction<X, C> percentile(
+      @Param("p") double p,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<C>> beforeF,
+      @Param(value = "format", dS = "%s") String format) {
+    Function<Collection<C>, C> f = cs ->
+        cs.stream().sorted().toList().get((int) Math.min(cs.size() - 1, Math.max(0, cs.size() * p / 100d)));
+    return FormattedNamedFunction.from(f, format, "percentile[%02.0f]".formatted(p))
+        .compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  public static <X> FormattedNamedFunction<X, Double> quantized(
+      @Param("q") double q,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Number> beforeF,
+      @Param(value = "format", dS = "%.1f") String format) {
+    Function<Number, Double> f = v -> q * Math.floor(v.doubleValue() / q + 0.5);
+    return FormattedNamedFunction.from(f, format, "q[%.1f]".formatted(q)).compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  public static <X> FormattedNamedFunction<X, Integer> size(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<?>> beforeF,
+      @Param(value = "format", dS = "%3d") String format) {
+    Function<Collection<?>, Integer> f = Collection::size;
+    return FormattedNamedFunction.from(f, format, "size").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
   public static <X, T> FormattedNamedFunction<X, List<T>> subList(
       @Param("from") double from,
       @Param("to") double to,
@@ -156,20 +182,21 @@ public class Functions {
   }
 
   @SuppressWarnings("unused")
-  public static <X> FormattedNamedFunction<X, Double> quantized(
-      @Param("q") double q,
-      @Param(value = "of", dNPM = "f.identity()") Function<X, Number> beforeF,
+  public static <X> NamedFunction<X, String> toBase64(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Object> beforeF,
       @Param(value = "format", dS = "%s") String format) {
-    Function<Number, Double> f = v -> q * Math.floor(v.doubleValue() / q + 0.5);
-    return FormattedNamedFunction.from(f, format, "q[%.1f]".formatted(q)).compose(beforeF);
-  }
-
-  @SuppressWarnings("unused")
-  public static <X> FormattedNamedFunction<X, Integer> size(
-      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<?>> beforeF,
-      @Param(value = "format", dS = "%s") String format) {
-    Function<Collection<?>, Integer> f = Collection::size;
-    return FormattedNamedFunction.from(f, format, "size").compose(beforeF);
+    Function<Object, String> f = x -> {
+      try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+          ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+        oos.writeObject(x);
+        oos.flush();
+        return Base64.getEncoder().encodeToString(baos.toByteArray());
+      } catch (Throwable t) {
+        L.warning("Cannot serialize  due to %s".formatted(t));
+        return "not-serializable";
+      }
+    };
+    return FormattedNamedFunction.from(f, format, "to.base64").compose(beforeF);
   }
 
   @SuppressWarnings("unused")
