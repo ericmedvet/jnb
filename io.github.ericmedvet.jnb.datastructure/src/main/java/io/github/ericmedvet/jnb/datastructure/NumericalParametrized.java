@@ -22,7 +22,7 @@ package io.github.ericmedvet.jnb.datastructure;
 
 import java.util.random.RandomGenerator;
 
-public interface NumericalParametrized extends Parametrized<double[]> {
+public interface NumericalParametrized<T extends NumericalParametrized<T>> extends Parametrized<T, double[]> {
   default void randomize(RandomGenerator randomGenerator, DoubleRange range) {
     double[] oldParams = getParams();
     double[] newParams = new double[oldParams.length];

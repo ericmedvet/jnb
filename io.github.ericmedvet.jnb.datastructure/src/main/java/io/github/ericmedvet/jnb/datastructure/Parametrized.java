@@ -20,8 +20,14 @@
 
 package io.github.ericmedvet.jnb.datastructure;
 
-public interface Parametrized<P> {
+public interface Parametrized<T extends Parametrized<T, P>, P> {
   P getParams();
 
   void setParams(P params);
+
+  default T withParams(P params) {
+    setParams(params);
+    //noinspection unchecked
+    return (T) this;
+  }
 }
