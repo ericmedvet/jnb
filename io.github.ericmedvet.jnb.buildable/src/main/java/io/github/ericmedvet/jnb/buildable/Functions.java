@@ -86,7 +86,8 @@ public class Functions {
 
   @SuppressWarnings("unused")
   public static <X> Function<X, X> identity() {
-    return x -> x;
+    Function<X, X> f = x -> x;
+    return NamedFunction.from(f, "identity");
   }
 
   @SuppressWarnings("unused")
