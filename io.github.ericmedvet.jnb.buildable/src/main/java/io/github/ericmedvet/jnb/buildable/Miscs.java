@@ -19,12 +19,12 @@
  */
 package io.github.ericmedvet.jnb.buildable;
 
-import io.github.ericmedvet.jnb.core.Discoverable;
-import io.github.ericmedvet.jnb.core.Param;
+import io.github.ericmedvet.jnb.core.*;
 import io.github.ericmedvet.jnb.datastructure.DoubleRange;
 import io.github.ericmedvet.jnb.datastructure.Grid;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
 
 @Discoverable(prefixTemplate = "misc|m")
@@ -50,4 +50,14 @@ public class Miscs {
   public static DoubleRange range(@Param("min") double min, @Param("max") double max) {
     return new DoubleRange(min, max);
   }
+
+  @SuppressWarnings("unused")
+  public static <T> Supplier<T> supplier(
+      @Param("of") T target,
+      @Param(value = "", injection = Param.Injection.MAP) ParamMap map,
+      @Param(value = "", injection = Param.Injection.BUILDER) NamedBuilder<?> builder) {
+    //noinspection unchecked
+    return () -> (T) builder.build((NamedParamMap) map.value("of", ParamMap.Type.NAMED_PARAM_MAP));
+  }
+
 }
