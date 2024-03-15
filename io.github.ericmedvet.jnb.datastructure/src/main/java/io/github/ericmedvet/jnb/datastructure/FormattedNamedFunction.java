@@ -42,7 +42,7 @@ public interface FormattedNamedFunction<T, R> extends NamedFunction<T, R>, Forma
 
       @Override
       public String toString() {
-        return "%s as '%s'".formatted(name, format);
+        return "%s('%s')".formatted(name, format);
       }
     };
   }
