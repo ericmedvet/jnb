@@ -61,11 +61,48 @@ public class Functions {
   }
 
   @SuppressWarnings("unused")
-  public static <X> FormattedNamedFunction<X, Integer> gridCount(
-      @Param(value = "of", dNPM = "f.identity()") Function<X, Grid<?>> beforeF,
+  public static <X, T> FormattedNamedFunction<X, Double> gridCompactness(
+      @Param(value = "predicate", dNPM = "f.nonNull()") Function<T, Boolean> predicate,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Grid<T>> beforeF,
       @Param(value = "format", dS = "%2d") String format) {
-    Function<Grid<?>, Integer> f = g -> GridUtils.count(g, Objects::nonNull);
+    Function<Grid<T>, Double> f = g -> GridUtils.compactness(g, predicate::apply);
+    return FormattedNamedFunction.from(f, format, "grid.compactness").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  public static <X, T> FormattedNamedFunction<X, Integer> gridCount(
+      @Param(value = "predicate", dNPM = "f.nonNull()") Function<T, Boolean> predicate,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Grid<T>> beforeF,
+      @Param(value = "format", dS = "%2d") String format) {
+    Function<Grid<T>, Integer> f = g -> GridUtils.count(g, predicate::apply);
     return FormattedNamedFunction.from(f, format, "grid.count").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  public static <X, T> FormattedNamedFunction<X, Double> gridElongation(
+      @Param(value = "predicate", dNPM = "f.nonNull()") Function<T, Boolean> predicate,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Grid<T>> beforeF,
+      @Param(value = "format", dS = "%2d") String format) {
+    Function<Grid<T>, Double> f = g -> GridUtils.elongation(g, predicate::apply);
+    return FormattedNamedFunction.from(f, format, "grid.elongation").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  public static <X, T> FormattedNamedFunction<X, Integer> gridFitH(
+      @Param(value = "predicate", dNPM = "f.nonNull()") Function<T, Boolean> predicate,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Grid<T>> beforeF,
+      @Param(value = "format", dS = "%2d") String format) {
+    Function<Grid<T>, Integer> f = g -> GridUtils.fit(g, predicate::apply).h();
+    return FormattedNamedFunction.from(f, format, "grid.fit.h").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  public static <X, T> FormattedNamedFunction<X, Integer> gridFitW(
+      @Param(value = "predicate", dNPM = "f.nonNull()") Function<T, Boolean> predicate,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Grid<T>> beforeF,
+      @Param(value = "format", dS = "%2d") String format) {
+    Function<Grid<T>, Integer> f = g -> GridUtils.fit(g, predicate::apply).w();
+    return FormattedNamedFunction.from(f, format, "grid.fit.w").compose(beforeF);
   }
 
   @SuppressWarnings("unused")
@@ -138,6 +175,14 @@ public class Functions {
         .toList();
     return FormattedNamedFunction.from(f, format, "[%di+%d]".formatted(n, k))
         .compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  public static <X> FormattedNamedFunction<X, Boolean> nonNull(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Object> beforeF,
+      @Param(value = "format", dS = "%s") String format) {
+    Function<Object, Boolean> f = Objects::nonNull;
+    return FormattedNamedFunction.from(f, format, "nonNull").compose(beforeF);
   }
 
   @SuppressWarnings("unused")

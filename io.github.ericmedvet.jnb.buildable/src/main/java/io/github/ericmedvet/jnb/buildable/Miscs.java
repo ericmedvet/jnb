@@ -59,5 +59,4 @@ public class Miscs {
     //noinspection unchecked
     return () -> (T) builder.build((NamedParamMap) map.value("of", ParamMap.Type.NAMED_PARAM_MAP));
   }
-
 }
