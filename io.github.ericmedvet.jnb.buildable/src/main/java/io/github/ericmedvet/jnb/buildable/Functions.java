@@ -25,7 +25,6 @@ import io.github.ericmedvet.jnb.datastructure.FormattedNamedFunction;
 import io.github.ericmedvet.jnb.datastructure.Grid;
 import io.github.ericmedvet.jnb.datastructure.GridUtils;
 import io.github.ericmedvet.jnb.datastructure.NamedFunction;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
@@ -68,8 +67,9 @@ public class Functions {
       @Param(value = "of", dNPM = "f.identity()") Function<X, String> beforeF,
       @Param(value = "format", dS = "%s") String format) {
     Function<String, Object> f = s -> {
-      try (ByteArrayInputStream bais = new ByteArrayInputStream(Base64.getDecoder().decode(s));
-           ObjectInputStream ois = new ObjectInputStream(bais)) {
+      try (ByteArrayInputStream bais =
+              new ByteArrayInputStream(Base64.getDecoder().decode(s));
+          ObjectInputStream ois = new ObjectInputStream(bais)) {
         return ois.readObject();
       } catch (Throwable t) {
         L.warning("Cannot deserialize due to %s".formatted(t));
