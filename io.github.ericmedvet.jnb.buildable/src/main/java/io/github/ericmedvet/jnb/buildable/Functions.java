@@ -182,7 +182,7 @@ public class Functions {
       @Param(value = "of", dNPM = "f.identity()") Function<X, Object> beforeF,
       @Param(value = "format", dS = "%s") String format) {
     Function<Object, Boolean> f = Objects::nonNull;
-    return FormattedNamedFunction.from(f, format, "nonNull").compose(beforeF);
+    return FormattedNamedFunction.from(f, format, "non.null").compose(beforeF);
   }
 
   @SuppressWarnings("unused")
