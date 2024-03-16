@@ -25,7 +25,10 @@ import io.github.ericmedvet.jnb.datastructure.FormattedNamedFunction;
 import io.github.ericmedvet.jnb.datastructure.Grid;
 import io.github.ericmedvet.jnb.datastructure.GridUtils;
 import io.github.ericmedvet.jnb.datastructure.NamedFunction;
+
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Base64;
 import java.util.Collection;
@@ -58,6 +61,22 @@ public class Functions {
     Function<Collection<T>, Collection<R>> f = ts -> ts.stream().map(mapF).toList();
     return NamedFunction.from(f, "each[%s]".formatted(NamedFunction.name(mapF)))
         .compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  public static <X> NamedFunction<X, Object> fromBase64(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, String> beforeF,
+      @Param(value = "format", dS = "%s") String format) {
+    Function<String, Object> f = s -> {
+      try (ByteArrayInputStream bais = new ByteArrayInputStream(Base64.getDecoder().decode(s));
+           ObjectInputStream ois = new ObjectInputStream(bais)) {
+        return ois.readObject();
+      } catch (Throwable t) {
+        L.warning("Cannot deserialize due to %s".formatted(t));
+        return null;
+      }
+    };
+    return FormattedNamedFunction.from(f, format, "from.base64").compose(beforeF);
   }
 
   @SuppressWarnings("unused")
@@ -238,7 +257,7 @@ public class Functions {
         oos.flush();
         return Base64.getEncoder().encodeToString(baos.toByteArray());
       } catch (Throwable t) {
-        L.warning("Cannot serialize  due to %s".formatted(t));
+        L.warning("Cannot serialize due to %s".formatted(t));
         return "not-serializable";
       }
     };
