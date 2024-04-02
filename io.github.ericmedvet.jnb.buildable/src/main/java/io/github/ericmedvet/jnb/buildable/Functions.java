@@ -143,7 +143,7 @@ public class Functions {
   @SuppressWarnings("unused")
   public static <X> Function<X, X> identity() {
     Function<X, X> f = x -> x;
-    return NamedFunction.from(f, "identity");
+    return NamedFunction.from(f, NamedFunction.IDENTITY_NAME);
   }
 
   @SuppressWarnings("unused")

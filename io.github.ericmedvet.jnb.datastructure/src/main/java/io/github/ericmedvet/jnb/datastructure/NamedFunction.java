@@ -26,10 +26,13 @@ import java.util.stream.Collectors;
 public interface NamedFunction<T, R> extends Function<T, R> {
 
   String UNNAMED_NAME = "unnamed";
+  String IDENTITY_NAME = "identity";
   String NAME_JOINER = "→";
 
   static String composeNames(String... names) {
-    return Arrays.stream(names).filter(s -> !s.equals(UNNAMED_NAME)).collect(Collectors.joining(NAME_JOINER));
+    return Arrays.stream(names)
+        .filter(s -> !s.equals(UNNAMED_NAME) && !s.equals(IDENTITY_NAME))
+        .collect(Collectors.joining(NAME_JOINER));
   }
 
   static <T, R> NamedFunction<T, R> from(Function<T, R> f, String name) {
