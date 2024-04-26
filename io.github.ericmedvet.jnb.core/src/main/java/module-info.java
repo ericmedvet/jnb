@@ -20,6 +20,7 @@
 module io.github.ericmedvet.jnb.core {
   requires java.logging;
   requires io.github.classgraph;
+  requires jcommander;
 
   exports io.github.ericmedvet.jnb.core;
   exports io.github.ericmedvet.jnb.core.parsing;

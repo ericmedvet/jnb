@@ -19,14 +19,21 @@
  */
 package io.github.ericmedvet.jnb.core;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParameterException;
+import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class InfoPrinter {
+
+  private static final Logger L = Logger.getLogger(InfoPrinter.class.getName());
 
   private static final int N_OF_COMPATIBILITY_ATTEMPTS = 10;
   private static final Set<ParamMap.Type> EASY_TYPES =
@@ -417,4 +424,57 @@ public class InfoPrinter {
   record ParamCompatibility(DocumentedBuilder.ParamInfo paramInfo, List<BuilderInfo> builderInfos) {}
 
   record ParamTriplet(String name, String value, BuilderInfo builderInfo) {}
+
+  public static class Configuration {
+    @Parameter(
+        names = {"--showBuilders", "-b"},
+        description = "Show a description of available builders.")
+    public boolean showBuilders = false;
+
+    @Parameter(
+        names = {"--buildersToFile", "-m"},
+        description = "Save to file a description (in Markdown format) of available builders.")
+    public String buildersFile = "";
+
+    @Parameter(
+        names = {"--help", "-h"},
+        description = "Show this help.",
+        help = true)
+    public boolean help;
+  }
+
+  public static void main(String[] args) {
+    Configuration configuration = new Configuration();
+    JCommander jc = JCommander.newBuilder().addObject(configuration).build();
+    jc.setProgramName(InfoPrinter.class.getName());
+    try {
+      jc.parse(args);
+    } catch (ParameterException e) {
+      e.usage();
+      L.severe(String.format("Cannot read command line options: %s", e));
+      System.exit(-1);
+    } catch (RuntimeException e) {
+      L.severe(e.getClass().getSimpleName() + ": " + e.getMessage());
+      System.exit(-1);
+    }
+    // check help
+    if (configuration.help) {
+      jc.usage();
+      return;
+    }
+    if (configuration.showBuilders) {
+      System.out.println(NamedBuilder.prettyToString(NamedBuilder.fromDiscovery(), true));
+      return;
+    }
+    if (!configuration.buildersFile.isEmpty()) {
+      try (PrintStream ps = new PrintStream(configuration.buildersFile)) {
+        new InfoPrinter().print(NamedBuilder.fromDiscovery(), ps);
+        return;
+      } catch (FileNotFoundException e) {
+        L.severe("Cannot save help file description: %s".formatted(e));
+        System.exit(-1);
+      }
+    }
+    System.out.println("No commands provided.");
+  }
 }
