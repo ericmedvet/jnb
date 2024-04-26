@@ -34,4 +34,8 @@ public record ProjectInfo(String name, Version version, String buildDate) {
   public String toString() {
     return name + ":" + version + ":" + buildDate;
   }
+
+  public String toShortString() {
+    return name + ":" + version;
+  }
 }

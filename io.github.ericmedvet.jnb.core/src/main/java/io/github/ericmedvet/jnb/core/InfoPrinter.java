@@ -332,7 +332,7 @@ public class InfoPrinter {
                   executableName(documentedBuilder.origin()),
                   ProjectInfoProvider.of(
                           documentedBuilder.origin().getDeclaringClass())
-                      .map(" by %s"::formatted)
+                      .map(pi -> " by %s".formatted(pi.toShortString()))
                       .orElse(""));
             } else {
               // signature
