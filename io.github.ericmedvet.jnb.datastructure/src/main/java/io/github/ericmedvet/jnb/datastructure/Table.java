@@ -33,11 +33,6 @@ import java.util.stream.Stream;
 
 public interface Table<R, C, T> {
 
-  @FunctionalInterface
-  interface TriFunction<I1, I2, I3, O> {
-    O apply(I1 i1, I2 i2, I3 i3);
-  }
-
   interface Unmodifiable<R, C, T> extends Table<R, C, T> {
     @Override
     default void addColumn(C columnIndex, Map<R, T> values) {
