@@ -22,6 +22,7 @@ package io.github.ericmedvet.jnb;
 import io.github.ericmedvet.jnb.core.*;
 import io.github.ericmedvet.jnb.core.parsing.StringParser;
 import java.util.List;
+import java.util.function.Function;
 
 public class Starter {
 
@@ -44,6 +45,12 @@ public class Starter {
     }
 
     public static Person young(@Param("name") String name) {
+      return new Person(name, 18, List.of());
+    }
+
+    public static Person mathusalem(
+        @Param("name") String name,
+        @Param(value = "f", dNPM = "p.old(name = ciccio)") Function<String, String> f) {
       return new Person(name, 18, List.of());
     }
   }
@@ -69,6 +76,7 @@ roomNumbers = [202:1:205] \s
     System.out.println(office);
     System.out.printf("The head's name is: %s%n", office.head().name());
     System.out.printf("One young person is: %s%n", namedBuilder.build("p.young(name=Jack)"));
+    System.out.printf("Mathusalem is: %s%n", namedBuilder.build("p.mathusalem(name=Math)"));
     System.out.println(StringParser.parse(description));
     System.out.println(MapNamedParamMap.prettyToString(StringParser.parse(description)));
   }

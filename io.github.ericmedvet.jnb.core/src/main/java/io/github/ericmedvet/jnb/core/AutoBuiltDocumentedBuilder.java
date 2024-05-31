@@ -126,23 +126,7 @@ public record AutoBuiltDocumentedBuilder<T>(
     if (!Modifier.isStatic(executable.getModifiers()) && executable instanceof Method) {
       return null;
     }
-    // check if has NamedBuilder parameter at the beginning
-    boolean hasNamedBuilder = executable.getParameters().length > 0
-        && executable.getParameters()[0].getType().equals(NamedBuilder.class);
-    // find parameters
-    List<ParamInfo> paramInfos = Arrays.stream(executable.getParameters())
-        .map(AutoBuiltDocumentedBuilder::from)
-        .filter(Objects::nonNull)
-        .toList();
-    if (paramInfos.size() != executable.getParameters().length - (hasNamedBuilder ? 1 : 0)) {
-      l.warning(String.format(
-          "Cannot process method %s(): %d on %d params are not valid",
-          executable.getName(),
-          executable.getParameters().length - (hasNamedBuilder ? 1 : 0) - paramInfos.size(),
-          executable.getParameters().length - (hasNamedBuilder ? 1 : 0)));
-      return null;
-    }
-    // wrap and return
+    // get name
     String name;
     java.lang.reflect.Type buildType;
     if (executable instanceof Method method) {
@@ -156,64 +140,87 @@ public record AutoBuiltDocumentedBuilder<T>(
     if (builderMethodAnnotation != null && !builderMethodAnnotation.value().isEmpty()) {
       name = builderMethodAnnotation.value();
     }
-    String finalName = name;
-    return new AutoBuiltDocumentedBuilder<>(
-        finalName,
-        buildType,
-        paramInfos,
-        executable,
-        (ParamMap map, NamedBuilder<?> namedBuilder, int index) -> {
-          Object[] params = new Object[paramInfos.size() + (hasNamedBuilder ? 1 : 0)];
-          if (hasNamedBuilder) {
-            params[0] = namedBuilder;
-          }
-          for (int j = 0; j < paramInfos.size(); j++) {
-            int k = j + (hasNamedBuilder ? 1 : 0);
-            if (paramInfos.get(j).injection().equals(Param.Injection.MAP)) {
-              params[k] = map;
-            } else if (paramInfos.get(j).injection().equals(Param.Injection.MAP_WITH_DEFAULTS)) {
-              if (map instanceof NamedParamMap npm) {
-                params[k] = namedBuilder.fillWithDefaults(npm);
-              }
-            } else if (paramInfos.get(j).injection().equals(Param.Injection.BUILDER)) {
-              params[k] = namedBuilder;
-            } else if (paramInfos.get(j).injection().equals(Param.Injection.INDEX)) {
-              params[k] = index;
-            } else {
-              try {
-                //noinspection unchecked
-                params[k] = buildParam(
-                    paramInfos.get(j), map, executable.getParameters()[k], (NamedBuilder<Object>)
-                        namedBuilder);
-              } catch (RuntimeException e) {
-                throw new BuilderException(
-                    String.format(
-                        "Cannot build param \"%s\" for \"%s\": %s",
-                        paramInfos.get(j).name(), finalName, e.getMessage()),
-                    e);
+    try {
+      // check if has NamedBuilder parameter at the beginning
+      boolean hasNamedBuilder = executable.getParameters().length > 0
+          && executable.getParameters()[0].getType().equals(NamedBuilder.class);
+      // find parameters
+      List<ParamInfo> paramInfos = Arrays.stream(executable.getParameters())
+          .map(AutoBuiltDocumentedBuilder::from)
+          .filter(Objects::nonNull)
+          .toList();
+      if (paramInfos.size() != executable.getParameters().length - (hasNamedBuilder ? 1 : 0)) {
+        throw new BuilderException("Cannot build builder \"%s\": %d on %d params are not valid"
+            .formatted(
+                name,
+                executable.getParameters().length - (hasNamedBuilder ? 1 : 0) - paramInfos.size(),
+                executable.getParameters().length - (hasNamedBuilder ? 1 : 0)));
+      }
+      // wrap and return
+      String finalName = name;
+      return new AutoBuiltDocumentedBuilder<>(
+          finalName,
+          buildType,
+          paramInfos,
+          executable,
+          (ParamMap map, NamedBuilder<?> namedBuilder, int index) -> {
+            Object[] params = new Object[paramInfos.size() + (hasNamedBuilder ? 1 : 0)];
+            if (hasNamedBuilder) {
+              params[0] = namedBuilder;
+            }
+            for (int j = 0; j < paramInfos.size(); j++) {
+              int k = j + (hasNamedBuilder ? 1 : 0);
+              if (paramInfos.get(j).injection().equals(Param.Injection.MAP)) {
+                params[k] = map;
+              } else if (paramInfos.get(j).injection().equals(Param.Injection.MAP_WITH_DEFAULTS)) {
+                if (map instanceof NamedParamMap npm) {
+                  params[k] = namedBuilder.fillWithDefaults(npm);
+                }
+              } else if (paramInfos.get(j).injection().equals(Param.Injection.BUILDER)) {
+                params[k] = namedBuilder;
+              } else if (paramInfos.get(j).injection().equals(Param.Injection.INDEX)) {
+                params[k] = index;
+              } else {
+                try {
+                  //noinspection unchecked
+                  params[k] = buildParam(
+                      paramInfos.get(j), map, executable.getParameters()[k], (NamedBuilder<
+                              Object>)
+                          namedBuilder);
+                } catch (RuntimeException e) {
+                  throw new BuilderException(
+                      "Cannot build param \"%s\" for \"%s\""
+                          .formatted(paramInfos.get(j).name(), finalName),
+                      e);
+                }
               }
             }
-          }
-          // check exceeding params
-          Set<String> exceedingParamNames = new TreeSet<>(map.names());
-          paramInfos.stream()
-              .filter(pi -> pi.injection().equals(Param.Injection.NONE))
-              .map(ParamInfo::name)
-              .toList()
-              .forEach(exceedingParamNames::remove);
-          if (!exceedingParamNames.isEmpty()) {
-            l.warning(String.format(
-                "Exceeding parameters while building %s: %s", finalName, exceedingParamNames));
-          }
-          try {
-            if (executable instanceof Method method) {
-              return method.invoke(null, params);
+            // check exceeding params
+            Set<String> exceedingParamNames = new TreeSet<>(map.names());
+            paramInfos.stream()
+                .filter(pi -> pi.injection().equals(Param.Injection.NONE))
+                .map(ParamInfo::name)
+                .toList()
+                .forEach(exceedingParamNames::remove);
+            if (!exceedingParamNames.isEmpty()) {
+              l.warning(String.format(
+                  "Exceeding parameters while building %s: %s", finalName, exceedingParamNames));
             }
-            return ((Constructor<?>) executable).newInstance(params);
-          } catch (IllegalAccessException | InvocationTargetException | InstantiationException e) {
-            throw new BuilderException(String.format("Cannot invoke %s: %s", executable.getName(), e), e);
-          }
-        });
+            try {
+              if (executable instanceof Method method) {
+                return method.invoke(null, params);
+              }
+              return ((Constructor<?>) executable).newInstance(params);
+            } catch (IllegalAccessException
+                | InvocationTargetException
+                | InstantiationException
+                | IllegalArgumentException e) {
+              throw new BuilderException("Cannot build \"%s\"".formatted(finalName), e);
+            }
+          });
+    } catch (Exception ex) {
+      throw new BuilderException("Cannot build builder for \"%s\"".formatted(name), ex);
+    }
   }
 
   private static ParamInfo from(Parameter parameter) {
@@ -234,160 +241,165 @@ public record AutoBuiltDocumentedBuilder<T>(
       return null;
     }
     String name = paramAnnotation.value();
-    if (parameter.getType().equals(Integer.class) || parameter.getType().equals(Integer.TYPE)) {
-      return new ParamInfo(
-          ParamMap.Type.INT,
-          null,
-          name,
-          buildDefaultValue(ParamMap.Type.INT, Integer.class, paramAnnotation),
-          null,
-          paramAnnotation.injection(),
-          parameter.getParameterizedType());
-    }
-    if (parameter.getType().equals(Double.class) || parameter.getType().equals(Double.TYPE)) {
-      return new ParamInfo(
-          ParamMap.Type.DOUBLE,
-          null,
-          name,
-          buildDefaultValue(ParamMap.Type.DOUBLE, Double.class, paramAnnotation),
-          null,
-          paramAnnotation.injection(),
-          parameter.getParameterizedType());
-    }
-    if (parameter.getType().equals(String.class)) {
-      return new ParamInfo(
-          ParamMap.Type.STRING,
-          null,
-          name,
-          buildDefaultValue(ParamMap.Type.STRING, String.class, paramAnnotation),
-          paramAnnotation.iS().equals(Param.UNDEFAULTED_STRING) ? null : paramAnnotation.iS(),
-          paramAnnotation.injection(),
-          parameter.getParameterizedType());
-    }
-    if (parameter.getType().equals(Boolean.class) || parameter.getType().equals(Boolean.TYPE)) {
-      return new ParamInfo(
-          ParamMap.Type.BOOLEAN,
-          null,
-          name,
-          buildDefaultValue(ParamMap.Type.BOOLEAN, Boolean.class, paramAnnotation),
-          null,
-          paramAnnotation.injection(),
-          parameter.getParameterizedType());
-    }
-    if (parameter.getType().isEnum()) {
-      return new ParamInfo(
-          ParamMap.Type.ENUM,
-          parameter.getType(),
-          name,
-          buildDefaultValue(ParamMap.Type.ENUM, parameter.getType(), paramAnnotation),
-          null,
-          paramAnnotation.injection(),
-          parameter.getParameterizedType());
-    }
-    if (parameter.getType().equals(List.class)
-        && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
-      if (parameterizedType.getActualTypeArguments()[0].equals(Integer.class)) {
+    try {
+      if (parameter.getType().equals(Integer.class) || parameter.getType().equals(Integer.TYPE)) {
         return new ParamInfo(
-            ParamMap.Type.INTS,
+            ParamMap.Type.INT,
             null,
             name,
-            buildDefaultValue(ParamMap.Type.INTS, Integer.class, paramAnnotation),
+            buildDefaultValue(ParamMap.Type.INT, Integer.class, paramAnnotation),
             null,
             paramAnnotation.injection(),
             parameter.getParameterizedType());
       }
-    }
-    if (parameter.getType().equals(List.class)
-        && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
-      if (parameterizedType.getActualTypeArguments()[0].equals(Double.class)) {
+      if (parameter.getType().equals(Double.class) || parameter.getType().equals(Double.TYPE)) {
         return new ParamInfo(
-            ParamMap.Type.DOUBLES,
+            ParamMap.Type.DOUBLE,
             null,
             name,
-            buildDefaultValue(ParamMap.Type.DOUBLES, Double.class, paramAnnotation),
+            buildDefaultValue(ParamMap.Type.DOUBLE, Double.class, paramAnnotation),
             null,
             paramAnnotation.injection(),
             parameter.getParameterizedType());
       }
-    }
-    if (parameter.getType().equals(List.class)
-        && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
-      if (parameterizedType.getActualTypeArguments()[0].equals(String.class)) {
+      if (parameter.getType().equals(String.class)) {
         return new ParamInfo(
-            ParamMap.Type.STRINGS,
+            ParamMap.Type.STRING,
             null,
             name,
-            buildDefaultValue(ParamMap.Type.STRINGS, String.class, paramAnnotation),
+            buildDefaultValue(ParamMap.Type.STRING, String.class, paramAnnotation),
+            paramAnnotation.iS().equals(Param.UNDEFAULTED_STRING) ? null : paramAnnotation.iS(),
+            paramAnnotation.injection(),
+            parameter.getParameterizedType());
+      }
+      if (parameter.getType().equals(Boolean.class) || parameter.getType().equals(Boolean.TYPE)) {
+        return new ParamInfo(
+            ParamMap.Type.BOOLEAN,
+            null,
+            name,
+            buildDefaultValue(ParamMap.Type.BOOLEAN, Boolean.class, paramAnnotation),
             null,
             paramAnnotation.injection(),
             parameter.getParameterizedType());
       }
-    }
-    if (parameter.getType().equals(List.class)
-        && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
-      if (parameterizedType.getActualTypeArguments()[0].equals(Boolean.class)) {
+      if (parameter.getType().isEnum()) {
         return new ParamInfo(
-            ParamMap.Type.BOOLEANS,
-            null,
+            ParamMap.Type.ENUM,
+            parameter.getType(),
             name,
-            buildDefaultValue(ParamMap.Type.BOOLEANS, Boolean.class, paramAnnotation),
+            buildDefaultValue(ParamMap.Type.ENUM, parameter.getType(), paramAnnotation),
             null,
             paramAnnotation.injection(),
             parameter.getParameterizedType());
       }
-    }
-    if (parameter.getType().equals(List.class)
-        && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
-      Class<?> clazz = Objects.class;
-      if (!parameterizedType.getActualTypeArguments()[0].getTypeName().contains("<")) {
-        try {
-          clazz = Class.forName(parameterizedType.getActualTypeArguments()[0].getTypeName());
-        } catch (ClassNotFoundException e) {
-          // ignore
+      if (parameter.getType().equals(List.class)
+          && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
+        if (parameterizedType.getActualTypeArguments()[0].equals(Integer.class)) {
+          return new ParamInfo(
+              ParamMap.Type.INTS,
+              null,
+              name,
+              buildDefaultValue(ParamMap.Type.INTS, Integer.class, paramAnnotation),
+              null,
+              paramAnnotation.injection(),
+              parameter.getParameterizedType());
         }
       }
-      if (clazz.isEnum()) {
-        return new ParamInfo(
-            ParamMap.Type.ENUMS,
-            clazz,
-            name,
-            buildDefaultValue(ParamMap.Type.ENUMS, clazz, paramAnnotation),
-            null,
-            paramAnnotation.injection(),
-            parameter.getParameterizedType());
+      if (parameter.getType().equals(List.class)
+          && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
+        if (parameterizedType.getActualTypeArguments()[0].equals(Double.class)) {
+          return new ParamInfo(
+              ParamMap.Type.DOUBLES,
+              null,
+              name,
+              buildDefaultValue(ParamMap.Type.DOUBLES, Double.class, paramAnnotation),
+              null,
+              paramAnnotation.injection(),
+              parameter.getParameterizedType());
+        }
       }
-    }
-    if (parameter.getType().equals(List.class)
-        && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
-      if (parameterizedType.getActualTypeArguments()[0].equals(NamedParamMap.class)) {
+      if (parameter.getType().equals(List.class)
+          && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
+        if (parameterizedType.getActualTypeArguments()[0].equals(String.class)) {
+          return new ParamInfo(
+              ParamMap.Type.STRINGS,
+              null,
+              name,
+              buildDefaultValue(ParamMap.Type.STRINGS, String.class, paramAnnotation),
+              null,
+              paramAnnotation.injection(),
+              parameter.getParameterizedType());
+        }
+      }
+      if (parameter.getType().equals(List.class)
+          && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
+        if (parameterizedType.getActualTypeArguments()[0].equals(Boolean.class)) {
+          return new ParamInfo(
+              ParamMap.Type.BOOLEANS,
+              null,
+              name,
+              buildDefaultValue(ParamMap.Type.BOOLEANS, Boolean.class, paramAnnotation),
+              null,
+              paramAnnotation.injection(),
+              parameter.getParameterizedType());
+        }
+      }
+      if (parameter.getType().equals(List.class)
+          && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
+        Class<?> clazz = Objects.class;
+        if (!parameterizedType.getActualTypeArguments()[0].getTypeName().contains("<")) {
+          try {
+            clazz = Class.forName(parameterizedType.getActualTypeArguments()[0].getTypeName());
+          } catch (ClassNotFoundException e) {
+            // ignore
+          }
+        }
+        if (clazz.isEnum()) {
+          return new ParamInfo(
+              ParamMap.Type.ENUMS,
+              clazz,
+              name,
+              buildDefaultValue(ParamMap.Type.ENUMS, clazz, paramAnnotation),
+              null,
+              paramAnnotation.injection(),
+              parameter.getParameterizedType());
+        }
+      }
+      if (parameter.getType().equals(List.class)
+          && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
+        if (parameterizedType.getActualTypeArguments()[0].equals(NamedParamMap.class)) {
+          return new ParamInfo(
+              ParamMap.Type.NAMED_PARAM_MAPS,
+              null,
+              name,
+              buildDefaultValue(ParamMap.Type.NAMED_PARAM_MAPS, NamedParamMap.class, paramAnnotation),
+              null,
+              paramAnnotation.injection(),
+              parameter.getParameterizedType());
+        }
+      }
+      if (parameter.getType().equals(List.class)
+          && parameter.getParameterizedType() instanceof ParameterizedType) {
         return new ParamInfo(
             ParamMap.Type.NAMED_PARAM_MAPS,
             null,
             name,
-            buildDefaultValue(ParamMap.Type.NAMED_PARAM_MAPS, NamedParamMap.class, paramAnnotation),
+            buildDefaultValue(ParamMap.Type.NAMED_PARAM_MAPS, Object.class, paramAnnotation),
             null,
             paramAnnotation.injection(),
             parameter.getParameterizedType());
       }
-    }
-    if (parameter.getType().equals(List.class) && parameter.getParameterizedType() instanceof ParameterizedType) {
       return new ParamInfo(
-          ParamMap.Type.NAMED_PARAM_MAPS,
+          ParamMap.Type.NAMED_PARAM_MAP,
           null,
           name,
-          buildDefaultValue(ParamMap.Type.NAMED_PARAM_MAPS, Object.class, paramAnnotation),
+          buildDefaultValue(ParamMap.Type.NAMED_PARAM_MAP, Object.class, paramAnnotation),
           null,
           paramAnnotation.injection(),
           parameter.getParameterizedType());
+    } catch (Exception ex) {
+      throw new BuilderException("Cannot build param info for \"%s\"".formatted(name), ex);
     }
-    return new ParamInfo(
-        ParamMap.Type.NAMED_PARAM_MAP,
-        null,
-        name,
-        buildDefaultValue(ParamMap.Type.NAMED_PARAM_MAP, Object.class, paramAnnotation),
-        null,
-        paramAnnotation.injection(),
-        parameter.getParameterizedType());
   }
 
   private static Object processNPM(NamedParamMap npm, Parameter actualParameter, NamedBuilder<Object> nb, int index) {
