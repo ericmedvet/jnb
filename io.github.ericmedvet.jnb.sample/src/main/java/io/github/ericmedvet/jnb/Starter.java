@@ -20,9 +20,7 @@
 package io.github.ericmedvet.jnb;
 
 import io.github.ericmedvet.jnb.core.*;
-import io.github.ericmedvet.jnb.core.parsing.StringParser;
 import java.util.List;
-import java.util.function.Function;
 
 public class Starter {
 
@@ -33,6 +31,7 @@ public class Starter {
       @Param("staff") List<Person> staff) {}
 
   @Discoverable
+  @Alias("namedPerson(name = name)")
   public record Person(
       @Param("name") String name, @Param("age") int age, @Param("nicknames") List<String> nicknames) {}
 
@@ -44,14 +43,9 @@ public class Starter {
       return new Person(name, 60, List.of());
     }
 
-    public static Person young(@Param("name") String name) {
-      return new Person(name, 18, List.of());
-    }
-
-    public static Person mathusalem(
-        @Param("name") String name,
-        @Param(value = "f", dNPM = "p.old(name = ciccio)") Function<String, String> f) {
-      return new Person(name, 18, List.of());
+    @Alias("mathusalem(name = Math; age = 199)")
+    public static Person young(@Param("name") String name, @Param(value = "age", dI = 18) int age) {
+      return new Person(name, age, List.of());
     }
   }
 
@@ -69,15 +63,12 @@ roomNumbers = [202:1:205] \s
 )
 """;
     NamedBuilder<?> namedBuilder = NamedBuilder.fromDiscovery("io.github.ericmedvet");
-
-    new InfoPrinter().print(namedBuilder, System.out);
-
+    System.out.println(namedBuilder);
     Office office = (Office) namedBuilder.build(description);
     System.out.println(office);
     System.out.printf("The head's name is: %s%n", office.head().name());
     System.out.printf("One young person is: %s%n", namedBuilder.build("p.young(name=Jack)"));
-    System.out.printf("Mathusalem is: %s%n", namedBuilder.build("p.mathusalem(name=Math)"));
-    System.out.println(StringParser.parse(description));
-    System.out.println(MapNamedParamMap.prettyToString(StringParser.parse(description)));
+    System.out.printf("Mathusalem is: %s%n", namedBuilder.build("p.mathusalem()"));
+    System.out.printf("Young mathusalem is: %s%n", namedBuilder.build("p.young()"));
   }
 }

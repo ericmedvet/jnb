@@ -35,10 +35,9 @@ import java.util.stream.Stream;
 
 public class NamedBuilder<X> {
 
-  private static final Logger L = Logger.getLogger(NamedBuilder.class.getName());
-
   public static final char NAME_SEPARATOR = '.';
   public static final char PREFIX_SEPARATOR = '|';
+  private static final Logger L = Logger.getLogger(NamedBuilder.class.getName());
   private static final NamedBuilder<Object> EMPTY = new NamedBuilder<>(Map.of());
   private final Map<String, Builder<? extends X>> builders;
 
@@ -111,19 +110,16 @@ public class NamedBuilder<X> {
           "Cannot build named builder from class %s that has %d!=1 constructors",
           c.getSimpleName(), c.getConstructors().length));
     }
-    DocumentedBuilder<C> builder = (DocumentedBuilder<C>) AutoBuiltDocumentedBuilder.from(constructors.get(0));
-    if (builder != null) {
-      return new NamedBuilder<>(Map.of(builder.name(), builder));
-    } else {
-      return (NamedBuilder<C>) empty();
-    }
+    return (NamedBuilder<C>) (new NamedBuilder<>(
+        AutoBuiltDocumentedBuilder.from(constructors.get(0), c.getAnnotationsByType(Alias.class)).stream()
+            .collect(Collectors.toMap(DocumentedBuilder::name, b -> b))));
   }
 
   @SuppressWarnings("unused")
   public static NamedBuilder<Object> fromUtilityClass(Class<?> c) {
     return new NamedBuilder<>(Arrays.stream(c.getMethods())
-        .map(AutoBuiltDocumentedBuilder::from)
-        .filter(Objects::nonNull)
+        .map(m -> AutoBuiltDocumentedBuilder.from(m, m.getAnnotationsByType(Alias.class)))
+        .flatMap(List::stream)
         .collect(Collectors.toMap(DocumentedBuilder::name, b -> b)));
   }
 

@@ -19,16 +19,19 @@
  */
 package io.github.ericmedvet.jnb.core;
 
+import io.github.ericmedvet.jnb.core.Param.Injection;
 import io.github.ericmedvet.jnb.core.parsing.StringParser;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public record AutoBuiltDocumentedBuilder<T>(
     String name, java.lang.reflect.Type builtType, List<ParamInfo> params, Executable origin, Builder<T> builder)
     implements DocumentedBuilder<T> {
+
   private static Object buildDefaultValue(ParamMap.Type type, Class<?> clazz, Param pa) {
     if (type.equals(ParamMap.Type.INT) && pa.dI() != Integer.MIN_VALUE) {
       return pa.dI();
@@ -115,16 +118,16 @@ public record AutoBuiltDocumentedBuilder<T>(
         .toList();
   }
 
-  public static AutoBuiltDocumentedBuilder<Object> from(Executable executable) {
+  public static List<DocumentedBuilder<Object>> from(Executable executable, Alias[] aliases) {
     Logger l = Logger.getLogger(DocumentedBuilder.class.getName());
     // check annotation
     BuilderMethod builderMethodAnnotation = executable.getAnnotation(BuilderMethod.class);
     // check public and static or constructor
     if (!Modifier.isPublic(executable.getModifiers())) {
-      return null;
+      return List.of();
     }
     if (!Modifier.isStatic(executable.getModifiers()) && executable instanceof Method) {
-      return null;
+      return List.of();
     }
     // get name
     String name;
@@ -158,7 +161,7 @@ public record AutoBuiltDocumentedBuilder<T>(
       }
       // wrap and return
       String finalName = name;
-      return new AutoBuiltDocumentedBuilder<>(
+      AutoBuiltDocumentedBuilder<Object> mainBuilder = new AutoBuiltDocumentedBuilder<>(
           finalName,
           buildType,
           paramInfos,
@@ -170,15 +173,15 @@ public record AutoBuiltDocumentedBuilder<T>(
             }
             for (int j = 0; j < paramInfos.size(); j++) {
               int k = j + (hasNamedBuilder ? 1 : 0);
-              if (paramInfos.get(j).injection().equals(Param.Injection.MAP)) {
+              if (paramInfos.get(j).injection().equals(Injection.MAP)) {
                 params[k] = map;
-              } else if (paramInfos.get(j).injection().equals(Param.Injection.MAP_WITH_DEFAULTS)) {
+              } else if (paramInfos.get(j).injection().equals(Injection.MAP_WITH_DEFAULTS)) {
                 if (map instanceof NamedParamMap npm) {
                   params[k] = namedBuilder.fillWithDefaults(npm);
                 }
-              } else if (paramInfos.get(j).injection().equals(Param.Injection.BUILDER)) {
+              } else if (paramInfos.get(j).injection().equals(Injection.BUILDER)) {
                 params[k] = namedBuilder;
-              } else if (paramInfos.get(j).injection().equals(Param.Injection.INDEX)) {
+              } else if (paramInfos.get(j).injection().equals(Injection.INDEX)) {
                 params[k] = index;
               } else {
                 try {
@@ -198,7 +201,7 @@ public record AutoBuiltDocumentedBuilder<T>(
             // check exceeding params
             Set<String> exceedingParamNames = new TreeSet<>(map.names());
             paramInfos.stream()
-                .filter(pi -> pi.injection().equals(Param.Injection.NONE))
+                .filter(pi -> pi.injection().equals(Injection.NONE))
                 .map(ParamInfo::name)
                 .toList()
                 .forEach(exceedingParamNames::remove);
@@ -218,6 +221,10 @@ public record AutoBuiltDocumentedBuilder<T>(
               throw new BuilderException("Cannot build \"%s\"".formatted(finalName), e);
             }
           });
+      return Stream.concat(
+              Stream.of(mainBuilder),
+              Arrays.stream(aliases).map(a -> mainBuilder.alias(StringParser.parse(a.value()))))
+          .toList();
     } catch (Exception ex) {
       throw new BuilderException("Cannot build builder for \"%s\"".formatted(name), ex);
     }
@@ -420,6 +427,7 @@ public record AutoBuiltDocumentedBuilder<T>(
 
   @Override
   public String toString() {
-    return "(" + params.stream().map(ParamInfo::toString).collect(Collectors.joining("; ")) + ") -> " + builtType;
+    return "(" + params().stream().map(ParamInfo::toString).collect(Collectors.joining("; ")) + ") -> "
+        + builtType();
   }
 }

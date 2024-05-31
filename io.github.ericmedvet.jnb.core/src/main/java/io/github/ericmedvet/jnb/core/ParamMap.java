@@ -22,8 +22,50 @@ package io.github.ericmedvet.jnb.core;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public interface ParamMap {
+
+  Set<String> names();
+
+  <E extends Enum<E>> Object value(String n, Type type, Class<E> enumClass);
+
+  default Object value(String n) {
+    return Arrays.stream(Type.values())
+        .filter(t -> !(t.equals(Type.ENUM) || t.equals(Type.ENUMS)))
+        .map(t -> value(n, t))
+        .filter(Objects::nonNull)
+        .findFirst()
+        .orElse(null);
+  }
+
+  default Object value(String n, Type type) {
+    if (type.equals(Type.ENUM) || type.equals(Type.ENUMS)) {
+      throw new IllegalArgumentException("Cannot obtain enum(s) type for \"%s\" without enum class".formatted(n));
+    }
+    return value(n, type, null);
+  }
+
+  default ParamMap and(ParamMap other) {
+    ParamMap thisParamMap = this;
+    return new ParamMap() {
+      @Override
+      public Set<String> names() {
+        return Stream.concat(thisParamMap.names().stream(), other.names().stream())
+            .collect(Collectors.toSet());
+      }
+
+      @Override
+      public <E extends Enum<E>> Object value(String n, Type type, Class<E> enumClass) {
+        Object o = thisParamMap.value(n, type, enumClass);
+        if (o == null) {
+          o = other.value(n, type, enumClass);
+        }
+        return o;
+      }
+    };
+  }
 
   enum Type {
     INT("i"),
@@ -47,41 +89,5 @@ public interface ParamMap {
     public String rendered() {
       return rendered;
     }
-  }
-
-  /*default <E extends Enum<E>> Object value(String n, Type type, Class<E> enumClass) {
-  return switch (type) {
-  case INT -> i(n);
-  case DOUBLE -> d(n);
-  case BOOLEAN -> b(n);
-  case STRING -> s(n);
-  case ENUM -> e(n, enumClass);
-  case NAMED_PARAM_MAP -> npm(n);
-  case INTS -> is(n);
-  case DOUBLES -> ds(n);
-  case BOOLEANS -> bs(n);
-  case STRINGS -> ss(n);
-  case ENUMS -> es(n, enumClass);
-  case NAMED_PARAM_MAPS -> npms(n);
-  };
-  }*/
-  Set<String> names();
-
-  <E extends Enum<E>> Object value(String n, Type type, Class<E> enumClass);
-
-  default Object value(String n) {
-    return Arrays.stream(Type.values())
-        .filter(t -> !(t.equals(Type.ENUM) || t.equals(Type.ENUMS)))
-        .map(t -> value(n, t))
-        .filter(Objects::nonNull)
-        .findFirst()
-        .orElse(null);
-  }
-
-  default Object value(String n, Type type) {
-    if (type.equals(Type.ENUM) || type.equals(Type.ENUMS)) {
-      throw new IllegalArgumentException("Cannot obtain enum(s) type for \"%s\" without enum class".formatted(n));
-    }
-    return value(n, type, null);
   }
 }

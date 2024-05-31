@@ -24,6 +24,33 @@ import java.lang.reflect.Executable;
 import java.util.List;
 
 public interface DocumentedBuilder<T> extends Builder<T> {
+  java.lang.reflect.Type builtType();
+
+  String name();
+
+  List<ParamInfo> params();
+
+  Executable origin();
+
+  default DocumentedBuilder<T> alias(NamedParamMap preMap) {
+    List<ParamInfo> newParams = params().stream()
+        .map(pi -> new ParamInfo(
+            pi.type,
+            pi.enumClass,
+            pi.name,
+            preMap.names().contains(pi.name) ? preMap.value(pi.name) : pi.defaultValue,
+            pi.interpolationString,
+            pi.injection,
+            pi.javaType))
+        .toList();
+    return new AutoBuiltDocumentedBuilder<>(
+        preMap.getName(),
+        builtType(),
+        newParams,
+        origin(),
+        (map, namedBuilder, index) -> build(map.and(preMap), namedBuilder, index));
+  }
+
   record ParamInfo(
       ParamMap.Type type,
       Class<?> enumClass,
@@ -47,12 +74,4 @@ public interface DocumentedBuilder<T> extends Builder<T> {
           defaultValueString.isEmpty() ? "" : ("[" + defaultValueString + "]"));
     }
   }
-
-  java.lang.reflect.Type builtType();
-
-  String name();
-
-  List<ParamInfo> params();
-
-  Executable origin();
 }
