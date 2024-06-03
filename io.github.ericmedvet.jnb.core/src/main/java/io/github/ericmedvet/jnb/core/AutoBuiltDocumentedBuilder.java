@@ -26,7 +26,6 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public record AutoBuiltDocumentedBuilder<T>(
     String name, java.lang.reflect.Type builtType, List<ParamInfo> params, Executable origin, Builder<T> builder)
@@ -221,10 +220,23 @@ public record AutoBuiltDocumentedBuilder<T>(
               throw new BuilderException("Cannot build \"%s\"".formatted(finalName), e);
             }
           });
-      return Stream.concat(
-              Stream.of(mainBuilder),
-              Arrays.stream(aliases).map(a -> mainBuilder.alias(StringParser.parse(a.value()))))
-          .toList();
+      Map<String, DocumentedBuilder<Object>> builders = new TreeMap<>();
+      builders.put(mainBuilder.name(), mainBuilder);
+      for (Alias alias : aliases) {
+        NamedParamMap aliasMap = StringParser.parse(alias.value());
+        DocumentedBuilder<Object> toAliasBuilder = builders.get(aliasMap.getName());
+        if (toAliasBuilder == null) {
+          throw new BuilderException("Cannot build alias \"%s\" for builder \"%s\": known builders are %s"
+              .formatted(
+                  aliasMap.getName(),
+                  mainBuilder.name,
+                  builders.keySet().stream()
+                      .map("\"%s\""::formatted)
+                      .collect(Collectors.joining(", "))));
+        }
+        builders.put(alias.name(), toAliasBuilder.alias(alias.name(), aliasMap));
+      }
+      return builders.values().stream().toList();
     } catch (Exception ex) {
       throw new BuilderException("Cannot build builder for \"%s\"".formatted(name), ex);
     }

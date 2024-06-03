@@ -32,7 +32,7 @@ public interface DocumentedBuilder<T> extends Builder<T> {
 
   Executable origin();
 
-  default DocumentedBuilder<T> alias(NamedParamMap preMap) {
+  default DocumentedBuilder<T> alias(String name, NamedParamMap preMap) {
     List<ParamInfo> newParams = params().stream()
         .map(pi -> new ParamInfo(
             pi.type,
@@ -44,7 +44,7 @@ public interface DocumentedBuilder<T> extends Builder<T> {
             pi.javaType))
         .toList();
     return new AutoBuiltDocumentedBuilder<>(
-        preMap.getName(),
+        name,
         builtType(),
         newParams,
         origin(),
