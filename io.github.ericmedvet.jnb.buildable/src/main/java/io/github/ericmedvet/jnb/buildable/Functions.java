@@ -221,7 +221,8 @@ public class Functions {
       @Param(value = "of", dNPM = "f.identity()") Function<X, Number> beforeF,
       @Param(value = "format", dS = "%.1f") String format) {
     Function<Number, Double> f = v -> q * Math.floor(v.doubleValue() / q + 0.5);
-    return FormattedNamedFunction.from(f, format, "q[%.1f]".formatted(q)).compose(beforeF);
+    return FormattedNamedFunction.from(f, format, "q[%s]".formatted(format.formatted(q)))
+        .compose(beforeF);
   }
 
   @SuppressWarnings("unused")
