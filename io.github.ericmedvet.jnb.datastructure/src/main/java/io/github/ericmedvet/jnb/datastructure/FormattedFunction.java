@@ -19,11 +19,14 @@
  */
 package io.github.ericmedvet.jnb.datastructure;
 
+import java.util.Collection;
 import java.util.function.Function;
 
 public interface FormattedFunction<T, R> extends Function<T, R> {
 
   String UNFORMATTED_FORMAT = "%s";
+
+  String format();
 
   static String format(Function<?, ?> f) {
     if (f instanceof FormattedFunction<?, ?> ff) {
@@ -35,13 +38,13 @@ public interface FormattedFunction<T, R> extends Function<T, R> {
   static <T, R> FormattedFunction<T, R> from(Function<T, R> f, String format) {
     return new FormattedFunction<>() {
       @Override
-      public String format() {
-        return format;
+      public R apply(T t) {
+        return f.apply(t);
       }
 
       @Override
-      public R apply(T t) {
-        return f.apply(t);
+      public String format() {
+        return format;
       }
 
       @Override
@@ -58,14 +61,8 @@ public interface FormattedFunction<T, R> extends Function<T, R> {
     return from(f, UNFORMATTED_FORMAT);
   }
 
-  String format();
-
   default String applyFormatted(T t) {
     return format().formatted(apply(t));
-  }
-
-  default FormattedFunction<T, R> reformatted(String format) {
-    return from(this, format);
   }
 
   @Override
@@ -88,5 +85,18 @@ public interface FormattedFunction<T, R> extends Function<T, R> {
           NamedFunction.composeNames(NamedFunction.name(this), afterNF.name()));
     }
     return from(t -> after.apply(apply(t)), format(after));
+  }
+
+  default FormattedFunction<T, R> reformatted(String format) {
+    return from(this, format);
+  }
+
+  default FormattedFunction<T, R> reformattedToFit(Collection<? extends T> ts) {
+    if (!format().equals("%s")) {
+      return this;
+    }
+    int maxLength =
+        ts.stream().mapToInt(t -> applyFormatted(t).length()).max().orElseThrow();
+    return reformatted("%" + maxLength + "s");
   }
 }
