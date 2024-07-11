@@ -21,10 +21,7 @@ package io.github.ericmedvet.jnb.buildable;
 
 import io.github.ericmedvet.jnb.core.Discoverable;
 import io.github.ericmedvet.jnb.core.Param;
-import io.github.ericmedvet.jnb.datastructure.FormattedNamedFunction;
-import io.github.ericmedvet.jnb.datastructure.Grid;
-import io.github.ericmedvet.jnb.datastructure.GridUtils;
-import io.github.ericmedvet.jnb.datastructure.NamedFunction;
+import io.github.ericmedvet.jnb.datastructure.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
@@ -51,6 +48,18 @@ public class Functions {
     Function<List<? extends Number>, Double> f =
         vs -> vs.stream().mapToDouble(Number::doubleValue).average().orElseThrow();
     return FormattedNamedFunction.from(f, format, "avg").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  public static <X> FormattedNamedFunction<X, Double> clip(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Double> beforeF,
+      @Param("range") DoubleRange range,
+      @Param(value = "format", dS = "%.1f") String format) {
+
+    Function<Double, Double> f = range::clip;
+    return FormattedNamedFunction.from(
+            f, format, ("clip[" + format + ";" + format + "]").formatted(range.min(), range.max()))
+        .compose(beforeF);
   }
 
   @SuppressWarnings("unused")
