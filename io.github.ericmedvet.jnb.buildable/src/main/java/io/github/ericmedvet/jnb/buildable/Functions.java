@@ -187,7 +187,7 @@ public class Functions {
       @Param("n") int n,
       @Param(value = "of", dNPM = "f.identity()") Function<X, List<T>> beforeF,
       @Param(value = "format", dS = "%s") String format) {
-    Function<List<T>, T> f = ts -> ts.get(n);
+    Function<List<T>, T> f = ts -> n >= 0 ? ts.get(n) : ts.get(ts.size() - n);
     return FormattedNamedFunction.from(f, format, "[%d]".formatted(n)).compose(beforeF);
   }
 
