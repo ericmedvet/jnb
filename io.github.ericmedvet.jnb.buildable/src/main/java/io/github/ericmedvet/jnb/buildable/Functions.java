@@ -183,7 +183,7 @@ public class Functions {
   }
 
   @SuppressWarnings("unused")
-  public static <X, T> FormattedNamedFunction<X, T> nTh(
+  public static <X, T> NamedFunction<X, T> nTh(
       @Param("n") int n,
       @Param(value = "of", dNPM = "f.identity()") Function<X, List<T>> beforeF,
       @Param(value = "format", dS = "%s") String format) {
@@ -211,6 +211,22 @@ public class Functions {
       @Param(value = "format", dS = "%s") String format) {
     Function<Object, Boolean> f = Objects::nonNull;
     return FormattedNamedFunction.from(f, format, "non.null").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  public static <X, F, S> FormattedNamedFunction<X, F> pairFirst(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Pair<F, S>> beforeF,
+      @Param(value = "format", dS = "%s") String format) {
+    Function<Pair<F, S>, F> f = Pair::first;
+    return FormattedNamedFunction.from(f, format, "first").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  public static <X, F, S> FormattedNamedFunction<X, S> pairSecond(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Pair<F, S>> beforeF,
+      @Param(value = "format", dS = "%s") String format) {
+    Function<Pair<F, S>, S> f = Pair::second;
+    return FormattedNamedFunction.from(f, format, "second").compose(beforeF);
   }
 
   @SuppressWarnings("unused")
