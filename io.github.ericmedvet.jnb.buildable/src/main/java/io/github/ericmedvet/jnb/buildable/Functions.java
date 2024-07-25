@@ -107,6 +107,15 @@ public class Functions {
   }
 
   @SuppressWarnings("unused")
+  public static <X, T> FormattedNamedFunction<X, Double> gridCoverage(
+      @Param(value = "predicate", dNPM = "f.nonNull()") Function<T, Boolean> predicate,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Grid<T>> beforeF,
+      @Param(value = "format", dS = "%2d") String format) {
+    Function<Grid<T>, Double> f = g -> (double) GridUtils.count(g, predicate::apply) / (double) (g.w() * g.h());
+    return FormattedNamedFunction.from(f, format, "grid.coverage").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
   public static <X, T> FormattedNamedFunction<X, Double> gridElongation(
       @Param(value = "predicate", dNPM = "f.nonNull()") Function<T, Boolean> predicate,
       @Param(value = "of", dNPM = "f.identity()") Function<X, Grid<T>> beforeF,
