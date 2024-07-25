@@ -251,6 +251,21 @@ public class Functions {
   }
 
   @SuppressWarnings("unused")
+  public static <X> FormattedNamedFunction<X, Double> sd(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, List<? extends Number>> beforeF,
+      @Param(value = "format", dS = "%.1f") String format) {
+    Function<List<? extends Number>, Double> f = vs -> {
+      double mean = vs.stream().mapToDouble(Number::doubleValue).average().orElseThrow();
+      return Math.sqrt(vs.stream()
+              .mapToDouble(v -> v.doubleValue() - mean)
+              .map(v -> v * v)
+              .sum()
+          / ((double) vs.size()));
+    };
+    return FormattedNamedFunction.from(f, format, "sd").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
   public static <X> FormattedNamedFunction<X, Integer> size(
       @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<?>> beforeF,
       @Param(value = "format", dS = "%3d") String format) {
