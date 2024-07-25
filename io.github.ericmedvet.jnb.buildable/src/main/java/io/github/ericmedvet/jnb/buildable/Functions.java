@@ -26,10 +26,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
@@ -60,6 +57,15 @@ public class Functions {
     return FormattedNamedFunction.from(
             f, format, ("clip[" + format + ";" + format + "]").formatted(range.min(), range.max()))
         .compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  public static <X, T> NamedFunction<X, Set<T>> distinct(
+      @Param("n") int n,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<T>> beforeF,
+      @Param(value = "format", dS = "%s") String format) {
+    Function<Collection<T>, Set<T>> f = HashSet::new;
+    return FormattedNamedFunction.from(f, format, "distinct").compose(beforeF);
   }
 
   @SuppressWarnings("unused")
