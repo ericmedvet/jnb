@@ -20,6 +20,7 @@
 package io.github.ericmedvet.jnb.buildable;
 
 import io.github.ericmedvet.jnb.core.Discoverable;
+import io.github.ericmedvet.jnb.core.MathOp;
 import io.github.ericmedvet.jnb.core.Param;
 import io.github.ericmedvet.jnb.datastructure.*;
 import java.io.ByteArrayInputStream;
@@ -28,7 +29,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Discoverable(prefixTemplate = "function|f")
@@ -61,7 +64,6 @@ public class Functions {
 
   @SuppressWarnings("unused")
   public static <X, T> NamedFunction<X, Set<T>> distinct(
-      @Param("n") int n,
       @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<T>> beforeF,
       @Param(value = "format", dS = "%s") String format) {
     Function<Collection<T>, Set<T>> f = HashSet::new;
@@ -74,6 +76,17 @@ public class Functions {
       @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<T>> beforeF) {
     Function<Collection<T>, Collection<R>> f = ts -> ts.stream().map(mapF).toList();
     return NamedFunction.from(f, "each[%s]".formatted(NamedFunction.name(mapF)))
+        .compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  public static <X, T> NamedFunction<X, Collection<T>> filter(
+      @Param(value = "condition", dNPM = "predicate.always()") Predicate<T> condition,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<T>> beforeF,
+      @Param(value = "format", dS = "%s") String format) {
+    Function<Collection<T>, Collection<T>> f =
+        ts -> ts.stream().filter(condition).toList();
+    return FormattedNamedFunction.from(f, format, "filter[%s]".formatted(condition))
         .compose(beforeF);
   }
 
@@ -168,6 +181,30 @@ public class Functions {
   public static <X> Function<X, X> identity() {
     Function<X, X> f = x -> x;
     return NamedFunction.from(f, NamedFunction.IDENTITY_NAME);
+  }
+
+  @SuppressWarnings("unused")
+  public static <X> FormattedNamedFunction<X, Double> mathConst(
+      @Param("v") double v, @Param(value = "format", dS = "%.1f") String format) {
+    return FormattedNamedFunction.from(x -> v, format, format.formatted(v));
+  }
+
+  @SuppressWarnings("unused")
+  public static <X, Y> FormattedNamedFunction<X, Double> mathOp(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Y> beforeF,
+      @Param("args") List<Function<Y, ? extends Number>> args,
+      @Param("op") MathOp op,
+      @Param(value = "format", dS = "%.1f") String format) {
+    Function<Y, Double> f = y -> op.applyAsDouble(
+        args.stream().mapToDouble(aF -> aF.apply(y).doubleValue()).toArray());
+    return FormattedNamedFunction.from(
+            f,
+            format,
+            "%s[%s]"
+                .formatted(
+                    op.toString().toLowerCase(),
+                    args.stream().map(NamedFunction::name).collect(Collectors.joining(";"))))
+        .compose(beforeF);
   }
 
   @SuppressWarnings("unused")
@@ -318,6 +355,14 @@ public class Functions {
       }
     };
     return FormattedNamedFunction.from(f, format, "to.base64").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  public static <X> NamedFunction<X, String> toString(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Object> beforeF,
+      @Param(value = "format", dS = "%s") String format) {
+    Function<Object, String> f = Object::toString;
+    return FormattedNamedFunction.from(f, format, "to.string").compose(beforeF);
   }
 
   @SuppressWarnings("unused")
