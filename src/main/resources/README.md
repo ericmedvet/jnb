@@ -123,6 +123,7 @@ where:
 - `∅` is the empty string.
 
 The format is reasonably robust to spaces and line-breaks.
+Moreover, you can include line comments in the string describing the map, with the syntax `% comment`, to be put reasonably everywhere in the line.
 
 An example of a syntactically valid named parameter map is:
 ```
@@ -140,7 +141,7 @@ office(
     person(name = Bob; age = 25);
     person(name = Charlie; age = 38)
   ];
-  roomNumbers = [1:2:10]  
+  roomNumbers = [1:2:10]  % this will be read exactly as [1; 3; 5; 7; 9]
 )
 ```
 In this case, the `head` parameter of `office` is valued with another named parameter map: `person(name = "Mario Rossi"; age = 43)`.

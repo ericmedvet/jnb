@@ -59,14 +59,15 @@ public class Starter {
   public static void main(String[] args) {
     String description =
         """
-office(
+office(       % this is a comment
 head = person(name = "Mario Rossi"; age = 43);
 staff = + [
 person(name = Alice; age = 33; nicknames = [Puce; "The Cice"]);
 person(name = Bob; age = 25);
 person(name = Charlie; age = 38)
 ] + [person(name = Dane; age = 28)];
-roomNumbers = [202:1:205] \s
+% another comment
+roomNumbers = [201:2:210] \s
 )
 """;
     NamedBuilder<?> namedBuilder = NamedBuilder.fromDiscovery("io.github.ericmedvet");

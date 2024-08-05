@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 public class StringParser {
 
+  public static final String VOID_REGEX = "\\s*(%[^\\n\\r]*[\\n\\r])*";
   private static final int CONTEXT_SIZE = 10;
 
   record DNode(Token token, Number value) implements Node {}

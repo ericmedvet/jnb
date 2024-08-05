@@ -21,7 +21,9 @@ package io.github.ericmedvet.jnb.core.parsing;
 
 public record Token(int start, int end) {
   public String trimmedContent(String s) {
-    return s.substring(start, end).trim();
+    return s.substring(start, end)
+        .replaceAll("\\A" + StringParser.VOID_REGEX, "")
+        .replaceAll(StringParser.VOID_REGEX + "\\z", "");
   }
 
   public String trimmedUnquotedContent(String s) {

@@ -25,19 +25,20 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public enum TokenType {
-  NUM("\\s*(-?[0-9]+(\\.[0-9]+)?)|(-?Infinity)\\s*", "0.0"),
-  I_NUM("\\s*[0-9]+?\\s*", "0"),
-  STRING("\\s*([A-Za-z][A-Za-z0-9_]*)|(\"[^\"]*\")\\s*", "a"),
-  NAME("\\s*[A-Za-z][" + NamedBuilder.NAME_SEPARATOR + "A-Za-z0-9_]*\\s*", "a.a"),
-  OPEN_CONTENT("\\s*\\(\\s*", "("),
-  CLOSED_CONTENT("\\s*\\)\\s*", ")"),
-  ASSIGN_SEPARATOR("\\s*=\\s*", "="),
-  LIST_SEPARATOR("\\s*;\\s*", ";"),
-  INTERVAL_SEPARATOR("\\s*:\\s*", ":"),
-  OPEN_LIST("\\s*\\[\\s*", "["),
-  CLOSED_LIST("\\s*\\]\\s*", "]"),
-  LIST_JOIN("\\s*\\*\\s*", "*"),
-  LIST_CONCAT("\\s*\\+\\s*", "+");
+  NUM("(-?[0-9]+(\\.[0-9]+)?)|(-?Infinity)", "0.0"),
+  I_NUM("[0-9]+?", "0"),
+  STRING("([A-Za-z][A-Za-z0-9_]*)|(\"[^\"]*\")", "a"),
+  NAME("[A-Za-z][" + NamedBuilder.NAME_SEPARATOR + "A-Za-z0-9_]*", "a.a"),
+  OPEN_CONTENT("\\(", "("),
+  CLOSED_CONTENT("\\)", ")"),
+  ASSIGN_SEPARATOR("=", "="),
+  LIST_SEPARATOR(";", ";"),
+  INTERVAL_SEPARATOR(":", ":"),
+  OPEN_LIST("\\[", "["),
+  CLOSED_LIST("\\]", "]"),
+  LIST_JOIN("\\*", "*"),
+  LIST_CONCAT("\\+", "+");
+
   private final String regex;
   private final String rendered;
 
@@ -51,7 +52,8 @@ public enum TokenType {
   }
 
   Optional<Token> next(String s, int i) {
-    Matcher matcher = Pattern.compile(regex).matcher(s);
+    Matcher matcher = Pattern.compile(StringParser.VOID_REGEX + regex + StringParser.VOID_REGEX)
+        .matcher(s);
     if (!matcher.find(i)) {
       return Optional.empty();
     }
