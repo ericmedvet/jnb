@@ -23,12 +23,22 @@ import io.github.ericmedvet.jnb.core.MapNamedParamMap;
 import io.github.ericmedvet.jnb.core.NamedParamMap;
 import io.github.ericmedvet.jnb.core.ParamMap;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class StringParser {
 
-  public static final String VOID_REGEX = "\\s*(%[^\\n\\r]*[\\n\\r])*";
+  public static final String LINE_TERMINATOR_REGEX = "(\\r\\n)|(\\r)|(\\n)";
+  public static final String VOID_REGEX = "\\s*(%[^\\n\\r]*(" + LINE_TERMINATOR_REGEX + ")*)*";
   private static final int CONTEXT_SIZE = 10;
+
+  private record StringPosition(int lineIndex, int charIndex, int lineStartCharIndex) {
+    @Override
+    public String toString() {
+      return "%d:%d".formatted(lineIndex + 1, charIndex + 1);
+    }
+  }
 
   record DNode(Token token, Number value) implements Node {}
 
@@ -68,13 +78,14 @@ public class StringParser {
     if (eNode.token.end() != s.length()) {
       int start = Math.max(0, eNode.token.end() - CONTEXT_SIZE);
       int end = Math.min(s.length(), eNode.token.end() + CONTEXT_SIZE);
-      throw new IllegalArgumentException("Unexpected trailing content `%s` @%d `%s`[%d:%s]"
+      String msg = ("Unexpected trailing content `%s` @%s in `%s`[%d:%d]")
           .formatted(
-              s.substring(eNode.token.end(), eNode.token.end() + 1),
-              eNode.token.end(),
-              s.substring(start, end).replaceAll("[\\n\\r]", "¶").replaceAll("\\s\\s+", "␣"),
+              linearizeSubstring(s, eNode.token.end(), eNode.token.end() + 1),
+              stringPosition(s, eNode.token.end()),
+              linearizeSubstring(s, start, end),
               start,
-              end));
+              end);
+      throw new IllegalArgumentException(msg);
     }
     return from(eNode);
   }
@@ -141,40 +152,53 @@ public class StringParser {
         .max(Comparator.comparingInt(c -> c.token.length()));
     int start = Math.max(0, lastErrorIndex - CONTEXT_SIZE);
     int end = Math.min(lastErrorIndex + CONTEXT_SIZE, s.length());
-    String msg = ("Syntax error: `%s` found instead of %s @%d in `%s`[%d:%d]")
+    String msg = ("Syntax error: `%s` found instead of %s @%s in `%s`")
         .formatted(
-            cleanSubstring(s, lastErrorIndex, lastErrorIndex + 1),
+            linearizeSubstring(s, lastErrorIndex, lastErrorIndex + 1),
             lastErrorCalls.stream()
                 .map(c -> Objects.isNull(c.tokenType)
                     ? c.nodeClass.getSimpleName()
                     : "`%s`".formatted(c.tokenType.rendered()))
                 .collect(Collectors.joining(" or ")),
-            lastErrorIndex,
-            cleanSubstring(s, start, end),
-            start,
-            end);
+            stringPosition(s, lastErrorIndex),
+            linearizeSubstring(s, start, end));
     if (oLastSuccessfullCall.isPresent()) {
       Call lastSuccessfullCall = oLastSuccessfullCall.get();
       msg = msg
-          + "; last successful match: %s @%d `%s`[%d:%d]"
+          + "; last successful match: %s @%s `%s`"
               .formatted(
                   Objects.isNull(lastSuccessfullCall.tokenType)
                       ? lastSuccessfullCall.nodeClass.getSimpleName()
                       : "`%s`".formatted(lastSuccessfullCall.tokenType.rendered()),
-                  lastSuccessfullCall.i,
-                  cleanSubstring(
-                      s, lastSuccessfullCall.token.start(), lastSuccessfullCall.token.end()),
-                  lastSuccessfullCall.token.start(),
-                  lastSuccessfullCall.token.end());
+                  stringPosition(s, lastSuccessfullCall.i),
+                  linearizeSubstring(
+                      s, lastSuccessfullCall.token.start(), lastSuccessfullCall.token.end()));
     }
     return new IllegalArgumentException(msg);
   }
 
-  private static String cleanSubstring(String s, int start, int end) {
+  private static StringPosition stringPosition(String s, int index) {
+    Pattern pattern = Pattern.compile(LINE_TERMINATOR_REGEX);
+    Matcher matcher = pattern.matcher(s);
+    int l = 0;
+    int currentLineEndIndex;
+    int lastLineStartIndex = 0;
+    while (matcher.find(lastLineStartIndex)) {
+      currentLineEndIndex = matcher.end();
+      if (index < currentLineEndIndex) {
+        return new StringPosition(l, index - lastLineStartIndex, lastLineStartIndex);
+      }
+      l = l + 1;
+      lastLineStartIndex = matcher.end();
+    }
+    return new StringPosition(l, index - lastLineStartIndex, lastLineStartIndex);
+  }
+
+  private static String linearizeSubstring(String s, int start, int end) {
     if (s.isEmpty()) {
       return "";
     }
-    return s.substring(start, end).replaceAll("[\\n\\r]", "¶").replaceAll("\\s\\s+", "␣");
+    return s.substring(start, end).replaceAll(LINE_TERMINATOR_REGEX, "↲").replaceAll("\\s\\s+", "␣");
   }
 
   private <N extends Node> Optional<N> parse(int i, Class<N> nodeClass) {

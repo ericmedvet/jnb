@@ -93,7 +93,7 @@ You can annotate a method or a constructor (also of a `record`) in order to make
 
 For example:
 ```java
-public static Person young(@Param("name") String name, @Param(value = "age",dI = 43) int age) {
+public static Person young(@Param("name") String name, @Param(value = "age", dI = 43) int age) {
   return new Person(name, 18);
 }
 ```
