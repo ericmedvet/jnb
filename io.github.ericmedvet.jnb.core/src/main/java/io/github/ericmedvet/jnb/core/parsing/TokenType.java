@@ -28,6 +28,9 @@ public enum TokenType {
   NUM("(-?[0-9]+(\\.[0-9]+)?)|(-?Infinity)", "0.0"),
   I_NUM("[0-9]+?", "0"),
   STRING("([A-Za-z][A-Za-z0-9_]*)|(\"[^\"]*\")", "a"),
+  CONST_NAME(
+      "(" + Pattern.quote(StringParser.CONST_NAME_PREFIX) + "[A-Za-z][A-Za-z0-9_]*)|(\"[^\"]*\")",
+      StringParser.CONST_NAME_PREFIX + "a"),
   NAME("[A-Za-z][" + NamedBuilder.NAME_SEPARATOR + "A-Za-z0-9_]*", "a.a"),
   OPEN_CONTENT("\\(", "("),
   CLOSED_CONTENT("\\)", ")"),

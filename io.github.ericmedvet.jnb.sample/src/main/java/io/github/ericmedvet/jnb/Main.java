@@ -20,22 +20,24 @@
 package io.github.ericmedvet.jnb;
 
 import io.github.ericmedvet.jnb.core.*;
+import io.github.ericmedvet.jnb.core.parsing.StringParser;
 import java.util.List;
 
 public class Main {
 
-  private static final String S =
+  private static final String S = // spotless:off
       """
-office(
-head = person(name = "Mario Rossi"; pet = pet(name = Fuffi; booleans = [true]));
-staff = + [
-person(name = Alice; age = 33; nicknames = [Puce; "The Cice"]; gender = f);
-person(name = Bob);
-person(name = Charlie; age = 38)
-] + [person(name = Dane; age = 28)];
-roomNumbers = [202:1:205]
-)
-""";
+          office(       % this is a comment
+            head = person(name = "Mario Rossi"; age = 43);
+            staff = + [
+              person(name = Alice; age = 33; nicknames = [Puce; "The Cice"]);
+              person(name = Bob; age = 25);
+              person(name = Charlie; age = 38)
+            ] + [person(name = Dane; age = 28)];
+            % another comment
+            roomNumbers = [201:2:210] \s
+          )
+          """; // spotless:on
 
   public enum DayOfWeek {
     MON,
@@ -94,6 +96,7 @@ roomNumbers = [202:1:205]
           List<Boolean> booleans) {}
 
   public static void main(String[] args) {
+    justParse();
     NamedBuilder<?> nb = NamedBuilder.empty()
         .and(NamedBuilder.fromClass(Office.class))
         .and(NamedBuilder.fromClass(Person.class))
@@ -116,5 +119,33 @@ roomNumbers = [202:1:205]
 
     InfoPrinter infoPrinter = new InfoPrinter();
     infoPrinter.print(nb, System.out);
+  }
+
+  private static void justParse() {
+    String s1 = // spotless:off
+        """
+            $age = 45
+            $a = $age
+            $owner = person(name = eric; age = $a)
+            """; // spotless:on
+    String s2 = // spotless:off
+        """
+            animal(
+              name = simba;
+              age = 17
+            )
+            """; // spotless:on
+    String s3 = // spotless:off
+        """
+            animal(
+              name = simba;
+              owner = $owner;
+              age = 17
+            )
+            """; // spotless:on
+    // System.out.println(StringParser.parse(s2));
+    System.out.println(StringParser.parse(s1 + s2));
+    System.out.println(StringParser.parse(s1 + s3));
+    System.exit(0);
   }
 }

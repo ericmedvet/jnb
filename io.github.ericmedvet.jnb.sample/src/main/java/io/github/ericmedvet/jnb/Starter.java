@@ -59,17 +59,17 @@ public class Starter {
   public static void main(String[] args) {
     String description = // spotless:off
         """
-office(       % this is a comment
-head = person(name = "Mario Rossi"; age = 43);
-staff = + [
-person(name = Alice; age = 33; nicknames = [Puce; "The Cice"]);
-person(name = Bob; age = 25);
-person(name = Charlie; age = 38a)
-] + [person(name = Dane; age = 28)];
-% another comment
-roomNumbers = [201:2:210] \s
-)
-"""; // spotless:on
+            office(       % this is a comment
+              head = person(name = "Mario Rossi"; age = 43);
+              staff = + [
+                person(name = Alice; age = 33; nicknames = [Puce; "The Cice"]);
+                person(name = Bob; age = 25);
+                person(name = Charlie; age = 38)
+              ] + [person(name = Dane; age = 28)];
+              % another comment
+              roomNumbers = [201:2:210] \s
+            )
+            """; // spotless:on
     NamedBuilder<?> namedBuilder = NamedBuilder.fromDiscovery("io.github.ericmedvet");
     System.out.println(namedBuilder);
     Office office = (Office) namedBuilder.build(description);
