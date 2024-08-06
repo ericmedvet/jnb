@@ -32,6 +32,7 @@ public class StringParser {
   public static final String LINE_TERMINATOR_REGEX = "(\\r\\n)|(\\r)|(\\n)";
   public static final String VOID_REGEX = "\\s*(%[^\\n\\r]*(" + LINE_TERMINATOR_REGEX + ")*)*";
   private static final int CONTEXT_SIZE = 10;
+  private static final boolean SHOW_LAST_MATCH = false;
 
   private record StringPosition(int lineIndex, int charIndex, int lineStartCharIndex) {
     @Override
@@ -162,7 +163,7 @@ public class StringParser {
                 .collect(Collectors.joining(" or ")),
             stringPosition(s, lastErrorIndex),
             linearizeSubstring(s, start, end));
-    if (oLastSuccessfullCall.isPresent()) {
+    if (oLastSuccessfullCall.isPresent() && SHOW_LAST_MATCH) {
       Call lastSuccessfullCall = oLastSuccessfullCall.get();
       msg = msg
           + "; last successful match: %s @%s `%s`"
