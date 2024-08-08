@@ -19,6 +19,9 @@
  */
 package io.github.ericmedvet.jnb.core.parsing;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public record Token(int start, int end) {
   public String trimmedContent(String s) {
     return s.substring(start, end)
@@ -27,7 +30,12 @@ public record Token(int start, int end) {
   }
 
   public String trimmedUnquotedContent(String s) {
-    return trimmedContent(s).replaceAll("\"", "");
+    String innerS = s.substring(start, end).replaceAll("\\A" + StringParser.VOID_REGEX, "");
+    Matcher m = Pattern.compile(TokenType.STRING.getRegex()).matcher(innerS);
+    if (!m.find()) {
+      return "";
+    }
+    return innerS.substring(m.start(), m.end()).replace("\"", "");
   }
 
   public int length() {

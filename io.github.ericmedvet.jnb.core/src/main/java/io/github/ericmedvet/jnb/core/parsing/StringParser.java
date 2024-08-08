@@ -30,6 +30,9 @@ public class StringParser {
   public static final String LINE_TERMINATOR_REGEX = "(\\r\\n)|(\\r)|(\\n)";
   public static final String VOID_REGEX = "\\s*(%[^\\n\\r]*(" + LINE_TERMINATOR_REGEX + ")*)*";
   public static final String CONST_NAME_PREFIX = "$";
+  public static final String PLAIN_STRING_REGEX = "[A-Za-z][A-Za-z0-9_]*";
+  public static final String QUOTED_STRING_REGEX = "\"[^\"]*\"";
+
   private final String s;
   private final Map<String, Node> consts;
 
@@ -324,7 +327,7 @@ public class StringParser {
   private LSNode parseLS(int i) throws ParseException {
     Token openT = TokenType.OPEN_LIST.next(s, i);
     ListNode<SNode> ssNode = parseListNode(openT.end(), this::parseS, true);
-    Token closedT = TokenType.OPEN_LIST.next(s, ssNode.token().end());
+    Token closedT = TokenType.CLOSED_LIST.next(s, ssNode.token().end());
     return new LSNode(new Token(openT.start(), closedT.end()), ssNode);
   }
 

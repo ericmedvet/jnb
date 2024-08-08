@@ -20,7 +20,10 @@
 package io.github.ericmedvet.jnb;
 
 import io.github.ericmedvet.jnb.core.*;
-import io.github.ericmedvet.jnb.core.parsing.StringParser;
+import io.github.ericmedvet.jnb.core.parsing.*;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 public class Main {
@@ -95,7 +98,7 @@ public class Main {
               dBs = {false, false})
           List<Boolean> booleans) {}
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws ParseException, IOException {
     justParse();
     NamedBuilder<?> nb = NamedBuilder.empty()
         .and(NamedBuilder.fromClass(Office.class))
@@ -121,12 +124,17 @@ public class Main {
     infoPrinter.print(nb, System.out);
   }
 
-  private static void justParse() {
+  private static void justParse() throws ParseException, IOException {
     String s1 = // spotless:off
         """
             $age = 45
             $a = $age
-            $owner = person(name = eric; age = $a)
+            $owner = person(
+              name = eric; age = $a; friends = [
+                toio;
+                ucio
+              ]
+            )
             """; // spotless:on
     String s2 = // spotless:off
         """
@@ -139,15 +147,20 @@ public class Main {
     String s3 = // spotless:off
         """
             animal(            
-              name = simba;
-              nums = [1; 2; 3]; % comment
+              name = "simba%33"; % comment with "quoted" content;
+              nums = (name = [1;2;3]) * [n(); n()]; % comment
               owner = $owner;
               age = 17
             )
             """; // spotless:on
+    String se = Files.readString(Path.of("../jgea/io.github.ericmedvet.jgea"
+        + ".experimenter/src/main/resources/exp-examples/robot-vs-nav.txt"));
     // System.out.println(StringParser.parse(s2));
     // System.out.println(StringParser.parse(s1 + s2));
     System.out.println(StringParser.parse(s1 + s3));
+    System.out.println(MapNamedParamMap.prettyToString(StringParser.parse(se)));
+    NamedParamMap npm = StringParser.parse(se);
+    System.out.println(((List<?>) npm.value("runs", ParamMap.Type.NAMED_PARAM_MAPS)).size());
     System.exit(0);
   }
 }
