@@ -19,35 +19,28 @@
  */
 package io.github.ericmedvet.jnb.core.parsing;
 
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
-public class WrongTokenException extends ParseException {
-  private final List<TokenType> expectedTokenTypes;
-
-  public WrongTokenException(int index, String string, List<TokenType> expectedTokenTypes) {
+public class CompositeWrongTokenException extends WrongTokenException {
+  public CompositeWrongTokenException(Collection<WrongTokenException> wtes) {
     super(
-        "`%s` found instead of %s"
-            .formatted(
-                linearize(string, index, index + 1),
-                expectedTokenTypes.stream()
-                    .map(tt -> "`%s`".formatted(tt.rendered()))
-                    .collect(Collectors.joining(" or "))),
-        null,
-        index,
-        string);
-    this.expectedTokenTypes = expectedTokenTypes;
-  }
-
-  public int getIndex() {
-    return index;
-  }
-
-  public String getString() {
-    return string;
-  }
-
-  public List<TokenType> getExpectedTokenTypes() {
-    return expectedTokenTypes;
+        wtes.stream()
+            .max(Comparator.comparingInt(WrongTokenException::getIndex))
+            .orElseThrow()
+            .getIndex(),
+        wtes.stream().findFirst().orElseThrow().getString(),
+        wtes.stream()
+            .filter(wte -> wte.getIndex()
+                == wtes.stream()
+                    .max(Comparator.comparingInt(WrongTokenException::getIndex))
+                    .orElseThrow()
+                    .getIndex())
+            .map(WrongTokenException::getExpectedTokenTypes)
+            .flatMap(List::stream)
+            .distinct()
+            .sorted()
+            .toList());
   }
 }

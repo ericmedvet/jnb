@@ -23,54 +23,43 @@ import io.github.ericmedvet.jnb.core.MapNamedParamMap;
 import io.github.ericmedvet.jnb.core.NamedParamMap;
 import io.github.ericmedvet.jnb.core.ParamMap;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class StringParser {
 
   public static final String LINE_TERMINATOR_REGEX = "(\\r\\n)|(\\r)|(\\n)";
   public static final String VOID_REGEX = "\\s*(%[^\\n\\r]*(" + LINE_TERMINATOR_REGEX + ")*)*";
   public static final String CONST_NAME_PREFIX = "$";
-  private static final int CONTEXT_SIZE = 10;
-  private static final boolean SHOW_LAST_MATCH = false;
   private final String s;
-  private final List<Call> calls;
   private final Map<String, Node> consts;
 
   private StringParser(String s) {
     this.s = s;
-    this.calls = new ArrayList<>();
     this.consts = new TreeMap<>();
+  }
+
+  @FunctionalInterface
+  private interface NodeParser<N extends Node> {
+    N parse(int i) throws ParseException;
   }
 
   record CNode(Token token, String name, Node value) implements Node {}
 
-  record CSENode(Token token, CSNode csNode, ENode eNode) implements Node {}
-
-  record CSNode(Token token, List<CNode> children) implements Node {}
-
-  private record Call(int i, Class<? extends Node> nodeClass, TokenType tokenType, Token token) {}
+  record CSENode(Token token, ListNode<CNode> csNode, ENode eNode) implements Node {}
 
   record DNode(Token token, Number value) implements Node {}
 
-  record DSNode(Token token, List<DNode> children) implements Node {}
+  record ENode(Token token, ListNode<NPNode> child, String name) implements Node {}
 
-  record ENode(Token token, NPSNode child, String name) implements Node {}
+  record LDNode(Token token, ListNode<DNode> child) implements Node {}
 
-  record ESNode(Token token, List<ENode> children) implements Node {}
+  record LENode(Token token, ListNode<ENode> child) implements Node {}
 
-  record LDNode(Token token, DSNode child) implements Node {}
-
-  record LENode(Token token, ESNode child) implements Node {}
-
-  record LSNode(Token token, SSNode child) implements Node {}
+  record LSNode(Token token, ListNode<SNode> child) implements Node {}
 
   record NPNode(Token token, String name, Node value) implements Node {}
 
-  record NPSNode(Token token, List<NPNode> children) implements Node {}
-
   record SNode(Token token, String value) implements Node {}
-
-  record SSNode(Token token, List<SNode> children) implements Node {}
 
   private static NamedParamMap from(ENode eNode) {
     Map<MapNamedParamMap.TypedKey, Object> values = new HashMap<>();
@@ -112,31 +101,16 @@ public class StringParser {
     return new MapNamedParamMap(eNode.name(), values);
   }
 
-  private static String linearizeSubstring(String s, int start, int end) {
-    if (s.isEmpty()) {
-      return "";
-    }
-    return s.substring(start, end).replaceAll(LINE_TERMINATOR_REGEX, "↲").replaceAll("\\s\\s+", "␣");
-  }
-
   public static NamedParamMap parse(String s) {
     StringParser stringParser = new StringParser(s);
-    CSENode cseNode = stringParser.parse(0, CSENode.class).orElseThrow(WrongTokenException::new);
-    ENode eNode = cseNode.eNode();
-    if (eNode.token().end() != s.length()) {
-      int start = Math.max(0, eNode.token().end() - CONTEXT_SIZE);
-      int end = Math.min(s.length(), eNode.token().end() + CONTEXT_SIZE);
-      String msg = ("Unexpected trailing content `%s` @%s in `%s`[%d:%d]")
-          .formatted(
-              linearizeSubstring(
-                  s, eNode.token().end(), eNode.token().end() + 1),
-              StringPosition.from(s, eNode.token().end()),
-              linearizeSubstring(s, start, end),
-              start,
-              end);
-      throw new IllegalArgumentException(msg);
+    try {
+      CSENode cseNode = stringParser.parseCSE(0);
+      TokenType.END_OF_STRING.next(s, cseNode.token().end());
+      ENode eNode = cseNode.eNode();
+      return from(eNode);
+    } catch (ParseException e) {
+      throw new RuntimeException(e.getMessage(), e);
     }
-    return from(eNode);
   }
 
   private static <T> List<T> withAppended(List<T> ts, T t) {
@@ -145,295 +119,94 @@ public class StringParser {
     return newTs;
   }
 
-  private ParseException buildException(Exception cause) {
-    int lastErrorIndex = calls.stream()
-        .filter(c -> c.token == null)
-        .mapToInt(c -> c.i)
-        .max()
-        .orElseThrow();
-    List<Call> lastErrorCalls = calls.stream()
-        .filter(c -> c.token == null)
-        .filter(c -> c.i == lastErrorIndex)
-        .toList();
-    Optional<Call> oLastSuccessfullCall = calls.stream()
-        .filter(c -> c.token() != null)
-        .filter(c -> c.token().end() == lastErrorIndex)
-        .max(Comparator.comparingInt(c -> c.token().length()));
-    int start = Math.max(0, lastErrorIndex - CONTEXT_SIZE);
-    int end = Math.min(lastErrorIndex + CONTEXT_SIZE, s.length());
-    Throwable rootCause = cause;
-    while (rootCause.getCause() != null) {
-      rootCause = rootCause.getCause();
-    }
-    String msg = ("Syntax error: `%s` found instead of %s @%s in `%s`%s")
-        .formatted(
-            linearizeSubstring(s, lastErrorIndex, lastErrorIndex + 1),
-            lastErrorCalls.stream()
-                .map(c -> Objects.isNull(c.tokenType)
-                    ? c.nodeClass.getSimpleName()
-                    : "`%s`".formatted(c.tokenType.rendered()))
-                .collect(Collectors.joining(" or ")),
-            StringPosition.from(s, lastErrorIndex),
-            linearizeSubstring(s, start, end),
-            rootCause instanceof ParseException ? "" : "caused by %s".formatted(rootCause));
-    if (oLastSuccessfullCall.isPresent() && SHOW_LAST_MATCH) {
-      Call lastSuccessfullCall = oLastSuccessfullCall.get();
-      msg = msg
-          + "; last successful match: %s @%s `%s`"
-              .formatted(
-                  Objects.isNull(lastSuccessfullCall.tokenType)
-                      ? lastSuccessfullCall.nodeClass.getSimpleName()
-                      : "`%s`".formatted(lastSuccessfullCall.tokenType.rendered()),
-                  StringPosition.from(s, lastSuccessfullCall.i),
-                  linearizeSubstring(
-                      s,
-                      lastSuccessfullCall.token().start(),
-                      lastSuccessfullCall.token().end()));
-    }
-    return new ParseException(msg, cause);
+  private CNode parseC(int i) throws ParseException {
+    Token tName = TokenType.CONST_NAME.next(s, i);
+    Token tAssign = TokenType.ASSIGN_SEPARATOR.next(s, tName.end());
+    Node value = parseValue(tAssign.end());
+    String constantName = tName.trimmedContent(s);
+    consts.put(constantName, value);
+    return new CNode(new Token(tName.start(), value.token().end()), constantName, value);
   }
 
-  private <N extends Node> Optional<N> parse(int i, Class<N> nodeClass) {
-    Optional<? extends Node> oNode;
+  private CSENode parseCSE(int i) throws ParseException {
+    ListNode<CNode> csNode = parseListNode(i, this::parseC, false);
+    ENode eNode = parseE(csNode.token().end());
+    return new CSENode(new Token(csNode.token().start(), eNode.token().end()), csNode, eNode);
+  }
+
+  private DNode parseD(int i) throws ParseException {
+    Token tNum = TokenType.NUM.next(s, i);
     try {
-      if (nodeClass.equals(CNode.class)) {
-        oNode = parseC(i);
-      } else if (nodeClass.equals(CSNode.class)) {
-        oNode = parseCS(i);
-      } else if (nodeClass.equals(CSENode.class)) {
-        oNode = parseCSE(i);
-      } else if (nodeClass.equals(DNode.class)) {
-        oNode = parseD(i);
-      } else if (nodeClass.equals(DSNode.class)) {
-        oNode = parseDS(i);
-      } else if (nodeClass.equals(ENode.class)) {
-        oNode = parseE(i);
-      } else if (nodeClass.equals(ESNode.class)) {
-        oNode = parseES(i);
-      } else if (nodeClass.equals(LDNode.class)) {
-        oNode = parseLD(i);
-      } else if (nodeClass.equals(LENode.class)) {
-        oNode = parseLE(i);
-      } else if (nodeClass.equals(LSNode.class)) {
-        oNode = parseLS(i);
-      } else if (nodeClass.equals(NPNode.class)) {
-        oNode = parseNP(i);
-      } else if (nodeClass.equals(NPSNode.class)) {
-        oNode = parseNPS(i);
-      } else if (nodeClass.equals(SNode.class)) {
-        oNode = parseS(i);
-      } else if (nodeClass.equals(SSNode.class)) {
-        oNode = parseSS(i);
-      } else {
-        throw new IllegalArgumentException("Unknown node type %s".formatted(nodeClass.getSimpleName()));
-      }
-      if (oNode.isPresent()) {
-        calls.add(new Call(i, nodeClass, null, oNode.get().token()));
-        //noinspection unchecked
-        return oNode.map(n -> (N) n);
-      } else {
-        calls.add(new Call(i, nodeClass, null, null));
-        throw new ParseException("Unexpected empty token without exception", null);
-      }
-    } catch (RuntimeException e) {
-      calls.add(new Call(i, nodeClass, null, null));
-      if (e instanceof ParseException) {
-        throw buildException(e);
-      } else {
-        throw e;
-      }
+      return new DNode(tNum, Double.parseDouble(tNum.trimmedContent(s)));
+    } catch (NumberFormatException e) {
+      throw new ParseException(e.getMessage(), e, i, s);
     }
   }
 
-  private Optional<Token> parse(int i, TokenType tokenType) {
-    Optional<Token> oToken = tokenType.next(s, i);
-    calls.add(new Call(i, null, tokenType, oToken.orElse(null)));
-    return oToken;
+  private ENode parseE(int i) throws ParseException {
+    Token tName = TokenType.NAME.next(s, i);
+    Token tOpenPar = TokenType.OPEN_CONTENT.next(s, tName.end());
+    ListNode<NPNode> npsNode = parseListNode(tOpenPar.end(), this::parseNP, true);
+    Token tClosedPar = TokenType.CLOSED_CONTENT.next(s, npsNode.token().end());
+    return new ENode(new Token(tName.start(), tClosedPar.end()), npsNode, tName.trimmedContent(s));
   }
 
-  private Optional<CNode> parseC(int i) {
-    Token tName = parse(i, TokenType.CONST_NAME).orElseThrow(WrongTokenException::new);
-    Token tAssign = parse(tName.end(), TokenType.ASSIGN_SEPARATOR).orElseThrow(WrongTokenException::new);
-    CNode cNode;
-    // try parse const name
-    Optional<Token> oTConstName = parse(tAssign.end(), TokenType.CONST_NAME);
-    if (oTConstName.isPresent()) {
-      Token tConstName = oTConstName.get();
-      String constName = tConstName.trimmedContent(s);
-      Node value = consts.get(constName);
-      if (value == null) {
-        throw new UndefinedConstantNameException(
-            constName, consts.keySet().stream().toList(), StringPosition.from(s, tConstName.start()));
-      }
-      cNode = new CNode(new Token(tName.start(), tConstName.end()), tName.trimmedContent(s), value);
-    } else {
-      // try parse regular content
-      Optional<? extends Node> oNode = parseRegularContent(tAssign.end());
-      Node value = oNode.orElseThrow(WrongTokenException::new);
-      String constantName = tName.trimmedContent(s);
-      cNode = new CNode(new Token(tName.start(), value.token().end()), constantName, value);
-    }
-    consts.put(cNode.name(), cNode.value());
-    return Optional.of(cNode);
-  }
-
-  private Optional<CSNode> parseCS(int i) {
-    List<CNode> nodes = new ArrayList<>();
-    try {
-      nodes.add(parse(i, CNode.class).orElseThrow(WrongTokenException::new));
-      while (true) {
-        try {
-          nodes.add(parse(nodes.get(nodes.size() - 1).token().end(), CNode.class)
-              .orElseThrow(WrongTokenException::new));
-        } catch (UndefinedConstantNameException e) {
-          throw e;
-        } catch (RuntimeException e) {
-          break;
-        }
-      }
-    } catch (UndefinedConstantNameException e) {
-      throw e;
-    } catch (RuntimeException e) {
-      if (nodes.isEmpty()) {
-        return Optional.of(new CSNode(new Token(i, i), List.of()));
-      }
-      throw e;
-    }
-    return Optional.of(new CSNode(
-        new Token(
-            i,
-            nodes.isEmpty()
-                ? i
-                : nodes.get(nodes.size() - 1).token().end()),
-        nodes));
-  }
-
-  private Optional<CSENode> parseCSE(int i) {
-    CSNode csNode = parseCS(i).orElseThrow(WrongTokenException::new);
-    ENode eNode = parseE(csNode.token().end()).orElseThrow(WrongTokenException::new);
-    return Optional.of(
-        new CSENode(new Token(csNode.token().start(), eNode.token().end()), csNode, eNode));
-  }
-
-  private Optional<DNode> parseD(int i) {
-    return TokenType.NUM.next(s, i).map(t -> new DNode(t, Double.parseDouble(t.trimmedContent(s))));
-  }
-
-  private Optional<DSNode> parseDS(int i) {
-    List<DNode> nodes = new ArrayList<>();
-    try {
-      nodes.add(parse(i, DNode.class).orElseThrow(WrongTokenException::new));
-      while (true) {
-        Optional<Token> sepT = parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
-        if (sepT.isEmpty()) {
-          break;
-        }
-        nodes.add(parse(sepT.get().end(), DNode.class).orElseThrow(WrongTokenException::new));
-      }
-    } catch (RuntimeException e) {
-      if (nodes.isEmpty()) {
-        return Optional.of(new DSNode(new Token(i, i), List.of()));
-      }
-      throw e;
-    }
-    return Optional.of(new DSNode(
-        new Token(
-            i,
-            nodes.isEmpty()
-                ? i
-                : nodes.get(nodes.size() - 1).token().end()),
-        nodes));
-  }
-
-  private Optional<ENode> parseE(int i) {
-    Token tName = parse(i, TokenType.NAME).orElseThrow(WrongTokenException::new);
-    Token tOpenPar = parse(tName.end(), TokenType.OPEN_CONTENT).orElseThrow(WrongTokenException::new);
-    NPSNode npsNode = parse(tOpenPar.end(), NPSNode.class).orElseThrow(WrongTokenException::new);
-    Token tClosedPar =
-        parse(npsNode.token().end(), TokenType.CLOSED_CONTENT).orElseThrow(WrongTokenException::new);
-    return Optional.of(new ENode(new Token(tName.start(), tClosedPar.end()), npsNode, tName.trimmedContent(s)));
-  }
-
-  private Optional<ESNode> parseES(int i) {
-    List<ENode> nodes = new ArrayList<>();
-    try {
-      nodes.add(parse(i, ENode.class).orElseThrow(WrongTokenException::new));
-      while (true) {
-        Optional<Token> sepT = parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
-        if (sepT.isEmpty()) {
-          break;
-        }
-        nodes.add(parse(sepT.get().end(), ENode.class).orElseThrow(WrongTokenException::new));
-      }
-    } catch (RuntimeException e) {
-      if (nodes.isEmpty()) {
-        return Optional.of(new ESNode(new Token(i, i), List.of()));
-      }
-      throw e;
-    }
-    return Optional.of(new ESNode(
-        new Token(
-            i,
-            nodes.isEmpty()
-                ? i
-                : nodes.get(nodes.size() - 1).token().end()),
-        nodes));
-  }
-
-  private Optional<LDNode> parseLD(int i) {
+  private LDNode parseLD(int i) throws ParseException {
+    List<WrongTokenException> wtes = new ArrayList<>();
     // case: interval
     try {
-      Token openT = parse(i, TokenType.OPEN_LIST).orElseThrow(WrongTokenException::new);
-      DNode minDNode = parse(openT.end(), DNode.class).orElseThrow(WrongTokenException::new);
-      Token sep1 =
-          parse(minDNode.token().end(), TokenType.INTERVAL_SEPARATOR).orElseThrow(WrongTokenException::new);
-      DNode stepDNode = parse(sep1.end(), DNode.class).orElseThrow(WrongTokenException::new);
-      Token sep2 =
-          parse(stepDNode.token().end(), TokenType.INTERVAL_SEPARATOR).orElseThrow(WrongTokenException::new);
-      DNode maxDNode = parse(sep2.end(), DNode.class).orElseThrow(WrongTokenException::new);
-      Token closedT = parse(maxDNode.token().end(), TokenType.CLOSED_LIST).orElseThrow(WrongTokenException::new);
+      Token openT = TokenType.OPEN_LIST.next(s, i);
+      DNode minDNode = parseD(openT.end());
+      Token sep1 = TokenType.INTERVAL_SEPARATOR.next(s, minDNode.token().end());
+      DNode stepDNode = parseD(sep1.end());
+      Token sep2 = TokenType.INTERVAL_SEPARATOR.next(s, stepDNode.token().end());
+      DNode maxDNode = parseD(sep2.end());
+      Token closedT = TokenType.CLOSED_LIST.next(s, maxDNode.token().end());
       double min = minDNode.value().doubleValue();
       double step = stepDNode.value().doubleValue();
       double max = maxDNode.value().doubleValue();
       if (min > max || step <= 0) {
-        throw new IllegalArgumentException(
+        throw new ParseException(
             "Cannot build list of numbers because min>max or step<=0: min=%f, max=%f, step=%f"
-                .formatted(min, max, step));
+                .formatted(min, max, step),
+            null,
+            i,
+            s);
       }
       List<DNode> dNodes = new ArrayList<>();
       for (double v = min; v <= max; v = v + step) {
         dNodes.add(new DNode(
             new Token(minDNode.token().start(), maxDNode.token().start()), v));
       }
-      return Optional.of(new LDNode(
+      return new LDNode(
           new Token(openT.start(), closedT.end()),
-          new DSNode(
-              new Token(minDNode.token().start(), maxDNode.token().start()), dNodes)));
-    } catch (RuntimeException e) {
-      // ignore
+          ListNode.from(
+              new Token(minDNode.token().start(), maxDNode.token().start()), dNodes));
+    } catch (WrongTokenException wte) {
+      wtes.add(wte);
     }
     // case: list of values
     try {
-      Token openT = parse(i, TokenType.OPEN_LIST).orElseThrow(WrongTokenException::new);
-      DSNode dsNode = parse(openT.end(), DSNode.class).orElseThrow(WrongTokenException::new);
-      Token closedT = parse(dsNode.token().end(), TokenType.CLOSED_LIST).orElseThrow(WrongTokenException::new);
-      return Optional.of(new LDNode(new Token(openT.start(), closedT.end()), dsNode));
-    } catch (RuntimeException e) {
-      // ignore
+      Token openT = TokenType.OPEN_LIST.next(s, i);
+      ListNode<DNode> dsNode = parseListNode(openT.end(), this::parseD, true);
+      Token closedT = TokenType.CLOSED_LIST.next(s, dsNode.token().end());
+      return new LDNode(new Token(openT.start(), closedT.end()), dsNode);
+    } catch (WrongTokenException wte) {
+      wtes.add(wte);
     }
     // nothing
-    throw new ParseException("No valid case", null);
+    throw new CompositeWrongTokenException(wtes);
   }
 
-  private Optional<LENode> parseLE(int i) {
+  private LENode parseLE(int i) throws ParseException {
+    List<WrongTokenException> wtes = new ArrayList<>();
     // case: list with join
     try {
-      Token openT = parse(i, TokenType.OPEN_CONTENT).orElseThrow(WrongTokenException::new);
-      NPNode npNode = parse(openT.end(), NPNode.class).orElseThrow(WrongTokenException::new);
-      Token closedT =
-          parse(npNode.token().end(), TokenType.CLOSED_CONTENT).orElseThrow(WrongTokenException::new);
-      Token jointT = parse(closedT.end(), TokenType.LIST_JOIN).orElseThrow(WrongTokenException::new);
-      LENode outerLENode = parse(jointT.end(), LENode.class).orElseThrow(WrongTokenException::new);
+      Token openT = TokenType.OPEN_CONTENT.next(s, i);
+      NPNode npNode = parseNP(openT.end());
+      Token closedT = TokenType.CLOSED_CONTENT.next(s, npNode.token().end());
+      Token jointT = TokenType.LIST_JOIN.next(s, closedT.end());
+      LENode outerLENode = parseLE(jointT.end());
       // do cartesian product
       List<ENode> originalENodes = outerLENode.child().children();
       List<ENode> eNodes = new ArrayList<>();
@@ -443,7 +216,7 @@ public class StringParser {
             || npNode.value() instanceof ENode) {
           eNodes.add(new ENode(
               originalENode.token(),
-              new NPSNode(
+              ListNode.from(
                   originalENode.child().token(),
                   withAppended(originalENode.child().children(), npNode)),
               originalENode.name()));
@@ -452,7 +225,7 @@ public class StringParser {
             for (DNode dNode : ldNode.child().children()) {
               eNodes.add(new ENode(
                   originalENode.token(),
-                  new NPSNode(
+                  ListNode.from(
                       originalENode.child().token(),
                       withAppended(
                           originalENode.child().children(),
@@ -463,7 +236,7 @@ public class StringParser {
             for (SNode sNode : lsNode.child().children()) {
               eNodes.add(new ENode(
                   originalENode.token(),
-                  new NPSNode(
+                  ListNode.from(
                       originalENode.child().token(),
                       withAppended(
                           originalENode.child().children(),
@@ -474,7 +247,7 @@ public class StringParser {
             for (ENode eNode : leNode.child().children()) {
               eNodes.add(new ENode(
                   originalENode.token(),
-                  new NPSNode(
+                  ListNode.from(
                       originalENode.child().token(),
                       withAppended(
                           originalENode.child().children(),
@@ -484,163 +257,181 @@ public class StringParser {
           }
         }
       }
-      return Optional.of(new LENode(
+      return new LENode(
           new Token(openT.start(), outerLENode.token().end()),
-          new ESNode(
+          ListNode.from(
               new Token(
                   npNode.token().start(), outerLENode.token().end()),
-              eNodes)));
-    } catch (RuntimeException e) {
-      // ignore
+              eNodes));
+    } catch (WrongTokenException wte) {
+      wtes.add(wte);
     }
     // case: list with mult
     try {
-      Token multToken = parse(i, TokenType.I_NUM).orElseThrow(WrongTokenException::new);
+      Token multToken = TokenType.I_NUM.next(s, i);
       int mult = Integer.parseInt(multToken.trimmedContent(s));
-      Token jointT = parse(multToken.end(), TokenType.LIST_JOIN).orElseThrow(WrongTokenException::new);
-      LENode originalLENode = parse(jointT.end(), LENode.class).orElseThrow(WrongTokenException::new);
+      Token jointT = TokenType.LIST_JOIN.next(s, multToken.end());
+      LENode originalLENode = parseLE(jointT.end());
       // multiply
       List<ENode> eNodes = new ArrayList<>();
       for (int j = 0; j < mult; j++) {
         eNodes.addAll(originalLENode.child().children());
       }
-      return Optional.of(new LENode(
+      return new LENode(
           new Token(multToken.start(), originalLENode.token().end()),
-          new ESNode(
+          ListNode.from(
               new Token(
                   originalLENode.token().start(),
                   originalLENode.token().end()),
-              eNodes)));
-    } catch (RuntimeException e) {
-      // ignore
+              eNodes));
+    } catch (NumberFormatException e) {
+      throw new ParseException(e.getMessage(), e, i, s);
+    } catch (WrongTokenException wte) {
+      wtes.add(wte);
     }
     // case: list with concat
     try {
-      Token firstConcatT = parse(i, TokenType.LIST_CONCAT).orElseThrow(WrongTokenException::new);
-      LENode firstLENode = parse(firstConcatT.end(), LENode.class).orElseThrow(WrongTokenException::new);
+      Token firstConcatT = TokenType.LIST_CONCAT.next(s, i);
+      LENode firstLENode = parseLE(firstConcatT.end());
       Token secondConcatT =
-          parse(firstLENode.token().end(), TokenType.LIST_CONCAT).orElseThrow(WrongTokenException::new);
-      LENode secondLENode = parse(secondConcatT.end(), LENode.class).orElseThrow(WrongTokenException::new);
+          TokenType.LIST_CONCAT.next(s, firstLENode.token().end());
+      LENode secondLENode = parseLE(secondConcatT.end());
       // concat
-      List<ENode> eNodes = new ArrayList<>(firstLENode.child().children());
-      eNodes.addAll(secondLENode.child().children());
-      return Optional.of(new LENode(
+      return new LENode(
           new Token(firstConcatT.start(), secondLENode.token().end()),
-          new ESNode(
-              new Token(firstConcatT.start(), secondLENode.token().end()), eNodes)));
-    } catch (RuntimeException e) {
-      // ignore
+          ListNode.from(
+              new Token(firstConcatT.start(), secondLENode.token().end()),
+              Stream.concat(
+                      firstLENode.child().children().stream(),
+                      secondLENode.child().children().stream())
+                  .toList()));
+    } catch (WrongTokenException wte) {
+      wtes.add(wte);
     }
     // case: just list
     try {
-      Token openT = parse(i, TokenType.OPEN_LIST).orElseThrow(WrongTokenException::new);
-      ESNode sNode = parse(openT.end(), ESNode.class).orElseThrow(WrongTokenException::new);
-      Token closedT = parse(sNode.token().end(), TokenType.CLOSED_LIST).orElseThrow(WrongTokenException::new);
-      return Optional.of(new LENode(new Token(openT.start(), closedT.end()), sNode));
-    } catch (RuntimeException e) {
-      // ignore
+      Token openT = TokenType.OPEN_LIST.next(s, i);
+      ListNode<ENode> esNode = parseListNode(openT.end(), this::parseE, true);
+      Token closedT = TokenType.CLOSED_LIST.next(s, esNode.token().end());
+      return new LENode(new Token(openT.start(), closedT.end()), esNode);
+    } catch (WrongTokenException wte) {
+      wtes.add(wte);
     }
     // nothing
-    throw new IllegalArgumentException("No valid case");
+    throw new CompositeWrongTokenException(wtes);
   }
 
-  private Optional<LSNode> parseLS(int i) {
-    Token openT = parse(i, TokenType.OPEN_LIST).orElseThrow(WrongTokenException::new);
-    SSNode ssNode = parse(openT.end(), SSNode.class).orElseThrow(WrongTokenException::new);
-    Token closedT = parse(ssNode.token().end(), TokenType.CLOSED_LIST).orElseThrow(WrongTokenException::new);
-    return Optional.of(new LSNode(new Token(openT.start(), closedT.end()), ssNode));
+  private LSNode parseLS(int i) throws ParseException {
+    Token openT = TokenType.OPEN_LIST.next(s, i);
+    ListNode<SNode> ssNode = parseListNode(openT.end(), this::parseS, true);
+    Token closedT = TokenType.OPEN_LIST.next(s, ssNode.token().end());
+    return new LSNode(new Token(openT.start(), closedT.end()), ssNode);
   }
 
-  private Optional<NPNode> parseNP(int i) {
-    Token tName = parse(i, TokenType.STRING).orElseThrow(WrongTokenException::new);
-    Token tAssign = parse(tName.end(), TokenType.ASSIGN_SEPARATOR).orElseThrow(WrongTokenException::new);
+  private <N extends Node> ListNode<N> parseListNode(int i, NodeParser<N> nodeParser, boolean withSeparator)
+      throws ParseException {
+    List<N> children = new ArrayList<>();
+    int j = i;
+    while (true) {
+      try {
+        N node = nodeParser.parse(j);
+        children.add(node);
+        j = node.token().end();
+        if (withSeparator) {
+          j = TokenType.LIST_SEPARATOR.next(s, j).end();
+        }
+      } catch (WrongTokenException e) {
+        if (e.getIndex() > j) {
+          throw e;
+        }
+        if (!withSeparator
+            || children.isEmpty()
+            || e.getExpectedTokenTypes().equals(List.of(TokenType.LIST_SEPARATOR))) {
+          break;
+        }
+        throw e;
+      }
+    }
+    return ListNode.from(new Token(i, j), children);
+  }
+
+  private NPNode parseNP(int i) throws ParseException {
+    Token tName = TokenType.STRING.next(s, i);
+    Token tAssign = TokenType.ASSIGN_SEPARATOR.next(s, tName.end());
+    Node value = parseValue(tAssign.end());
+    return new NPNode(new Token(tName.start(), value.token().end()), tName.trimmedContent(s), value);
+  }
+
+  private SNode parseS(int i) throws ParseException {
+    Token sToken = TokenType.STRING.next(s, i);
+    return new SNode(sToken, sToken.trimmedUnquotedContent(s));
+  }
+
+  private Node parseValue(int i) throws ParseException {
+    List<WrongTokenException> wtes = new ArrayList<>();
     // try parse const name
-    Optional<Token> oTConstName = parse(tAssign.end(), TokenType.CONST_NAME);
-    if (oTConstName.isPresent()) {
-      Token tConstName = oTConstName.get();
+    try {
+      Token tConstName = TokenType.CONST_NAME.next(s, i);
       String constName = tConstName.trimmedContent(s);
       Node value = consts.get(constName);
       if (value == null) {
         throw new UndefinedConstantNameException(
-            constName, consts.keySet().stream().toList(), StringPosition.from(s, tConstName.start()));
+            i, s, constName, consts.keySet().stream().toList());
       }
-      return Optional.of(new NPNode(new Token(tName.start(), tConstName.end()), tName.trimmedContent(s), value));
-    } else {
-      // try parse regular content
-      Optional<? extends Node> oNode = parseRegularContent(tAssign.end());
-      Node value = oNode.orElseThrow(WrongTokenException::new);
-      return Optional.of(
-          new NPNode(new Token(tName.start(), value.token().end()), tName.trimmedContent(s), value));
+      if (value instanceof DNode dNode) {
+        return new DNode(tConstName, dNode.value());
+      }
+      if (value instanceof ENode eNode) {
+        return new ENode(tConstName, eNode.child(), eNode.name());
+      }
+      if (value instanceof SNode sNode) {
+        return new SNode(tConstName, sNode.value());
+      }
+      if (value instanceof LDNode ldNode) {
+        return new LDNode(tConstName, ldNode.child());
+      }
+      if (value instanceof LENode leNode) {
+        return new LENode(tConstName, leNode.child());
+      }
+      if (value instanceof LSNode lsNode) {
+        return new LSNode(tConstName, lsNode.child());
+      }
+      throw new ParseException(
+          "Unknown type %s of const %s".formatted(value.getClass().getSimpleName(), constName), null, i, s);
+    } catch (WrongTokenException wte) {
+      wtes.add(wte);
     }
-  }
-
-  private Optional<NPSNode> parseNPS(int i) {
-    List<NPNode> nodes = new ArrayList<>();
+    // these order is with a purpose!
     try {
-      nodes.add(parse(i, NPNode.class).orElseThrow(WrongTokenException::new));
-      while (true) {
-        Optional<Token> ot = parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
-        if (ot.isEmpty()) {
-          break;
-        }
-        nodes.add(parse(ot.get().end(), NPNode.class).orElseThrow(WrongTokenException::new));
-      }
-    } catch (RuntimeException e) {
-      if (nodes.isEmpty()) {
-        return Optional.of(new NPSNode(new Token(i, i), List.of()));
-      }
-      throw e;
+      return parseE(i);
+    } catch (WrongTokenException wte) {
+      wtes.add(wte);
     }
-    return Optional.of(new NPSNode(
-        new Token(
-            i,
-            nodes.isEmpty()
-                ? i
-                : nodes.get(nodes.size() - 1).token().end()),
-        nodes));
-  }
-
-  private Optional<? extends Node> parseRegularContent(int i) {
-    for (Class<? extends Node> nodeClass :
-        List.of(ENode.class, LENode.class, DNode.class, SNode.class, LDNode.class, LSNode.class)) {
-      try {
-        return parse(i, nodeClass);
-      } catch (UndefinedConstantNameException e) {
-        throw e;
-      } catch (RuntimeException e) {
-        // ignore
-      }
-    }
-    return Optional.empty();
-  }
-
-  private Optional<SNode> parseS(int i) {
-    return parse(i, TokenType.STRING).map(t -> new SNode(t, t.trimmedUnquotedContent(s)));
-  }
-
-  private Optional<SSNode> parseSS(int i) {
-    List<SNode> nodes = new ArrayList<>();
     try {
-      nodes.add(parse(i, SNode.class).orElseThrow(WrongTokenException::new));
-      while (true) {
-        Optional<Token> sepT = parse(nodes.get(nodes.size() - 1).token().end(), TokenType.LIST_SEPARATOR);
-        if (sepT.isEmpty()) {
-          break;
-        }
-        nodes.add(parse(sepT.get().end(), SNode.class).orElseThrow(WrongTokenException::new));
-      }
-    } catch (RuntimeException e) {
-      if (nodes.isEmpty()) {
-        return Optional.of(new SSNode(new Token(i, i), List.of()));
-      }
-      throw e;
+      return parseLE(i);
+    } catch (WrongTokenException wte) {
+      wtes.add(wte);
     }
-    return Optional.of(new SSNode(
-        new Token(
-            i,
-            nodes.isEmpty()
-                ? i
-                : nodes.get(nodes.size() - 1).token().end()),
-        nodes));
+    try {
+      return parseD(i);
+    } catch (WrongTokenException wte) {
+      wtes.add(wte);
+    }
+    try {
+      return parseS(i);
+    } catch (WrongTokenException wte) {
+      wtes.add(wte);
+    }
+    try {
+      return parseLD(i);
+    } catch (WrongTokenException wte) {
+      wtes.add(wte);
+    }
+    try {
+      return parseLS(i);
+    } catch (WrongTokenException wte) {
+      wtes.add(wte);
+    }
+    throw new CompositeWrongTokenException(wtes);
   }
 }

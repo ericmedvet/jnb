@@ -21,16 +21,14 @@ package io.github.ericmedvet.jnb.core.parsing;
 
 import java.util.List;
 
-public class UndefinedConstantNameException extends RuntimeException {
+public class UndefinedConstantNameException extends ParseException {
   private final String notFoundName;
   private final List<String> knownNames;
-  private final StringPosition stringPosition;
 
-  public UndefinedConstantNameException(String notFoundName, List<String> knownNames, StringPosition stringPosition) {
-    super("Undefined const name %s @%s, known list is %s".formatted(notFoundName, stringPosition, knownNames));
+  public UndefinedConstantNameException(int index, String string, String notFoundName, List<String> knownNames) {
+    super("Const name %s not in known list %s".formatted(notFoundName, knownNames), null, index, string);
     this.notFoundName = notFoundName;
     this.knownNames = knownNames;
-    this.stringPosition = stringPosition;
   }
 
   public String getNotFoundName() {
@@ -39,9 +37,5 @@ public class UndefinedConstantNameException extends RuntimeException {
 
   public List<String> getKnownNames() {
     return knownNames;
-  }
-
-  public StringPosition getStringPosition() {
-    return stringPosition;
   }
 }

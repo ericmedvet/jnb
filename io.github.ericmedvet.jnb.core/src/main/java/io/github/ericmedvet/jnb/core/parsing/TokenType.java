@@ -20,7 +20,7 @@
 package io.github.ericmedvet.jnb.core.parsing;
 
 import io.github.ericmedvet.jnb.core.NamedBuilder;
-import java.util.Optional;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,7 +40,8 @@ public enum TokenType {
   OPEN_LIST("\\[", "["),
   CLOSED_LIST("\\]", "]"),
   LIST_JOIN("\\*", "*"),
-  LIST_CONCAT("\\+", "+");
+  LIST_CONCAT("\\+", "+"),
+  END_OF_STRING("\\z", "EOS");
 
   private final String regex;
   private final String rendered;
@@ -54,16 +55,13 @@ public enum TokenType {
     return regex;
   }
 
-  Optional<Token> next(String s, int i) {
+  Token next(String s, int i) throws WrongTokenException {
     Matcher matcher = Pattern.compile(StringParser.VOID_REGEX + regex + StringParser.VOID_REGEX)
         .matcher(s);
-    if (!matcher.find(i)) {
-      return Optional.empty();
+    if (!matcher.find(i) || matcher.start() != i) {
+      throw new WrongTokenException(i, s, List.of(this));
     }
-    if (matcher.start() != i) {
-      return Optional.empty();
-    }
-    return Optional.of(new Token(matcher.start(), matcher.end()));
+    return new Token(matcher.start(), matcher.end());
   }
 
   public String rendered() {

@@ -132,19 +132,21 @@ public class Main {
         """
             animal(
               name = simba;
+              nums = [1; 2; 3];
               age = 17
             )
             """; // spotless:on
     String s3 = // spotless:off
         """
-            animal(
+            animal(            
               name = simba;
+              nums = [1; 2; 3]; % comment
               owner = $owner;
               age = 17
             )
             """; // spotless:on
     // System.out.println(StringParser.parse(s2));
-    System.out.println(StringParser.parse(s1 + s2));
+    // System.out.println(StringParser.parse(s1 + s2));
     System.out.println(StringParser.parse(s1 + s3));
     System.exit(0);
   }
