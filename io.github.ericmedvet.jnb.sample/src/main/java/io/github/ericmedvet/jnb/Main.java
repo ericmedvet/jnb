@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Main {
 
@@ -124,6 +126,14 @@ public class Main {
     infoPrinter.print(nb, System.out);
   }
 
+  private static String find(String s, String regex) {
+    Matcher m = Pattern.compile(regex).matcher(s);
+    if (m.find() && m.start() == 0) {
+      return s.substring(0, m.end());
+    }
+    return null;
+  }
+
   private static void justParse() throws ParseException, IOException {
     String s1 = // spotless:off
         """
@@ -146,11 +156,11 @@ public class Main {
             """; // spotless:on
     String s3 = // spotless:off
         """
-            animal(            
+            animal(
               name = "simba%33"; % comment with "quoted" content;
               nums = (name = [1;2;3]) * [n(); n()]; % comment
               owner = $owner;
-              age = 17
+              age = 17 % va;
             )
             """; // spotless:on
     String se = Files.readString(Path.of("../jgea/io.github.ericmedvet.jgea"
