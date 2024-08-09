@@ -20,6 +20,7 @@
 package io.github.ericmedvet.jnb;
 
 import io.github.ericmedvet.jnb.core.*;
+import io.github.ericmedvet.jnb.core.ParamMap.Type;
 import io.github.ericmedvet.jnb.core.parsing.*;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -81,13 +82,17 @@ public class Main {
       @Param(value = "age", dI = 44) int age,
       @Param(value = "nice", dB = true) boolean nice,
       @Param("nicknames") List<String> nicknames,
-      @Param(value = "pet", dNPM = "pet(name=Fido)") Pet pet,
       @Param(
               value = "preferredDays",
               dSs = {"mon", "fri"})
           List<DayOfWeek> preferredDays,
       @Param(value = "", injection = Param.Injection.MAP_WITH_DEFAULTS) ParamMap map) {}
 
+  @Alias(
+      name = "cat",
+      value = "pet(kind = cat; owner = person(name = $ownerName))",
+      passThroughParams = {@PassThroughParam(name = "ownerName", type = Type.STRING, value = "ailo")})
+  @Alias(name = "garfield", value = "cat(name = g; ownerName = gOwner)")
   public record Pet(
       @Param("name") String name,
       @Param(value = "kind", dS = "dog") String kind,
@@ -95,19 +100,18 @@ public class Main {
               value = "legs",
               dIs = {4})
           List<Integer> legs,
+      @Param("owner") Person owner,
       @Param(
               value = "booleans",
               dBs = {false, false})
           List<Boolean> booleans) {}
 
   public static void main(String[] args) throws ParseException, IOException {
-    justParse();
     NamedBuilder<?> nb = NamedBuilder.empty()
         .and(NamedBuilder.fromClass(Office.class))
         .and(NamedBuilder.fromClass(Person.class))
         .and(NamedBuilder.fromClass(Pet.class));
-    System.out.println(
-        nb.build("person(name=eric;preferredDays=[mon;tue];age=44;pet=pet(name=\"simba\";legs=[2]))"));
+    System.out.println(nb.build("person(name=eric;preferredDays=[mon;tue];age=44)"));
     // System.exit(0);
 
     // Office office = (Office) nb.build(S);
@@ -124,6 +128,12 @@ public class Main {
 
     InfoPrinter infoPrinter = new InfoPrinter();
     infoPrinter.print(nb, System.out);
+
+    System.out.println(nb.build("pet(name = simba; owner = person(name = eric))"));
+    System.out.println(nb.build("cat(name = birba; ownerName = gargamella)"));
+    System.out.println(nb.build("cat(name = birba2)"));
+    System.out.println(nb.build("garfield()"));
+    System.out.println(nb.build("garfield(owner = person(name = maureen))"));
   }
 
   private static String find(String s, String regex) {

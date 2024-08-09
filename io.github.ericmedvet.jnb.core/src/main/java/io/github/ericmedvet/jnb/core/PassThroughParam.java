@@ -19,19 +19,10 @@
  */
 package io.github.ericmedvet.jnb.core;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Repeatable;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.TYPE})
-@Repeatable(Aliases.class)
-public @interface Alias {
+public @interface PassThroughParam {
   String name();
 
-  String value();
+  String value() default "";
 
-  PassThroughParam[] passThroughParams() default {};
+  ParamMap.Type type();
 }

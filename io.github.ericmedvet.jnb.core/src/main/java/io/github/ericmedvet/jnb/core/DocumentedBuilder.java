@@ -20,10 +20,14 @@
 package io.github.ericmedvet.jnb.core;
 
 import io.github.ericmedvet.jnb.core.ParamMap.Type;
+import io.github.ericmedvet.jnb.core.parsing.StringParser;
 import java.lang.reflect.Executable;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public interface DocumentedBuilder<T> extends Builder<T> {
+
   java.lang.reflect.Type builtType();
 
   String name();
@@ -32,23 +36,33 @@ public interface DocumentedBuilder<T> extends Builder<T> {
 
   Executable origin();
 
-  default DocumentedBuilder<T> alias(String name, NamedParamMap preMap) {
-    List<ParamInfo> newParams = params().stream()
-        .map(pi -> new ParamInfo(
-            pi.type,
-            pi.enumClass,
-            pi.name,
-            preMap.names().contains(pi.name) ? preMap.value(pi.name) : pi.defaultValue,
-            pi.interpolationString,
-            pi.injection,
-            pi.javaType))
-        .toList();
-    return new AutoBuiltDocumentedBuilder<>(
-        name,
-        builtType(),
-        newParams,
-        origin(),
-        (map, namedBuilder, index) -> build(map.and(preMap), namedBuilder, index));
+  default DocumentedBuilder<T> alias(String name, Alias alias) {
+    /*List<ParamInfo> newParams = params().stream()
+    .map(pi -> new ParamInfo(
+    pi.type,
+    pi.enumClass,
+    pi.name,
+    preMap.names().contains(pi.name) ? preMap.value(pi.name) : pi.defaultValue,
+    pi.interpolationString,
+    pi.injection,
+    pi.javaType))
+    .toList();*/
+    // TODO add params: 1. build pre map, if a param is based on a passthroughparam, fill
+    // in some way the default value...; 2. add the passthroughparams
+    return new AutoBuiltDocumentedBuilder<>(name, builtType(), params(), origin(), (map, namedBuilder, index) -> {
+      String consts = Arrays.stream(alias.passThroughParams())
+          .map(p -> "$%s = %s"
+              .formatted(p.name(), map.value(p.name()) == null ? p.value() : map.value(p.name())))
+          .collect(Collectors.joining("\n"));
+      consts = consts + "\n" + alias.value();
+      return build(
+          map.and(StringParser.parse(consts))
+              .without(Arrays.stream(alias.passThroughParams())
+                  .map(PassThroughParam::name)
+                  .toArray(String[]::new)),
+          namedBuilder,
+          index);
+    });
   }
 
   record ParamInfo(
@@ -59,6 +73,7 @@ public interface DocumentedBuilder<T> extends Builder<T> {
       String interpolationString,
       Param.Injection injection,
       java.lang.reflect.Type javaType) {
+
     @Override
     public String toString() {
       String defaultValueString = defaultValue != null ? defaultValue.toString() : "";

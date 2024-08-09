@@ -223,18 +223,22 @@ public record AutoBuiltDocumentedBuilder<T>(
       Map<String, DocumentedBuilder<Object>> builders = new TreeMap<>();
       builders.put(mainBuilder.name(), mainBuilder);
       for (Alias alias : aliases) {
-        NamedParamMap aliasMap = StringParser.parse(alias.value());
-        DocumentedBuilder<Object> toAliasBuilder = builders.get(aliasMap.getName());
+        String consts = Arrays.stream(alias.passThroughParams())
+            .map(p -> "$%s = x".formatted(p.name())) // x is just a placeholder
+            .collect(Collectors.joining("\n"));
+        consts = consts + "\n" + alias.value();
+        String aliasName = StringParser.parse(consts).getName();
+        DocumentedBuilder<Object> toAliasBuilder = builders.get(aliasName);
         if (toAliasBuilder == null) {
           throw new BuilderException("Cannot build alias \"%s\" for builder \"%s\": known builders are %s"
               .formatted(
-                  aliasMap.getName(),
+                  aliasName,
                   mainBuilder.name,
                   builders.keySet().stream()
                       .map("\"%s\""::formatted)
                       .collect(Collectors.joining(", "))));
         }
-        builders.put(alias.name(), toAliasBuilder.alias(alias.name(), aliasMap));
+        builders.put(alias.name(), toAliasBuilder.alias(alias.name(), alias));
       }
       return builders.values().stream().toList();
     } catch (Exception ex) {
@@ -439,7 +443,8 @@ public record AutoBuiltDocumentedBuilder<T>(
 
   @Override
   public String toString() {
-    return "(" + params().stream().map(ParamInfo::toString).collect(Collectors.joining("; ")) + ") -> "
+    return "(" + params().stream().map(ParamInfo::toString).collect(Collectors.joining("; "))
+        + ") -> "
         + builtType();
   }
 }

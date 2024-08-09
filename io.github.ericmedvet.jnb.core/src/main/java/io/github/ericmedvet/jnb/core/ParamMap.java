@@ -20,6 +20,7 @@
 package io.github.ericmedvet.jnb.core;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -47,6 +48,26 @@ public interface ParamMap {
     return value(n, type, null);
   }
 
+  default ParamMap and(String name, Type valueType, Object value) {
+    ParamMap thisParamMap = this;
+    return new ParamMap() {
+      @Override
+      public Set<String> names() {
+        return Stream.concat(thisParamMap.names().stream(), Stream.of(name))
+            .collect(Collectors.toSet());
+      }
+
+      @Override
+      public <E extends Enum<E>> Object value(String n, Type type, Class<E> enumClass) {
+        Object o = thisParamMap.value(n, type, enumClass);
+        if (o == null && valueType.equals(type)) {
+          o = value;
+        }
+        return o;
+      }
+    };
+  }
+
   default ParamMap and(ParamMap other) {
     ParamMap thisParamMap = this;
     return new ParamMap() {
@@ -63,6 +84,26 @@ public interface ParamMap {
           o = other.value(n, type, enumClass);
         }
         return o;
+      }
+    };
+  }
+
+  default ParamMap without(String... names) {
+    ParamMap thisParamMap = this;
+    Set<String> newNames = thisParamMap.names();
+    List.of(names).forEach(newNames::remove);
+    return new ParamMap() {
+      @Override
+      public Set<String> names() {
+        return newNames;
+      }
+
+      @Override
+      public <E extends Enum<E>> Object value(String n, Type type, Class<E> enumClass) {
+        if (!newNames.contains(n)) {
+          return null;
+        }
+        return thisParamMap.value(n, type, enumClass);
       }
     };
   }
