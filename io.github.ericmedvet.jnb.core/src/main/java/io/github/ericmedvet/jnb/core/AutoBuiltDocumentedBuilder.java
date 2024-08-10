@@ -223,11 +223,7 @@ public record AutoBuiltDocumentedBuilder<T>(
       Map<String, DocumentedBuilder<Object>> builders = new TreeMap<>();
       builders.put(mainBuilder.name(), mainBuilder);
       for (Alias alias : aliases) {
-        String consts = Arrays.stream(alias.passThroughParams())
-            .map(p -> "$%s = x".formatted(p.name())) // x is just a placeholder
-            .collect(Collectors.joining("\n"));
-        consts = consts + "\n" + alias.value();
-        String aliasName = StringParser.parse(consts).getName();
+        String aliasName = fromAlias(alias, null).getName();
         DocumentedBuilder<Object> toAliasBuilder = builders.get(aliasName);
         if (toAliasBuilder == null) {
           throw new BuilderException("Cannot build alias \"%s\" for builder \"%s\": known builders are %s"
@@ -434,6 +430,20 @@ public record AutoBuiltDocumentedBuilder<T>(
 
   private static String toLowerCamelCase(String s) {
     return s.substring(0, 1).toLowerCase() + s.substring(1);
+  }
+
+  static NamedParamMap fromAlias(Alias alias, ParamMap map) {
+    String consts = Arrays.stream(alias.passThroughParams())
+        .map(p -> StringParser.CONST_NAME_PREFIX
+            + "%s = %s"
+                .formatted(
+                    p.name(),
+                    map == null
+                        ? (p.value().isEmpty() ? "null" : p.value())
+                        : (map.value(p.name()) == null ? p.value() : map.value(p.name()))))
+        .collect(Collectors.joining("\n"));
+    consts = consts + "\n" + alias.value();
+    return StringParser.parse(consts);
   }
 
   @Override

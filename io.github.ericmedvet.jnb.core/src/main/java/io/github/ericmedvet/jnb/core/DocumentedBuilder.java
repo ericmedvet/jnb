@@ -19,12 +19,12 @@
  */
 package io.github.ericmedvet.jnb.core;
 
+import io.github.ericmedvet.jnb.core.Param.Injection;
 import io.github.ericmedvet.jnb.core.ParamMap.Type;
-import io.github.ericmedvet.jnb.core.parsing.StringParser;
 import java.lang.reflect.Executable;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public interface DocumentedBuilder<T> extends Builder<T> {
 
@@ -37,32 +37,35 @@ public interface DocumentedBuilder<T> extends Builder<T> {
   Executable origin();
 
   default DocumentedBuilder<T> alias(String name, Alias alias) {
-    /*List<ParamInfo> newParams = params().stream()
-    .map(pi -> new ParamInfo(
-    pi.type,
-    pi.enumClass,
-    pi.name,
-    preMap.names().contains(pi.name) ? preMap.value(pi.name) : pi.defaultValue,
-    pi.interpolationString,
-    pi.injection,
-    pi.javaType))
-    .toList();*/
-    // TODO add params: 1. build pre map, if a param is based on a passthroughparam, fill
-    // in some way the default value...; 2. add the passthroughparams
-    return new AutoBuiltDocumentedBuilder<>(name, builtType(), params(), origin(), (map, namedBuilder, index) -> {
-      String consts = Arrays.stream(alias.passThroughParams())
-          .map(p -> "$%s = %s"
-              .formatted(p.name(), map.value(p.name()) == null ? p.value() : map.value(p.name())))
-          .collect(Collectors.joining("\n"));
-      consts = consts + "\n" + alias.value();
-      return build(
-          map.and(StringParser.parse(consts))
-              .without(Arrays.stream(alias.passThroughParams())
-                  .map(PassThroughParam::name)
-                  .toArray(String[]::new)),
-          namedBuilder,
-          index);
-    });
+    NamedParamMap preMap = AutoBuiltDocumentedBuilder.fromAlias(alias, null);
+    List<ParamInfo> newParams = Stream.concat(
+            params().stream()
+                .map(pi -> new ParamInfo(
+                    pi.type,
+                    pi.enumClass,
+                    pi.name,
+                    preMap.names().contains(pi.name) ? preMap.value(pi.name) : pi.defaultValue,
+                    pi.interpolationString,
+                    pi.injection,
+                    pi.javaType)),
+            Arrays.stream(alias.passThroughParams())
+                .map(p -> new ParamInfo(
+                    p.type(), null, p.name(), p.value(), null, Injection.NONE, String.class)))
+        .toList();
+    // descriptions for passThroughParams and defaulted params using do not show that
+    // they are linked. however, drastic changes are needed in parsing result to fix this
+    return new AutoBuiltDocumentedBuilder<>(
+        name,
+        builtType(),
+        newParams,
+        origin(),
+        (map, namedBuilder, index) -> build(
+            map.and(AutoBuiltDocumentedBuilder.fromAlias(alias, map))
+                .without(Arrays.stream(alias.passThroughParams())
+                    .map(PassThroughParam::name)
+                    .toArray(String[]::new)),
+            namedBuilder,
+            index));
   }
 
   record ParamInfo(

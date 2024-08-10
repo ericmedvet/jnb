@@ -42,6 +42,14 @@ public class Functions {
   private Functions() {}
 
   @SuppressWarnings("unused")
+  public static <X, Z, Y> FormattedNamedFunction<X, Y> composition(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Z> beforeF,
+      @Param(value = "then", dNPM = "f.identity()") Function<Z, Y> afterF) {
+    return FormattedNamedFunction.from(afterF, FormattedFunction.format(afterF), NamedFunction.name(afterF))
+        .compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
   public static <X> FormattedNamedFunction<X, Double> avg(
       @Param(value = "of", dNPM = "f.identity()") Function<X, List<? extends Number>> beforeF,
       @Param(value = "format", dS = "%.1f") String format) {
