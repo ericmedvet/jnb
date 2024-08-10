@@ -92,6 +92,10 @@ public class Main {
       name = "cat",
       value = "pet(kind = cat; owner = person(name = $ownerName))",
       passThroughParams = {@PassThroughParam(name = "ownerName", type = Type.STRING, value = "ailo")})
+  @Alias(
+      name = "tiger",
+      value = "pet(kind = tiger; owner = $tOwner)",
+      passThroughParams = {@PassThroughParam(name = "tOwner", type = Type.NAMED_PARAM_MAP)})
   @Alias(name = "garfield", value = "cat(name = g; ownerName = gOwner)")
   public record Pet(
       @Param("name") String name,
@@ -134,6 +138,7 @@ public class Main {
     System.out.println(nb.build("cat(name = birba2)"));
     System.out.println(nb.build("garfield()"));
     System.out.println(nb.build("garfield(owner = person(name = maureen))"));
+    System.out.println(nb.build("tiger(name = omo; tOwner = person(name = none))"));
   }
 
   private static String find(String s, String regex) {
