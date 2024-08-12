@@ -51,11 +51,11 @@ public class Interpolator {
     if (keyPieces.size() == 1) {
       return paramMap.value(keyPieces.get(0));
     }
-    NamedParamMap namedParamMap = (NamedParamMap) paramMap.value(keyPieces.get(0), ParamMap.Type.NAMED_PARAM_MAP);
-    if (namedParamMap == null) {
+    ParamMap innerParamMap = (ParamMap) paramMap.value(keyPieces.get(0), ParamMap.Type.NAMED_PARAM_MAP);
+    if (innerParamMap == null) {
       return null;
     }
-    return getKeyFromParamMap(namedParamMap, keyPieces.subList(1, keyPieces.size()));
+    return getKeyFromParamMap(innerParamMap, keyPieces.subList(1, keyPieces.size()));
   }
 
   public static String interpolate(String format, ParamMap m, String noValueDefault) {
