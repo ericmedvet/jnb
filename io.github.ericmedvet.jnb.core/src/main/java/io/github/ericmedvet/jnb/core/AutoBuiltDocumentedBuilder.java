@@ -23,6 +23,7 @@ import io.github.ericmedvet.jnb.core.Param.Injection;
 import io.github.ericmedvet.jnb.core.parsing.StringParser;
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -433,14 +434,21 @@ public record AutoBuiltDocumentedBuilder<T>(
   }
 
   static NamedParamMap fromAlias(Alias alias, ParamMap map) {
+    BiFunction<String, ParamMap.Type, String> quoter =
+        (s, t) -> t.equals(ParamMap.Type.STRING) ? "\"%s\"".formatted(s) : s;
     String consts = Arrays.stream(alias.passThroughParams())
         .map(p -> StringParser.CONST_NAME_PREFIX
             + "%s = %s"
                 .formatted(
                     p.name(),
-                    map == null
-                        ? (p.value().isEmpty() ? "null" : p.value())
-                        : (map.value(p.name()) == null ? p.value() : map.value(p.name()))))
+                    quoter.apply(
+                        map == null
+                            ? (p.value().isEmpty() ? "null" : p.value())
+                            : (map.value(p.name()) == null
+                                ? p.value()
+                                : map.value(p.name())
+                                    .toString()),
+                        p.type())))
         .collect(Collectors.joining("\n"));
     consts = consts + "\n" + alias.value();
     return StringParser.parse(consts);

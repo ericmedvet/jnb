@@ -133,8 +133,8 @@ public class Main {
     InfoPrinter infoPrinter = new InfoPrinter();
     infoPrinter.print(nb, System.out);
 
+    System.out.println(nb.build("cat(name = birba; ownerName = \"../gargamella\")"));
     System.out.println(nb.build("pet(name = simba; owner = person(name = eric))"));
-    System.out.println(nb.build("cat(name = birba; ownerName = gargamella)"));
     System.out.println(nb.build("cat(name = birba2)"));
     System.out.println(nb.build("garfield()"));
     System.out.println(nb.build("garfield(owner = person(name = maureen))"));
@@ -179,7 +179,7 @@ public class Main {
             )
             """; // spotless:on
     String se = Files.readString(Path.of("../jgea/io.github.ericmedvet.jgea"
-        + ".experimenter/src/main/resources/exp-examples/robot-vs-nav.txt"));
+        + ".experimenter/src/main/resources/exp-examples/mini-robot-vs-nav.txt"));
     // System.out.println(StringParser.parse(s2));
     // System.out.println(StringParser.parse(s1 + s2));
     System.out.println(StringParser.parse(s1 + s3));
