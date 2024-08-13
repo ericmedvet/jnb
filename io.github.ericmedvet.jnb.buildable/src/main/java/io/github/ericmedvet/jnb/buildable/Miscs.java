@@ -47,6 +47,7 @@ public class Miscs {
   }
 
   @SuppressWarnings("unused")
+  @Cacheable
   public static DoubleRange range(@Param("min") double min, @Param("max") double max) {
     return new DoubleRange(min, max);
   }

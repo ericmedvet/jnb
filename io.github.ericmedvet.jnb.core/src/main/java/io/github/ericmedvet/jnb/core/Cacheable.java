@@ -19,29 +19,11 @@
  */
 package io.github.ericmedvet.jnb.core;
 
-import java.util.Map;
-import java.util.WeakHashMap;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-@FunctionalInterface
-public interface Builder<T> {
-  default T build(ParamMap map, NamedBuilder<?> namedBuilder) throws BuilderException {
-    return build(map, namedBuilder, 0);
-  }
-
-  T build(ParamMap map, NamedBuilder<?> namedBuilder, int index) throws BuilderException;
-
-  default Builder<T> cached() {
-    Map<ParamMap, T> cache = new WeakHashMap<>();
-    Builder<T> thisBuilder = this;
-    return (map, namedBuilder, index) -> {
-      synchronized (cache) {
-        T t = cache.get(map);
-        if (t == null) {
-          t = thisBuilder.build(map, namedBuilder, index);
-          cache.put(map, t);
-        }
-        return t;
-      }
-    };
-  }
-}
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
+public @interface Cacheable {}

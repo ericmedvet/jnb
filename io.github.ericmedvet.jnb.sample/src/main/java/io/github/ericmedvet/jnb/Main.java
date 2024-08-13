@@ -25,6 +25,7 @@ import io.github.ericmedvet.jnb.core.parsing.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -110,10 +111,22 @@ public class Main {
               dBs = {false, false})
           List<Boolean> booleans) {}
 
+  public static class Timed {
+    private final Instant creationInstant;
+    private final String name;
+
+    @Cacheable
+    public Timed(@Param("name") String name) {
+      this.creationInstant = Instant.now();
+      this.name = name;
+    }
+  }
+
   public static void main(String[] args) throws ParseException, IOException {
     NamedBuilder<?> nb = NamedBuilder.empty()
         .and(NamedBuilder.fromClass(Office.class))
         .and(NamedBuilder.fromClass(Person.class))
+        .and(NamedBuilder.fromClass(Timed.class))
         .and(NamedBuilder.fromClass(Pet.class));
     System.out.println(nb.build("person(name=eric;preferredDays=[mon;tue];age=44)"));
     // System.exit(0);
@@ -139,6 +152,9 @@ public class Main {
     System.out.println(nb.build("garfield()"));
     System.out.println(nb.build("garfield(owner = person(name = maureen))"));
     System.out.println(nb.build("tiger(name = omo; tOwner = person(name = none))"));
+    System.out.println(nb.build("timed(name = a)"));
+    System.out.println(nb.build("timed(name = b)"));
+    System.out.println(nb.build("timed(name = a)"));
   }
 
   private static String find(String s, String regex) {

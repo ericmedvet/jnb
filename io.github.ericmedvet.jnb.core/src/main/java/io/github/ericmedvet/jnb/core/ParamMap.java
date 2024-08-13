@@ -21,6 +21,7 @@ package io.github.ericmedvet.jnb.core;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -65,6 +66,19 @@ public interface ParamMap {
         }
         return o;
       }
+
+      @Override
+      public int hashCode() {
+        return ParamMap.hash(thisParamMap);
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        if (obj instanceof ParamMap other) {
+          return ParamMap.areEquals(this, other);
+        }
+        return false;
+      }
     };
   }
 
@@ -85,6 +99,19 @@ public interface ParamMap {
         }
         return o;
       }
+
+      @Override
+      public int hashCode() {
+        return ParamMap.hash(thisParamMap);
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        if (obj instanceof ParamMap otherMap) {
+          return ParamMap.areEquals(this, otherMap);
+        }
+        return false;
+      }
     };
   }
 
@@ -104,6 +131,19 @@ public interface ParamMap {
           return null;
         }
         return thisParamMap.value(n, type, enumClass);
+      }
+
+      @Override
+      public int hashCode() {
+        return ParamMap.hash(thisParamMap);
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        if (obj instanceof ParamMap other) {
+          return ParamMap.areEquals(this, other);
+        }
+        return false;
       }
     };
   }
@@ -130,5 +170,22 @@ public interface ParamMap {
     public String rendered() {
       return rendered;
     }
+  }
+
+  private static boolean areEquals(ParamMap pm1, ParamMap pm2) {
+    if (!pm1.names().equals(pm2.names())) {
+      return false;
+    }
+    for (String name : pm1.names()) {
+      if (!Objects.equals(pm1.value(name), pm2.value(name))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private static int hash(ParamMap pm) {
+    return Objects.hash(
+        pm.names().stream().map(n -> Map.entry(n, pm.value(n))).toArray(Object[]::new));
   }
 }

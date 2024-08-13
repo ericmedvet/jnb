@@ -120,8 +120,9 @@ public record AutoBuiltDocumentedBuilder<T>(
 
   public static List<DocumentedBuilder<Object>> from(Executable executable, Alias[] aliases) {
     Logger l = Logger.getLogger(DocumentedBuilder.class.getName());
-    // check annotation
+    // check annotations
     BuilderMethod builderMethodAnnotation = executable.getAnnotation(BuilderMethod.class);
+    boolean isCacheable = executable.getAnnotation(Cacheable.class) != null;
     // check public and static or constructor
     if (!Modifier.isPublic(executable.getModifiers())) {
       return List.of();
@@ -161,66 +162,62 @@ public record AutoBuiltDocumentedBuilder<T>(
       }
       // wrap and return
       String finalName = name;
-      AutoBuiltDocumentedBuilder<Object> mainBuilder = new AutoBuiltDocumentedBuilder<>(
-          finalName,
-          buildType,
-          paramInfos,
-          executable,
-          (ParamMap map, NamedBuilder<?> namedBuilder, int index) -> {
-            Object[] params = new Object[paramInfos.size() + (hasNamedBuilder ? 1 : 0)];
-            if (hasNamedBuilder) {
-              params[0] = namedBuilder;
+      Builder<Object> builder = (ParamMap map, NamedBuilder<?> namedBuilder, int index) -> {
+        Object[] params = new Object[paramInfos.size() + (hasNamedBuilder ? 1 : 0)];
+        if (hasNamedBuilder) {
+          params[0] = namedBuilder;
+        }
+        for (int j = 0; j < paramInfos.size(); j++) {
+          int k = j + (hasNamedBuilder ? 1 : 0);
+          if (paramInfos.get(j).injection().equals(Injection.MAP)) {
+            params[k] = map;
+          } else if (paramInfos.get(j).injection().equals(Injection.MAP_WITH_DEFAULTS)) {
+            if (map instanceof NamedParamMap npm) {
+              params[k] = namedBuilder.fillWithDefaults(npm);
             }
-            for (int j = 0; j < paramInfos.size(); j++) {
-              int k = j + (hasNamedBuilder ? 1 : 0);
-              if (paramInfos.get(j).injection().equals(Injection.MAP)) {
-                params[k] = map;
-              } else if (paramInfos.get(j).injection().equals(Injection.MAP_WITH_DEFAULTS)) {
-                if (map instanceof NamedParamMap npm) {
-                  params[k] = namedBuilder.fillWithDefaults(npm);
-                }
-              } else if (paramInfos.get(j).injection().equals(Injection.BUILDER)) {
-                params[k] = namedBuilder;
-              } else if (paramInfos.get(j).injection().equals(Injection.INDEX)) {
-                params[k] = index;
-              } else {
-                try {
-                  //noinspection unchecked
-                  params[k] = buildParam(
-                      paramInfos.get(j), map, executable.getParameters()[k], (NamedBuilder<
-                              Object>)
-                          namedBuilder);
-                } catch (RuntimeException e) {
-                  throw new BuilderException(
-                      "Cannot build param \"%s\" for \"%s\""
-                          .formatted(paramInfos.get(j).name(), finalName),
-                      e);
-                }
-              }
-            }
-            // check exceeding params
-            Set<String> exceedingParamNames = new TreeSet<>(map.names());
-            paramInfos.stream()
-                .filter(pi -> pi.injection().equals(Injection.NONE))
-                .map(ParamInfo::name)
-                .toList()
-                .forEach(exceedingParamNames::remove);
-            if (!exceedingParamNames.isEmpty()) {
-              l.warning(String.format(
-                  "Exceeding parameters while building %s: %s", finalName, exceedingParamNames));
-            }
+          } else if (paramInfos.get(j).injection().equals(Injection.BUILDER)) {
+            params[k] = namedBuilder;
+          } else if (paramInfos.get(j).injection().equals(Injection.INDEX)) {
+            params[k] = index;
+          } else {
             try {
-              if (executable instanceof Method method) {
-                return method.invoke(null, params);
-              }
-              return ((Constructor<?>) executable).newInstance(params);
-            } catch (IllegalAccessException
-                | InvocationTargetException
-                | InstantiationException
-                | IllegalArgumentException e) {
-              throw new BuilderException("Cannot build \"%s\"".formatted(finalName), e);
+              //noinspection unchecked
+              params[k] = buildParam(
+                  paramInfos.get(j), map, executable.getParameters()[k], (NamedBuilder<Object>)
+                      namedBuilder);
+            } catch (RuntimeException e) {
+              throw new BuilderException(
+                  "Cannot build param \"%s\" for \"%s\""
+                      .formatted(paramInfos.get(j).name(), finalName),
+                  e);
             }
-          });
+          }
+        }
+        // check exceeding params
+        Set<String> exceedingParamNames = new TreeSet<>(map.names());
+        paramInfos.stream()
+            .filter(pi -> pi.injection().equals(Injection.NONE))
+            .map(ParamInfo::name)
+            .toList()
+            .forEach(exceedingParamNames::remove);
+        if (!exceedingParamNames.isEmpty()) {
+          l.warning(String.format(
+              "Exceeding parameters while building %s: %s", finalName, exceedingParamNames));
+        }
+        try {
+          if (executable instanceof Method method) {
+            return method.invoke(null, params);
+          }
+          return ((Constructor<?>) executable).newInstance(params);
+        } catch (IllegalAccessException
+            | InvocationTargetException
+            | InstantiationException
+            | IllegalArgumentException e) {
+          throw new BuilderException("Cannot build \"%s\"".formatted(finalName), e);
+        }
+      };
+      AutoBuiltDocumentedBuilder<Object> mainBuilder = new AutoBuiltDocumentedBuilder<>(
+          finalName, buildType, paramInfos, executable, isCacheable ? builder.cached() : builder);
       Map<String, DocumentedBuilder<Object>> builders = new TreeMap<>();
       builders.put(mainBuilder.name(), mainBuilder);
       for (Alias alias : aliases) {

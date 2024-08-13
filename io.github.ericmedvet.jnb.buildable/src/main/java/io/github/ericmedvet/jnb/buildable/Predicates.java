@@ -19,6 +19,7 @@
  */
 package io.github.ericmedvet.jnb.buildable;
 
+import io.github.ericmedvet.jnb.core.Cacheable;
 import io.github.ericmedvet.jnb.core.Discoverable;
 import io.github.ericmedvet.jnb.core.Param;
 import io.github.ericmedvet.jnb.datastructure.FormattedFunction;
@@ -34,7 +35,7 @@ public class Predicates {
   private Predicates() {}
 
   private static <T> Predicate<T> named(Predicate<T> predicate, String name) {
-    return new Predicate<T>() {
+    return new Predicate<>() {
       @Override
       public boolean test(T t) {
         return predicate.test(t);
@@ -48,6 +49,7 @@ public class Predicates {
   }
 
   @SuppressWarnings("unused")
+  @Cacheable
   public static <X> Predicate<X> all(@Param("conditions") List<Predicate<X>> conditions) {
     return named(
         x -> conditions.stream().allMatch(p -> p.test(x)),
@@ -55,11 +57,13 @@ public class Predicates {
   }
 
   @SuppressWarnings("unused")
+  @Cacheable
   public static Predicate<?> always() {
     return named(t -> true, "always");
   }
 
   @SuppressWarnings("unused")
+  @Cacheable
   public static <X> Predicate<X> any(@Param("conditions") List<Predicate<X>> conditions) {
     return named(
         x -> conditions.stream().anyMatch(p -> p.test(x)),
@@ -67,12 +71,14 @@ public class Predicates {
   }
 
   @SuppressWarnings("unused")
+  @Cacheable
   public static <X, T> Predicate<X> eq(
       @Param(value = "f", dNPM = "f.identity()") Function<X, T> function, @Param("v") T v) {
     return named(x -> function.apply(x).equals(v), "%s==%s".formatted(NamedFunction.name(function), v));
   }
 
   @SuppressWarnings("unused")
+  @Cacheable
   public static <X> Predicate<X> gt(
       @Param(value = "f", dNPM = "f.identity()") Function<X, ? extends Number> function, @Param("t") double t) {
     return named(
@@ -84,6 +90,7 @@ public class Predicates {
   }
 
   @SuppressWarnings("unused")
+  @Cacheable
   public static <X> Predicate<X> gtEq(
       @Param(value = "f", dNPM = "f.identity()") Function<X, ? extends Number> function, @Param("t") double t) {
     return named(
@@ -95,6 +102,7 @@ public class Predicates {
   }
 
   @SuppressWarnings("unused")
+  @Cacheable
   public static <X> Predicate<X> inD(
       @Param(value = "f", dNPM = "f.identity()") Function<X, Double> function,
       @Param("values") List<Double> values) {
@@ -110,6 +118,7 @@ public class Predicates {
   }
 
   @SuppressWarnings("unused")
+  @Cacheable
   public static <X> Predicate<X> inI(
       @Param(value = "f", dNPM = "f.identity()") Function<X, Integer> function,
       @Param("values") List<Integer> values) {
@@ -125,6 +134,7 @@ public class Predicates {
   }
 
   @SuppressWarnings("unused")
+  @Cacheable
   public static <X> Predicate<X> inL(
       @Param(value = "f", dNPM = "f.identity()") Function<X, Long> function,
       @Param("values") List<Integer> values) {
@@ -140,6 +150,7 @@ public class Predicates {
   }
 
   @SuppressWarnings("unused")
+  @Cacheable
   public static <X> Predicate<X> inS(
       @Param(value = "f", dNPM = "f.identity()") Function<X, String> function,
       @Param("values") List<String> values) {
@@ -155,6 +166,7 @@ public class Predicates {
   }
 
   @SuppressWarnings("unused")
+  @Cacheable
   public static <X> Predicate<X> lt(
       @Param(value = "f", dNPM = "f.identity()") Function<X, ? extends Number> function, @Param("t") double t) {
     return named(
@@ -166,6 +178,7 @@ public class Predicates {
   }
 
   @SuppressWarnings("unused")
+  @Cacheable
   public static <X> Predicate<X> ltEq(
       @Param(value = "f", dNPM = "f.identity()") Function<X, ? extends Number> function, @Param("t") double t) {
     return named(
@@ -177,6 +190,7 @@ public class Predicates {
   }
 
   @SuppressWarnings("unused")
+  @Cacheable
   public static <X> Predicate<X> matches(
       @Param(value = "f", dNPM = "f.identity()") Function<X, String> function, @Param("regex") String regex) {
     Pattern p = Pattern.compile(regex);
@@ -189,6 +203,7 @@ public class Predicates {
   }
 
   @SuppressWarnings("unused")
+  @Cacheable
   public static <X> Predicate<X> not(@Param("condition") Predicate<X> condition) {
     return named(condition.negate(), "¬%s".formatted(condition));
   }

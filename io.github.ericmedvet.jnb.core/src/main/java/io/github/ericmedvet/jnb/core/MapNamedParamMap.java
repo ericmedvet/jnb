@@ -315,4 +315,20 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
       formatter.format("%s", prettyToString(this, Integer.MAX_VALUE));
     }
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof MapNamedParamMap that)) {
+      return false;
+    }
+    return Objects.equals(getName(), that.getName()) && Objects.equals(getValues(), that.getValues());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getName(), getValues());
+  }
 }
