@@ -19,6 +19,64 @@
  */
 package io.github.ericmedvet.jnb.core;
 
+import java.util.Objects;
+import java.util.Set;
+
 public interface NamedParamMap extends ParamMap {
   String getName();
+
+  static NamedParamMap from(String name, ParamMap paramMap) {
+    return new NamedParamMap() {
+      @Override
+      public String getName() {
+        return name;
+      }
+
+      @Override
+      public Set<String> names() {
+        return paramMap.names();
+      }
+
+      @Override
+      public <E extends Enum<E>> Object value(String n, Type type, Class<E> enumClass) {
+        return paramMap.value(n, type, enumClass);
+      }
+
+      @Override
+      public String toString() {
+        return MapNamedParamMap.prettyToString(this, Integer.MAX_VALUE);
+      }
+
+      @Override
+      public int hashCode() {
+        return Objects.hash(name, paramMap);
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        if (obj instanceof NamedParamMap other) {
+          if (!Objects.equals(name, other.getName())) {
+            return false;
+          }
+          return Objects.equals(paramMap, other);
+        }
+        return false;
+      }
+    };
+  }
+
+  @Override
+  default NamedParamMap and(String name, Type valueType, Object value) {
+    return from(getName(), ParamMap.super.and(name, valueType, value));
+  }
+
+  @Override
+  default ParamMap and(ParamMap other) {
+    return from(getName(), ParamMap.super.and(other));
+  }
+
+  @Override
+  default ParamMap without(String... names) {
+    return from(getName(), ParamMap.super.without(names));
+  }
 }
