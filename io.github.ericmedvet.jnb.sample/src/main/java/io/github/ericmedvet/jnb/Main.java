@@ -155,6 +155,9 @@ public class Main {
     System.out.println(nb.build("timed(name = a)"));
     System.out.println(nb.build("timed(name = b)"));
     System.out.println(nb.build("timed(name = a)"));
+    System.out.println(nb.build("person(name = eric; nicknames = [nn1; nn2])"));
+    System.out.println(
+        nb.build("$nn1 = nn1 $number = \"45\" person(name = $nn1; nicknames = [$nn1; nn2; $number])"));
   }
 
   private static String find(String s, String regex) {
