@@ -28,7 +28,8 @@ import java.util.stream.Stream;
 public class StringParser {
 
   public static final String LINE_TERMINATOR_REGEX = "(\\r\\n)|(\\r)|(\\n)";
-  public static final String VOID_REGEX = "\\s*(%[^\\n\\r]*(" + LINE_TERMINATOR_REGEX + ")+)*";
+  public static final String COMMENT_REGEX = "%[^\\n\\r]*(" + LINE_TERMINATOR_REGEX + ")\\s*";
+  public static final String VOID_REGEX = "\\s*(" + COMMENT_REGEX + ")*";
   public static final String CONST_NAME_PREFIX = "$";
   public static final String PLAIN_STRING_REGEX = "[A-Za-z][A-Za-z0-9_]*";
   public static final String QUOTED_STRING_REGEX = "\"[^\"]*\"";
@@ -43,6 +44,7 @@ public class StringParser {
 
   @FunctionalInterface
   private interface NodeParser<N extends Node> {
+
     N parse(int i) throws ParseException;
   }
 

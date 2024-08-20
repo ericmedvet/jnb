@@ -112,6 +112,7 @@ public class Main {
           List<Boolean> booleans) {}
 
   public static class Timed {
+
     private final Instant creationInstant;
     private final String name;
 
@@ -123,6 +124,8 @@ public class Main {
   }
 
   public static void main(String[] args) throws ParseException, IOException {
+    justParse();
+
     NamedBuilder<?> nb = NamedBuilder.empty()
         .and(NamedBuilder.fromClass(Office.class))
         .and(NamedBuilder.fromClass(Person.class))
@@ -169,14 +172,27 @@ public class Main {
   }
 
   private static void justParse() throws ParseException, IOException {
+
+    String s = "    toio %;\nhugo %;";
+    Matcher matcher = Pattern.compile("\\s*(%[^\\n\\r]*((\\r\\n)|(\\r)|(\\n))\\s*)*" + "[A-Za-z][A-Za-z0-9_]*"
+            + "\\s*(%[^\\n\\r]*((\\r\\n)|(\\r)|(\\n))\\s*)*")
+        .matcher(s);
+    while (matcher.find()) {
+      System.out.printf("`%s`%n", s.substring(matcher.start(), matcher.end()));
+    }
+    // System.exit(0);
+
     String s1 = // spotless:off
         """
             $age = 45
             $a = $age
             $owner = person(
-              name = eric; age = $a; friends = [
-                toio;
-                ucio
+              name = eric;
+              % age = $a;
+              friends = [
+                toio %;
+                % hugo;
+                % ucio
               ]
             )
             """; // spotless:on
@@ -201,10 +217,10 @@ public class Main {
         + ".experimenter/src/main/resources/exp-examples/mini-robot-vs-nav.txt"));
     // System.out.println(StringParser.parse(s2));
     // System.out.println(StringParser.parse(s1 + s2));
-    System.out.println(StringParser.parse(s1 + s3));
-    System.out.println(MapNamedParamMap.prettyToString(StringParser.parse(se)));
-    NamedParamMap npm = StringParser.parse(se);
-    System.out.println(((List<?>) npm.value("runs", ParamMap.Type.NAMED_PARAM_MAPS)).size());
+    System.out.println(MapNamedParamMap.prettyToString(StringParser.parse(s1 + s3)));
+    // System.out.println(MapNamedParamMap.prettyToString(StringParser.parse(se)));
+    // NamedParamMap npm = StringParser.parse(se);
+    // System.out.println(((List<?>) npm.value("runs", ParamMap.Type.NAMED_PARAM_MAPS)).size());
     System.exit(0);
   }
 }

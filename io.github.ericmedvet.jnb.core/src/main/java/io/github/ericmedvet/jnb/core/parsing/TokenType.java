@@ -26,8 +26,8 @@ import java.util.regex.Pattern;
 
 public enum TokenType {
   NUM("(-?[0-9]+(\\.[0-9]+)?)|(-?Infinity)", "0.0"),
-  I_NUM("[0-9]+?", "0"),
-  STRING("(" + StringParser.PLAIN_STRING_REGEX + ")|(" + StringParser.QUOTED_STRING_REGEX + ")", "a"),
+  I_NUM("[0-9]+", "0"),
+  STRING("((" + StringParser.PLAIN_STRING_REGEX + ")|(" + StringParser.QUOTED_STRING_REGEX + "))", "a|\"a\""),
   CONST_NAME(
       "(" + Pattern.quote(StringParser.CONST_NAME_PREFIX) + StringParser.PLAIN_STRING_REGEX + ")",
       StringParser.CONST_NAME_PREFIX + "a"),
@@ -56,8 +56,8 @@ public enum TokenType {
   }
 
   public Token next(String s, int i) throws WrongTokenException {
-    Matcher matcher = Pattern.compile(StringParser.VOID_REGEX + regex + StringParser.VOID_REGEX)
-        .matcher(s);
+    Pattern pattern = Pattern.compile(StringParser.VOID_REGEX + regex + StringParser.VOID_REGEX);
+    Matcher matcher = pattern.matcher(s);
     if (!matcher.find(i) || matcher.start() != i) {
       throw new WrongTokenException(i, s, List.of(this));
     }
