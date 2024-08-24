@@ -107,7 +107,7 @@ It can be described with a string adhering the following human- and machine-read
 <npm> ::= <n>(<nps>)
 <nps> ::= ∅ | <np> | <nps>;<np>
 <np> ::= <n>=<npm> | <n>=<d> | <n>=<s> | <n>=<lnpm> | <n>=<ld> | <n>=<ls>
-<lnmp> ::= (<np>)*<lnpm> | <i>*[<npms>] | +[<npms>]+[<npms>] | [<npms>]
+<lnmp> ::= (<np>)*<lnpm> | <i>*<lnpm> | +<lnpm>+<lnpm> | [<npms>]
 <ld> ::= [<d>:<d>:<d>] | [<ds>]
 <ls> ::= [<ss>]
 <npms> ::= ∅ | <npm> | <npms>;<npm>
