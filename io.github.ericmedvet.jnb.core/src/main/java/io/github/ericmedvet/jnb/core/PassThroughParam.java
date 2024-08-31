@@ -25,4 +25,6 @@ public @interface PassThroughParam {
   String value() default "";
 
   ParamMap.Type type();
+
+  Class<?> enumClass() default Object.class;
 }

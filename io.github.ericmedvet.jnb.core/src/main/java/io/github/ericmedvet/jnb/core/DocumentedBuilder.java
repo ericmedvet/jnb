@@ -36,6 +36,47 @@ public interface DocumentedBuilder<T> extends Builder<T> {
 
   Executable origin();
 
+  private Object aliasedParamDefaultValue(ParamMap.Type type, Class<?> clazz, String value) {
+    if (type.equals(ParamMap.Type.INT)) {
+      return Integer.parseInt(value);
+    }
+    if (type.equals(ParamMap.Type.DOUBLE)) {
+      return Double.parseDouble(value);
+    }
+    if (type.equals(ParamMap.Type.BOOLEAN)) {
+      return Boolean.parseBoolean(value);
+    }
+    if (type.equals(ParamMap.Type.STRING)) {
+      return value;
+    }
+    if (type.equals(ParamMap.Type.ENUM)) {
+      //noinspection rawtypes,unchecked
+      return Enum.valueOf((Class) clazz, value.toUpperCase());
+    }
+    if (type.equals(ParamMap.Type.NAMED_PARAM_MAP)) {
+      return value;
+    }
+    if (type.equals(ParamMap.Type.INTS)) {
+      return value;
+    }
+    if (type.equals(ParamMap.Type.DOUBLES)) {
+      return value;
+    }
+    if (type.equals(ParamMap.Type.BOOLEANS)) {
+      return value;
+    }
+    if (type.equals(ParamMap.Type.STRINGS)) {
+      return value;
+    }
+    if (type.equals(ParamMap.Type.ENUMS)) {
+      return value;
+    }
+    if (type.equals(ParamMap.Type.NAMED_PARAM_MAPS)) {
+      return value;
+    }
+    return null;
+  }
+
   default DocumentedBuilder<T> alias(String name, Alias alias) {
     NamedParamMap preMap = AutoBuiltDocumentedBuilder.fromAlias(alias, null);
     List<ParamInfo> newParams = Stream.concat(
@@ -50,7 +91,13 @@ public interface DocumentedBuilder<T> extends Builder<T> {
                     pi.javaType)),
             Arrays.stream(alias.passThroughParams())
                 .map(p -> new ParamInfo(
-                    p.type(), null, p.name(), p.value(), null, Injection.NONE, String.class)))
+                    p.type(),
+                    null,
+                    p.name(),
+                    aliasedParamDefaultValue(p.type(), p.enumClass(), p.value()),
+                    null,
+                    Injection.NONE,
+                    String.class)))
         .toList();
     // descriptions for passThroughParams and defaulted params using do not show that
     // they are linked. however, drastic changes are needed in parsing result to fix this

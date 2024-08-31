@@ -134,7 +134,7 @@ public class Main {
         .and(NamedBuilder.fromClass(Person.class))
         .and(NamedBuilder.fromClass(Timed.class))
         .and(NamedBuilder.fromClass(Pet.class));
-    //System.out.println(nb.build("person(name=eric;preferredDays=[mon;tue];age=44)"));
+    // System.out.println(nb.build("person(name=eric;preferredDays=[mon;tue];age=44)"));
     // System.exit(0);
 
     // Office office = (Office) nb.build(S);
@@ -150,7 +150,7 @@ public class Main {
     // System.out.println(MapNamedParamMap.prettyToString(nb.fillWithDefaults(StringParser.parse(S))));
 
     InfoPrinter infoPrinter = new InfoPrinter();
-    //infoPrinter.print(nb, System.out);
+    // infoPrinter.print(nb, System.out);
 
     System.out.println(nb.build("cat(name = birba2)"));
     System.exit(0);
