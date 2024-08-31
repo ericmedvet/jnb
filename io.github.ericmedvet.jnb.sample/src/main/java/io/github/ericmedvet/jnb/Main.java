@@ -91,8 +91,11 @@ public class Main {
 
   @Alias(
       name = "cat",
-      value = "pet(kind = cat; owner = person(name = $ownerName))",
-      passThroughParams = {@PassThroughParam(name = "ownerName", type = Type.STRING, value = "ailo")})
+      value = "pet(kind = cat; owner = person(name = $ownerName; age = $age))",
+      passThroughParams = {
+        @PassThroughParam(name = "ownerName", type = Type.STRING, value = "ailo"),
+        @PassThroughParam(name = "age", type = Type.INT, value = "45")
+      })
   @Alias(
       name = "tiger",
       value = "pet(kind = tiger; owner = $tOwner)",
@@ -124,14 +127,14 @@ public class Main {
   }
 
   public static void main(String[] args) throws ParseException, IOException {
-    justParse();
+    // justParse();
 
     NamedBuilder<?> nb = NamedBuilder.empty()
         .and(NamedBuilder.fromClass(Office.class))
         .and(NamedBuilder.fromClass(Person.class))
         .and(NamedBuilder.fromClass(Timed.class))
         .and(NamedBuilder.fromClass(Pet.class));
-    System.out.println(nb.build("person(name=eric;preferredDays=[mon;tue];age=44)"));
+    //System.out.println(nb.build("person(name=eric;preferredDays=[mon;tue];age=44)"));
     // System.exit(0);
 
     // Office office = (Office) nb.build(S);
@@ -147,11 +150,13 @@ public class Main {
     // System.out.println(MapNamedParamMap.prettyToString(nb.fillWithDefaults(StringParser.parse(S))));
 
     InfoPrinter infoPrinter = new InfoPrinter();
-    infoPrinter.print(nb, System.out);
+    //infoPrinter.print(nb, System.out);
+
+    System.out.println(nb.build("cat(name = birba2)"));
+    System.exit(0);
 
     System.out.println(nb.build("cat(name = birba; ownerName = \"../gargamella\")"));
     System.out.println(nb.build("pet(name = simba; owner = person(name = eric))"));
-    System.out.println(nb.build("cat(name = birba2)"));
     System.out.println(nb.build("garfield()"));
     System.out.println(nb.build("garfield(owner = person(name = maureen))"));
     System.out.println(nb.build("tiger(name = omo; tOwner = person(name = none))"));
