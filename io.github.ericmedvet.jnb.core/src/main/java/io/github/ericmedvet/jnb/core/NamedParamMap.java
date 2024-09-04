@@ -66,8 +66,8 @@ public interface NamedParamMap extends ParamMap {
   }
 
   @Override
-  default NamedParamMap and(String name, Type valueType, Object value) {
-    return from(getName(), ParamMap.super.and(name, valueType, value));
+  default NamedParamMap with(String name, Type valueType, Object value) {
+    return from(getName(), ParamMap.super.with(name, valueType, value));
   }
 
   @Override
