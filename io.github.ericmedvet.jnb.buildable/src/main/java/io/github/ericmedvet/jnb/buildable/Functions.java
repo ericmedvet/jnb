@@ -44,15 +44,6 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
-  public static <X, Z, Y> FormattedNamedFunction<X, Y> composition(
-      @Param(value = "of", dNPM = "f.identity()") Function<X, Z> beforeF,
-      @Param(value = "then", dNPM = "f.identity()") Function<Z, Y> afterF) {
-    return FormattedNamedFunction.from(afterF, FormattedFunction.format(afterF), NamedFunction.name(afterF))
-        .compose(beforeF);
-  }
-
-  @SuppressWarnings("unused")
-  @Cacheable
   public static <X> FormattedNamedFunction<X, Double> avg(
       @Param(value = "of", dNPM = "f.identity()") Function<X, List<? extends Number>> beforeF,
       @Param(value = "format", dS = "%.1f") String format) {
@@ -71,6 +62,15 @@ public class Functions {
     Function<Double, Double> f = range::clip;
     return FormattedNamedFunction.from(
             f, format, ("clip[" + format + ";" + format + "]").formatted(range.min(), range.max()))
+        .compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X, Z, Y> FormattedNamedFunction<X, Y> composition(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Z> beforeF,
+      @Param(value = "then", dNPM = "f.identity()") Function<Z, Y> afterF) {
+    return FormattedNamedFunction.from(afterF, FormattedFunction.format(afterF), NamedFunction.name(afterF))
         .compose(beforeF);
   }
 
