@@ -119,7 +119,7 @@ public record AutoBuiltDocumentedBuilder<T>(
   }
 
   public static List<DocumentedBuilder<Object>> from(Executable executable, Alias[] aliases) {
-    Logger l = Logger.getLogger(DocumentedBuilder.class.getName());
+    Logger l = Logger.getLogger(AutoBuiltDocumentedBuilder.class.getName());
     // check annotations
     BuilderMethod builderMethodAnnotation = executable.getAnnotation(BuilderMethod.class);
     boolean isCacheable = executable.getAnnotation(Cacheable.class) != null;
@@ -458,7 +458,8 @@ public record AutoBuiltDocumentedBuilder<T>(
 
   @Override
   public String toString() {
-    return "(" + params().stream().map(ParamInfo::toString).collect(Collectors.joining("; "))
+    return "("
+        + params().stream().map(ParamInfo::toString).collect(Collectors.joining("; "))
         + ") -> "
         + builtType();
   }

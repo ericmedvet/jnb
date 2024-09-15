@@ -404,30 +404,18 @@ public class StringParser {
     Token tConstName = TokenType.CONST_NAME.next(s, i);
     String constName = tConstName.trimmedContent(s);
     Node value = consts.get(constName);
-    if (value == null) {
-      throw new UndefinedConstantNameException(
+    return switch (value) {
+      case null -> throw new UndefinedConstantNameException(
           i, s, constName, consts.keySet().stream().toList());
-    }
-    if (value instanceof DNode dNode) {
-      return new DNode(tConstName, dNode.value());
-    }
-    if (value instanceof ENode eNode) {
-      return new ENode(tConstName, eNode.child(), eNode.name());
-    }
-    if (value instanceof SNode sNode) {
-      return new SNode(tConstName, sNode.value());
-    }
-    if (value instanceof LDNode ldNode) {
-      return new LDNode(tConstName, ldNode.child());
-    }
-    if (value instanceof LENode leNode) {
-      return new LENode(tConstName, leNode.child());
-    }
-    if (value instanceof LSNode lsNode) {
-      return new LSNode(tConstName, lsNode.child());
-    }
-    throw new ParseException(
-        "Unknown type %s of const %s".formatted(value.getClass().getSimpleName(), constName), null, i, s);
+      case DNode dNode -> new DNode(tConstName, dNode.value());
+      case ENode eNode -> new ENode(tConstName, eNode.child(), eNode.name());
+      case SNode sNode -> new SNode(tConstName, sNode.value());
+      case LDNode ldNode -> new LDNode(tConstName, ldNode.child());
+      case LENode leNode -> new LENode(tConstName, leNode.child());
+      case LSNode lsNode -> new LSNode(tConstName, lsNode.child());
+      default -> throw new ParseException(
+          "Unknown type %s of const %s".formatted(value.getClass().getSimpleName(), constName), null, i, s);
+    };
   }
 
   private Node parseValue(int i) throws ParseException {

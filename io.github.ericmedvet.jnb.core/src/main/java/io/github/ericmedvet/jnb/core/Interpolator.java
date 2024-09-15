@@ -49,9 +49,9 @@ public class Interpolator {
 
   private static Object getKeyFromParamMap(ParamMap paramMap, List<String> keyPieces) {
     if (keyPieces.size() == 1) {
-      return paramMap.value(keyPieces.get(0));
+      return paramMap.value(keyPieces.getFirst());
     }
-    ParamMap innerParamMap = (ParamMap) paramMap.value(keyPieces.get(0), ParamMap.Type.NAMED_PARAM_MAP);
+    ParamMap innerParamMap = (ParamMap) paramMap.value(keyPieces.getFirst(), ParamMap.Type.NAMED_PARAM_MAP);
     if (innerParamMap == null) {
       return null;
     }

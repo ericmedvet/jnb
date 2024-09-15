@@ -22,9 +22,7 @@ package io.github.ericmedvet.jnb.core;
 import java.util.Arrays;
 import java.util.function.ToDoubleFunction;
 
-/**
- * @author "Eric Medvet" on 2024/07/26 for jnb
- */
+/** @author "Eric Medvet" on 2024/07/26 for jnb */
 public enum MathOp implements ToDoubleFunction<double[]> {
   ADD(vs -> Arrays.stream(vs).sum()),
   SUBTRACT(vs -> switch (vs.length) {
@@ -38,9 +36,11 @@ public enum MathOp implements ToDoubleFunction<double[]> {
     case 2 -> vs[0] / vs[1];
     default -> throw new IllegalArgumentException("Divide expects 1 or 2 args, found %d".formatted(vs.length));
   }),
-  POWER(vs -> switch (vs.length) {
-    case 2 -> Math.pow(vs[0], vs[1]);
-    default -> throw new IllegalArgumentException("Powe expects 2 args, found %d".formatted(vs.length));
+  POWER(vs -> {
+    if (vs.length == 2) {
+      return Math.pow(vs[0], vs[1]);
+    }
+    throw new IllegalArgumentException("Power expects 2 args, found %d".formatted(vs.length));
   });
 
   private final ToDoubleFunction<double[]> f;

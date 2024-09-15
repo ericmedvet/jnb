@@ -87,9 +87,9 @@ public class NamedBuilder<X> {
 
   private static List<List<String>> flatTokens(List<List<String>> tokens) {
     if (tokens.size() == 1) {
-      return tokens.get(0).stream().map(List::of).toList();
+      return tokens.getFirst().stream().map(List::of).toList();
     }
-    return tokens.get(0).stream()
+    return tokens.getFirst().stream()
         .map(t -> flatTokens(tokens.subList(1, tokens.size())).stream()
             .map(l -> Stream.concat(Stream.of(t), l.stream()).toList())
             .toList())
@@ -111,7 +111,7 @@ public class NamedBuilder<X> {
           c.getSimpleName(), c.getConstructors().length));
     }
     return (NamedBuilder<C>) (new NamedBuilder<>(
-        AutoBuiltDocumentedBuilder.from(constructors.get(0), c.getAnnotationsByType(Alias.class)).stream()
+        AutoBuiltDocumentedBuilder.from(constructors.getFirst(), c.getAnnotationsByType(Alias.class)).stream()
             .collect(Collectors.toMap(DocumentedBuilder::name, b -> b))));
   }
 

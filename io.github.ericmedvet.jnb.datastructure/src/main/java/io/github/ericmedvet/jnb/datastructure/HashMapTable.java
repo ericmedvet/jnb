@@ -24,9 +24,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @author "Eric Medvet" on 2023/11/03 for jgea
- */
+/** @author "Eric Medvet" on 2023/11/03 for jgea */
 public class HashMapTable<R, C, T> implements Table<R, C, T> {
 
   private final Map<Key<R, C>, T> map;

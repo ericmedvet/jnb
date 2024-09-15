@@ -26,9 +26,9 @@ import java.util.stream.DoubleStream;
 
 public record DoubleRange(double min, double max) implements Serializable {
 
-  public static DoubleRange UNIT = new DoubleRange(0, 1);
-  public static DoubleRange SYMMETRIC_UNIT = new DoubleRange(-1, 1);
-  public static DoubleRange UNBOUNDED = new DoubleRange(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
+  public static final DoubleRange UNIT = new DoubleRange(0, 1);
+  public static final DoubleRange SYMMETRIC_UNIT = new DoubleRange(-1, 1);
+  public static final DoubleRange UNBOUNDED = new DoubleRange(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
 
   public DoubleRange {
     if (max < min) {

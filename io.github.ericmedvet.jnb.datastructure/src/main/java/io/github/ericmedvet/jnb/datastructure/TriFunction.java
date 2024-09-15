@@ -19,9 +19,7 @@
  */
 package io.github.ericmedvet.jnb.datastructure;
 
-/**
- * @author "Eric Medvet" on 2024/05/27 for jnb
- */
+/** @author "Eric Medvet" on 2024/05/27 for jnb */
 @FunctionalInterface
 public interface TriFunction<I1, I2, I3, O> {
   O apply(I1 i1, I2 i2, I3 i3);

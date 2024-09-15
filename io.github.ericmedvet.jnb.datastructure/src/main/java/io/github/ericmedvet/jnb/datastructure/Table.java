@@ -154,7 +154,7 @@ public interface Table<R, C, T> {
   default <T1, K> Table<R, C, T1> aggregateByIndexSingle(
       Function<R, K> rowKey, Comparator<R> comparator, BiFunction<C, List<Map.Entry<R, T>>, T1> aggregator) {
     Function<List<Map.Entry<R, Map<C, T>>>, Map<C, T1>> rowAggregator =
-        rows -> rows.get(0).getValue().keySet().stream()
+        rows -> rows.getFirst().getValue().keySet().stream()
             .map(c -> Map.entry(
                 c,
                 aggregator.apply(
@@ -176,7 +176,7 @@ public interface Table<R, C, T> {
 
   default <T1, K> Table<R, C, T1> aggregateSingle(
       Function<Map<C, T>, K> rowKey, Comparator<R> comparator, Function<List<T>, T1> aggregator) {
-    Function<List<Map<C, T>>, Map<C, T1>> rowAggregator = maps -> maps.get(0).keySet().stream()
+    Function<List<Map<C, T>>, Map<C, T1>> rowAggregator = maps -> maps.getFirst().keySet().stream()
         .map(c -> Map.entry(
             c, aggregator.apply(maps.stream().map(m -> m.get(c)).toList())))
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, Table::first, LinkedHashMap::new));
@@ -185,7 +185,7 @@ public interface Table<R, C, T> {
 
   default <T1, K> Table<R, C, T1> aggregateSingle(
       Function<Map<C, T>, K> rowKey, Comparator<R> comparator, BiFunction<C, List<T>, T1> aggregator) {
-    Function<List<Map<C, T>>, Map<C, T1>> rowAggregator = maps -> maps.get(0).keySet().stream()
+    Function<List<Map<C, T>>, Map<C, T1>> rowAggregator = maps -> maps.getFirst().keySet().stream()
         .map(c -> Map.entry(
             c, aggregator.apply(c, maps.stream().map(m -> m.get(c)).toList())))
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, Table::first, LinkedHashMap::new));

@@ -37,6 +37,7 @@ public class Starter {
 
   @Discoverable(prefixTemplate = "p|persons")
   public static class Persons {
+
     private Persons() {}
 
     @Alias(name = "mathusalem", value = "old(name = Mathusalem; age = 199)")
@@ -44,10 +45,7 @@ public class Starter {
     public static Person old(
         @Param("name") String name,
         @Param(value = "age", dI = 55) int age,
-        @Param(
-                value = "nicknames",
-                dSs = {})
-            List<String> nicknames) {
+        @Param("nicknames") List<String> nicknames) {
       return new Person(name, age, nicknames);
     }
 

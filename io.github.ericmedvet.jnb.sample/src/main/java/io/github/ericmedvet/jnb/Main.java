@@ -179,7 +179,8 @@ public class Main {
   private static void justParse() throws ParseException, IOException {
 
     String s = "    toio %;\nhugo %;";
-    Matcher matcher = Pattern.compile("\\s*(%[^\\n\\r]*((\\r\\n)|(\\r)|(\\n))\\s*)*" + "[A-Za-z][A-Za-z0-9_]*"
+    Matcher matcher = Pattern.compile("\\s*(%[^\\n\\r]*((\\r\\n)|(\\r)|(\\n))\\s*)*"
+            + "[A-Za-z][A-Za-z0-9_]*"
             + "\\s*(%[^\\n\\r]*((\\r\\n)|(\\r)|(\\n))\\s*)*")
         .matcher(s);
     while (matcher.find()) {
@@ -202,13 +203,13 @@ public class Main {
             )
             """; // spotless:on
     String s2 = // spotless:off
-        """
-            animal(
-              name = simba;
-              nums = [1; 2; 3];
-              age = 17
-            )
-            """; // spotless:on
+    """
+        animal(
+          name = simba;
+          nums = [1; 2; 3];
+          age = 17
+        )
+        """; // spotless:on
     String s3 = // spotless:off
         """
             animal(

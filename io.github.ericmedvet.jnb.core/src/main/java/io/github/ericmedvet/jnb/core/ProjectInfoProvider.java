@@ -26,9 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
-/**
- * @author "Eric Medvet" on 2023/10/18 for jnb
- */
+/** @author "Eric Medvet" on 2023/10/18 for jnb */
 public class ProjectInfoProvider {
 
   private static final Map<Class<?>, Optional<ProjectInfo>> CACHE = new HashMap<>();

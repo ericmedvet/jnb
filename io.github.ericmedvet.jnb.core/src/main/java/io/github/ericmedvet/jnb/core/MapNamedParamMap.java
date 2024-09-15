@@ -203,22 +203,22 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
           .append(TokenType.ASSIGN_SEPARATOR.rendered())
           .append(space);
       Object value = m.value(names.get(i));
-      if (value instanceof List<?> l) {
-        sb.append(TokenType.OPEN_LIST.rendered())
+      switch (value) {
+        case List<?> l -> sb.append(TokenType.OPEN_LIST.rendered())
             .append(listContentToInlineString(l, space))
             .append(TokenType.CLOSED_LIST.rendered());
-      } else if (value instanceof ParamMap innerMap) {
-        if (innerMap instanceof NamedParamMap namedParamMap) {
-          sb.append(namedParamMap.getName()).append(TokenType.OPEN_CONTENT.rendered());
+        case ParamMap innerMap -> {
+          if (innerMap instanceof NamedParamMap namedParamMap) {
+            sb.append(namedParamMap.getName()).append(TokenType.OPEN_CONTENT.rendered());
+          }
+          sb.append(mapContentToInlineString(innerMap, space));
+          if (innerMap instanceof NamedParamMap) {
+            sb.append(TokenType.CLOSED_CONTENT.rendered());
+          }
         }
-        sb.append(mapContentToInlineString(innerMap, space));
-        if (innerMap instanceof NamedParamMap) {
-          sb.append(TokenType.CLOSED_CONTENT.rendered());
-        }
-      } else if (value instanceof String) {
-        sb.append(stringValue((String) value));
-      } else {
-        sb.append(value == null ? null : value.toString());
+        case String s -> sb.append(stringValue(s));
+        case null -> sb.append((String) null);
+        default -> sb.append(value);
       }
       if (i < names.size() - 1) {
         sb.append(TokenType.LIST_SEPARATOR.rendered()).append(space);
@@ -238,21 +238,21 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
           .append(TokenType.ASSIGN_SEPARATOR.rendered())
           .append(space);
       Object value = map.value(names.get(i));
-      if (value instanceof List<?> l) {
-        sb.append(TokenType.OPEN_LIST.rendered());
-        String listContent = listContentToInlineString(l, space);
-        if (l.isEmpty() || listContent.length() + currentLineLength(sb.toString()) < maxW) {
-          sb.append(listContent);
-        } else {
-          listContentToMultilineString(sb, maxW, w, indent, space, l);
+      switch (value) {
+        case List<?> l -> {
+          sb.append(TokenType.OPEN_LIST.rendered());
+          String listContent = listContentToInlineString(l, space);
+          if (l.isEmpty() || listContent.length() + currentLineLength(sb.toString()) < maxW) {
+            sb.append(listContent);
+          } else {
+            listContentToMultilineString(sb, maxW, w, indent, space, l);
+          }
+          sb.append(TokenType.CLOSED_LIST.rendered());
         }
-        sb.append(TokenType.CLOSED_LIST.rendered());
-      } else if (value instanceof NamedParamMap m) {
-        prettyToString(m, sb, maxW, w + indent, indent, space);
-      } else if (value instanceof String) {
-        sb.append(stringValue((String) value));
-      } else {
-        sb.append(value.toString());
+        case NamedParamMap m -> prettyToString(m, sb, maxW, w + indent, indent, space);
+        case String s -> sb.append(stringValue(s));
+        case null -> sb.append((String) null);
+        default -> sb.append(value);
       }
       if (i < names.size() - 1) {
         sb.append(TokenType.LIST_SEPARATOR.rendered());
