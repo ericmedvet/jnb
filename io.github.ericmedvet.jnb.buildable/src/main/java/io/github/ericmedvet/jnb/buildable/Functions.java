@@ -19,10 +19,7 @@
  */
 package io.github.ericmedvet.jnb.buildable;
 
-import io.github.ericmedvet.jnb.core.Cacheable;
-import io.github.ericmedvet.jnb.core.Discoverable;
-import io.github.ericmedvet.jnb.core.MathOp;
-import io.github.ericmedvet.jnb.core.Param;
+import io.github.ericmedvet.jnb.core.*;
 import io.github.ericmedvet.jnb.datastructure.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -41,6 +38,36 @@ public class Functions {
   private static final Logger L = Logger.getLogger(Functions.class.getName());
 
   private Functions() {}
+
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X, T, K> NamedFunction<X, List<K>> all(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, T> beforeF,
+      @Param(
+              value = "fs",
+              dNPMs = {"f.identity()"})
+          List<Function<T, K>> functions,
+      @Param(value = "format", dS = "%s") String format) {
+    Function<T, List<K>> f =
+        t -> functions.stream().map(fun -> fun.apply(t)).toList();
+    return FormattedNamedFunction.from(
+            f,
+            format,
+            "[%s]"
+                .formatted(functions.stream()
+                    .map(NamedFunction::name)
+                    .collect(Collectors.joining(";"))))
+        .compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X, T> NamedFunction<X, T> any(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<T>> beforeF,
+      @Param(value = "format", dS = "%s") String format) {
+    Function<Collection<T>, T> f = ts -> ts.stream().findAny().orElseThrow();
+    return FormattedNamedFunction.from(f, format, "any").compose(beforeF);
+  }
 
   @SuppressWarnings("unused")
   @Cacheable
@@ -89,6 +116,23 @@ public class Functions {
       @Param(value = "format", dS = "%s") String format) {
     Function<Collection<T>, Set<T>> f = HashSet::new;
     return FormattedNamedFunction.from(f, format, "distinct").compose(beforeF);
+  }
+
+  @Alias(
+      name = "distinctSortedByKey",
+      passThroughParams = {@PassThroughParam(name = "sort", type = ParamMap.Type.NAMED_PARAM_MAP)},
+      value = "distinctByKey(representer = f.first(of = f.sortedBy(by = $sort)))")
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X, T, K> NamedFunction<X, Set<T>> distinctByKey(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<T>> beforeF,
+      @Param(value = "key", dNPM = "f.identity()") Function<T, K> keyF,
+      @Param(value = "representer", dNPM = "f.any()") Function<Collection<T>, T> representerF,
+      @Param(value = "format", dS = "%s") String format) {
+    Function<Collection<T>, Set<T>> f = ts -> ts.stream().collect(Collectors.groupingBy(keyF)).values().stream()
+        .map(representerF)
+        .collect(Collectors.toSet());
+    return FormattedNamedFunction.from(f, format, "distinctByKey").compose(beforeF);
   }
 
   @SuppressWarnings("unused")
@@ -272,6 +316,8 @@ public class Functions {
     return FormattedNamedFunction.from(f, format, "min").compose(beforeF);
   }
 
+  @Alias(name = "first", value = "nTh(n = 1)")
+  @Alias(name = "last", value = "nTh(n = -1)")
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T> NamedFunction<X, T> nTh(
@@ -370,6 +416,19 @@ public class Functions {
       @Param(value = "format", dS = "%3d") String format) {
     Function<Collection<?>, Integer> f = Collection::size;
     return FormattedNamedFunction.from(f, format, "size").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X, T, K extends Comparable<K>> NamedFunction<X, List<T>> sortedBy(
+      @Param(value = "by", dNPM = "f.identity()") Function<T, K> byF,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<T>> beforeF,
+      @Param(value = "format", dS = "%s") String format) {
+    Comparator<T> tComparator = Comparator.comparing(byF);
+    Function<Collection<T>, List<T>> f =
+        ts -> ts.stream().sorted(tComparator).toList();
+    return FormattedNamedFunction.from(f, format, "sortedBy[%s]".formatted(NamedFunction.name(byF)))
+        .compose(beforeF);
   }
 
   @SuppressWarnings("unused")
