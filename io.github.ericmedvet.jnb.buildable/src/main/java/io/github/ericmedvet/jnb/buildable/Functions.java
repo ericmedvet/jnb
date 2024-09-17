@@ -54,6 +54,14 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
+  public static <X> NamedFunction<X, String> classSimpleName(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Object> beforeF) {
+    Function<Object, String> f = o -> o.getClass().getSimpleName();
+    return NamedFunction.from(f, "class").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
   public static <X> FormattedNamedFunction<X, Double> clip(
       @Param(value = "of", dNPM = "f.identity()") Function<X, Double> beforeF,
       @Param("range") DoubleRange range,
