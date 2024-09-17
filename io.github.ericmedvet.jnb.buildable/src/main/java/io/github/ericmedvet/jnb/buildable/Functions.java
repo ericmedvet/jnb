@@ -71,6 +71,13 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
+  public static <X, Y> NamedFunction<X, Y> as(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Y> beforeF, @Param("name") String name) {
+    return NamedFunction.from(beforeF, name);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
   public static <X> FormattedNamedFunction<X, Double> avg(
       @Param(value = "of", dNPM = "f.identity()") Function<X, List<? extends Number>> beforeF,
       @Param(value = "format", dS = "%.1f") String format) {
@@ -132,7 +139,12 @@ public class Functions {
     Function<Collection<T>, Set<T>> f = ts -> ts.stream().collect(Collectors.groupingBy(keyF)).values().stream()
         .map(representerF)
         .collect(Collectors.toSet());
-    return FormattedNamedFunction.from(f, format, "distinctByKey").compose(beforeF);
+    return FormattedNamedFunction.from(
+            f,
+            format,
+            "distinctByKey[k=%s;r=%s]"
+                .formatted(NamedFunction.name(keyF), NamedFunction.name(representerF)))
+        .compose(beforeF);
   }
 
   @SuppressWarnings("unused")
@@ -316,7 +328,7 @@ public class Functions {
     return FormattedNamedFunction.from(f, format, "min").compose(beforeF);
   }
 
-  @Alias(name = "first", value = "nTh(n = 1)")
+  @Alias(name = "first", value = "nTh(n = 0)")
   @Alias(name = "last", value = "nTh(n = -1)")
   @SuppressWarnings("unused")
   @Cacheable
@@ -423,8 +435,9 @@ public class Functions {
   public static <X, T, K extends Comparable<K>> NamedFunction<X, List<T>> sortedBy(
       @Param(value = "by", dNPM = "f.identity()") Function<T, K> byF,
       @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<T>> beforeF,
+      @Param("reversed") boolean reversed,
       @Param(value = "format", dS = "%s") String format) {
-    Comparator<T> tComparator = Comparator.comparing(byF);
+    Comparator<T> tComparator = reversed ? Comparator.comparing(byF).reversed() : Comparator.comparing(byF);
     Function<Collection<T>, List<T>> f =
         ts -> ts.stream().sorted(tComparator).toList();
     return FormattedNamedFunction.from(f, format, "sortedBy[%s]".formatted(NamedFunction.name(byF)))
