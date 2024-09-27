@@ -73,6 +73,9 @@ public class Functions {
   @Cacheable
   public static <X, Y> NamedFunction<X, Y> as(
       @Param(value = "of", dNPM = "f.identity()") Function<X, Y> beforeF, @Param("name") String name) {
+    if (beforeF instanceof FormattedFunction<X, Y> formattedBeforeF) {
+      return FormattedNamedFunction.from(beforeF, formattedBeforeF.format(), name);
+    }
     return NamedFunction.from(beforeF, name);
   }
 
