@@ -424,6 +424,40 @@ public class Functions {
     return FormattedNamedFunction.from(f, format, "sd").compose(beforeF);
   }
 
+  @Alias(
+      name = "sizeIf",
+      passThroughParams = {
+        @PassThroughParam(name = "allF", value = "f.identity()", type = ParamMap.Type.NAMED_PARAM_MAP),
+        @PassThroughParam(name = "mapF", value = "f.identity()", type = ParamMap.Type.NAMED_PARAM_MAP),
+        @PassThroughParam(
+            name = "predicate",
+            value = "predicate.always()",
+            type = ParamMap.Type.NAMED_PARAM_MAP)
+      },
+      value = // spotless:off
+          """
+              size(of = f.filter(
+                of = f.each(
+                  of = $allF;
+                  mapF = $mapF
+                );
+                condition = $predicate
+              ))
+              """) // spotless:on
+  @Alias(
+      name = "sizeIfLt",
+      passThroughParams = {@PassThroughParam(name = "t", value = "0.0", type = ParamMap.Type.DOUBLE)},
+      value = // spotless:off
+          """
+              sizeIf(predicate = predicate.lt(t = $t))
+              """) // spotless:on
+  @Alias(
+      name = "sizeIfGt",
+      passThroughParams = {@PassThroughParam(name = "t", value = "0.0", type = ParamMap.Type.DOUBLE)},
+      value = // spotless:off
+          """
+              sizeIf(predicate = predicate.gt(t = $t))
+              """) // spotless:on
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> FormattedNamedFunction<X, Integer> size(

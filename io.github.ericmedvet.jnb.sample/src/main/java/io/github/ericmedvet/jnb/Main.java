@@ -153,7 +153,7 @@ public class Main {
     // infoPrinter.print(nb, System.out);
 
     System.out.println(nb.build("cat(name = birba2)"));
-    System.exit(0);
+    // System.exit(0);
 
     System.out.println(nb.build("cat(name = birba; ownerName = \"../gargamella\")"));
     System.out.println(nb.build("pet(name = simba; owner = person(name = eric))"));
