@@ -47,13 +47,7 @@ public class Main {
           """; // spotless:on
 
   public enum DayOfWeek {
-    MON,
-    TUE,
-    WED,
-    THU,
-    FRI,
-    SAT,
-    SUN;
+    MON, TUE, WED, THU, FRI, SAT, SUN;
 
     @Override
     public String toString() {
@@ -62,9 +56,7 @@ public class Main {
   }
 
   public enum Gender {
-    M,
-    F,
-    OTHER
+    M, F, OTHER
   }
 
   public record Office(
@@ -72,9 +64,10 @@ public class Main {
       @Param("head") Person head,
       @Param("staff") List<Person> staff,
       @Param(
-              value = "spareStaff",
-              dNPMs = {"person(name = Gigi)"})
-          List<Person> spareStaff) {}
+          value = "spareStaff", dNPMs = {
+              "person(name = Gigi)"}) List<Person> spareStaff
+  ){
+  }
 
   public record Person(
       @Param(value = "", injection = Param.Injection.INDEX) int index,
@@ -84,35 +77,29 @@ public class Main {
       @Param(value = "nice", dB = true) boolean nice,
       @Param("nicknames") List<String> nicknames,
       @Param(
-              value = "preferredDays",
-              dSs = {"mon", "fri"})
-          List<DayOfWeek> preferredDays,
-      @Param(value = "", injection = Param.Injection.MAP_WITH_DEFAULTS) ParamMap map) {}
+          value = "preferredDays", dSs = {
+              "mon", "fri"}) List<DayOfWeek> preferredDays,
+      @Param(value = "", injection = Param.Injection.MAP_WITH_DEFAULTS) ParamMap map
+  ){
+  }
 
   @Alias(
-      name = "cat",
-      value = "pet(kind = cat; owner = person(name = $ownerName; age = $age))",
-      passThroughParams = {
-        @PassThroughParam(name = "ownerName", type = Type.STRING, value = "ailo"),
-        @PassThroughParam(name = "age", type = Type.INT, value = "45")
+      name = "cat", value = "pet(kind = cat; owner = person(name = $ownerName; age = $age))", passThroughParams = {@PassThroughParam(name = "ownerName", type = Type.STRING, value = "ailo"), @PassThroughParam(name = "age", type = Type.INT, value = "45")
       })
   @Alias(
-      name = "tiger",
-      value = "pet(kind = tiger; owner = $tOwner)",
-      passThroughParams = {@PassThroughParam(name = "tOwner", type = Type.NAMED_PARAM_MAP)})
+      name = "tiger", value = "pet(kind = tiger; owner = $tOwner)", passThroughParams = {@PassThroughParam(name = "tOwner", type = Type.NAMED_PARAM_MAP)})
   @Alias(name = "garfield", value = "cat(name = g; ownerName = gOwner)")
   public record Pet(
       @Param("name") String name,
       @Param(value = "kind", dS = "dog") String kind,
       @Param(
-              value = "legs",
-              dIs = {4})
-          List<Integer> legs,
+          value = "legs", dIs = {
+              4}) List<Integer> legs,
       @Param("owner") Person owner,
       @Param(
-              value = "booleans",
-              dBs = {false, false})
-          List<Boolean> booleans) {}
+          value = "booleans", dBs = {false, false}) List<Boolean> booleans
+  ){
+  }
 
   public static class Timed {
 
@@ -165,7 +152,8 @@ public class Main {
     System.out.println(nb.build("timed(name = a)"));
     System.out.println(nb.build("person(name = eric; nicknames = [nn1; nn2])"));
     System.out.println(
-        nb.build("$nn1 = nn1 $number = \"45\" person(name = $nn1; nicknames = [$nn1; nn2; $number])"));
+        nb.build("$nn1 = nn1 $number = \"45\" person(name = $nn1; nicknames = [$nn1; nn2; $number])")
+    );
   }
 
   private static String find(String s, String regex) {
@@ -179,9 +167,9 @@ public class Main {
   private static void justParse() throws ParseException, IOException {
 
     String s = "    toio %;\nhugo %;";
-    Matcher matcher = Pattern.compile("\\s*(%[^\\n\\r]*((\\r\\n)|(\\r)|(\\n))\\s*)*"
-            + "[A-Za-z][A-Za-z0-9_]*"
-            + "\\s*(%[^\\n\\r]*((\\r\\n)|(\\r)|(\\n))\\s*)*")
+    Matcher matcher = Pattern.compile(
+        "\\s*(%[^\\n\\r]*((\\r\\n)|(\\r)|(\\n))\\s*)*" + "[A-Za-z][A-Za-z0-9_]*" + "\\s*(%[^\\n\\r]*((\\r\\n)|(\\r)|(\\n))\\s*)*"
+    )
         .matcher(s);
     while (matcher.find()) {
       System.out.printf("`%s`%n", s.substring(matcher.start(), matcher.end()));
@@ -219,8 +207,11 @@ public class Main {
               age = 17 % va;
             )
             """; // spotless:on
-    String se = Files.readString(Path.of("../jgea/io.github.ericmedvet.jgea"
-        + ".experimenter/src/main/resources/exp-examples/mini-robot-vs-nav.txt"));
+    String se = Files.readString(
+        Path.of(
+            "../jgea/io.github.ericmedvet.jgea" + ".experimenter/src/main/resources/exp-examples/mini-robot-vs-nav.txt"
+        )
+    );
     // System.out.println(StringParser.parse(s2));
     // System.out.println(StringParser.parse(s1 + s2));
     System.out.println(MapNamedParamMap.prettyToString(StringParser.parse(s1 + s3)));

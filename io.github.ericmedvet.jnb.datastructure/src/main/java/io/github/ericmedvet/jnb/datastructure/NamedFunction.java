@@ -78,7 +78,10 @@ public interface NamedFunction<T, R> extends Function<T, R> {
   default <V> NamedFunction<T, V> andThen(Function<? super R, ? extends V> after) {
     if (after instanceof FormattedFunction<? super R, ? extends V> afterFF) {
       return FormattedNamedFunction.from(
-          t -> after.apply(apply(t)), afterFF.format(), composeNames(name(), name(after)));
+          t -> after.apply(apply(t)),
+          afterFF.format(),
+          composeNames(name(), name(after))
+      );
     }
     return from(t -> after.apply(apply(t)), composeNames(name(), name(after)));
   }

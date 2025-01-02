@@ -71,7 +71,8 @@ public interface FormattedFunction<T, R> extends Function<T, R> {
       return FormattedNamedFunction.from(
           v -> apply(before.apply(v)),
           format(),
-          NamedFunction.composeNames(beforeNF.name(), NamedFunction.name(this)));
+          NamedFunction.composeNames(beforeNF.name(), NamedFunction.name(this))
+      );
     }
     return from(v -> apply(before.apply(v)), format());
   }
@@ -82,7 +83,8 @@ public interface FormattedFunction<T, R> extends Function<T, R> {
       return FormattedNamedFunction.from(
           t -> after.apply(apply(t)),
           format(after),
-          NamedFunction.composeNames(NamedFunction.name(this), afterNF.name()));
+          NamedFunction.composeNames(NamedFunction.name(this), afterNF.name())
+      );
     }
     return from(t -> after.apply(apply(t)), format(after));
   }
@@ -95,8 +97,7 @@ public interface FormattedFunction<T, R> extends Function<T, R> {
     if (!format().equals("%s")) {
       return this;
     }
-    int maxLength =
-        ts.stream().mapToInt(t -> applyFormatted(t).length()).max().orElseThrow();
+    int maxLength = ts.stream().mapToInt(t -> applyFormatted(t).length()).max().orElseThrow();
     return reformatted("%" + maxLength + "s");
   }
 }

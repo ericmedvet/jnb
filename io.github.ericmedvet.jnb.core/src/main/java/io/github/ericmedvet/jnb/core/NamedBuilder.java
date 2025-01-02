@@ -51,10 +51,9 @@ public class NamedBuilder<X> {
 
   public static NamedBuilder<Object> fromDiscovery(String... packageNames) {
     NamedBuilder<Object> nb = NamedBuilder.empty();
-    try (ScanResult scanResult =
-        new ClassGraph().enableAllInfo().acceptPackages(packageNames).scan()) {
-      for (ClassInfo classInfo :
-          scanResult.getAllClasses().filter(classInfo -> classInfo.hasAnnotation(Discoverable.class))) {
+    try (ScanResult scanResult = new ClassGraph().enableAllInfo().acceptPackages(packageNames).scan()) {
+      for (ClassInfo classInfo : scanResult.getAllClasses()
+          .filter(classInfo -> classInfo.hasAnnotation(Discoverable.class))) {
         String[] prefixes = (String[]) classInfo
             .getAnnotationInfo(Discoverable.class)
             .getParameterValues()
@@ -64,12 +63,16 @@ public class NamedBuilder<X> {
             .getParameterValues()
             .getValue("prefixTemplate");
         if (prefixes.length > 0 && !prefixTemplate.isEmpty()) {
-          L.warning("Both prefixes and prefixTemplate are set for discoverable class %s: using prefixes %s"
-              .formatted(classInfo.getName(), Arrays.toString(prefixes)));
+          L.warning(
+              "Both prefixes and prefixTemplate are set for discoverable class %s: using prefixes %s"
+                  .formatted(classInfo.getName(), Arrays.toString(prefixes))
+          );
         } else if (prefixes.length == 0 && !prefixTemplate.isEmpty()) {
           List<List<String>> tokens = Arrays.stream(prefixTemplate.split(Pattern.quote("" + NAME_SEPARATOR)))
-              .map(t -> Arrays.stream(t.split(Pattern.quote("" + PREFIX_SEPARATOR)))
-                  .toList())
+              .map(
+                  t -> Arrays.stream(t.split(Pattern.quote("" + PREFIX_SEPARATOR)))
+                      .toList()
+              )
               .toList();
           prefixes = flatTokens(tokens).stream()
               .map(l -> String.join("" + NAME_SEPARATOR, l))
@@ -89,10 +92,13 @@ public class NamedBuilder<X> {
     if (tokens.size() == 1) {
       return tokens.getFirst().stream().map(List::of).toList();
     }
-    return tokens.getFirst().stream()
-        .map(t -> flatTokens(tokens.subList(1, tokens.size())).stream()
-            .map(l -> Stream.concat(Stream.of(t), l.stream()).toList())
-            .toList())
+    return tokens.getFirst()
+        .stream()
+        .map(
+            t -> flatTokens(tokens.subList(1, tokens.size())).stream()
+                .map(l -> Stream.concat(Stream.of(t), l.stream()).toList())
+                .toList()
+        )
         .flatMap(Collection::stream)
         .toList();
   }
@@ -106,25 +112,34 @@ public class NamedBuilder<X> {
           .toList();
     }
     if (constructors.size() != 1) {
-      throw new IllegalArgumentException(String.format(
-          "Cannot build named builder from class %s that has %d!=1 constructors",
-          c.getSimpleName(), c.getConstructors().length));
+      throw new IllegalArgumentException(
+          String.format(
+              "Cannot build named builder from class %s that has %d!=1 constructors",
+              c.getSimpleName(),
+              c.getConstructors().length
+          )
+      );
     }
     return (NamedBuilder<C>) (new NamedBuilder<>(
-        AutoBuiltDocumentedBuilder.from(constructors.getFirst(), c.getAnnotationsByType(Alias.class)).stream()
-            .collect(Collectors.toMap(DocumentedBuilder::name, b -> b))));
+        AutoBuiltDocumentedBuilder.from(constructors.getFirst(), c.getAnnotationsByType(Alias.class))
+            .stream()
+            .collect(Collectors.toMap(DocumentedBuilder::name, b -> b))
+    ));
   }
 
   @SuppressWarnings("unused")
   public static NamedBuilder<Object> fromUtilityClass(Class<?> c) {
-    return new NamedBuilder<>(Arrays.stream(c.getMethods())
-        .map(m -> AutoBuiltDocumentedBuilder.from(m, m.getAnnotationsByType(Alias.class)))
-        .flatMap(List::stream)
-        .collect(Collectors.toMap(DocumentedBuilder::name, b -> b)));
+    return new NamedBuilder<>(
+        Arrays.stream(c.getMethods())
+            .map(m -> AutoBuiltDocumentedBuilder.from(m, m.getAnnotationsByType(Alias.class)))
+            .flatMap(List::stream)
+            .collect(Collectors.toMap(DocumentedBuilder::name, b -> b))
+    );
   }
 
   public static String prettyToString(NamedBuilder<?> namedBuilder, boolean newLine) {
-    return namedBuilder.builders.entrySet().stream()
+    return namedBuilder.builders.entrySet()
+        .stream()
         .map(e -> {
           String s = e.getKey();
           if (e.getValue() instanceof DocumentedBuilder<?> db) {
@@ -144,8 +159,11 @@ public class NamedBuilder<X> {
       return and(namedBuilder);
     }
     Map<String, Builder<? extends X>> allBuilders = new HashMap<>(builders);
-    prefixes.forEach(prefix -> namedBuilder.builders.forEach(
-        (k, v) -> allBuilders.put(prefix.isEmpty() ? k : (prefix + NAME_SEPARATOR + k), v)));
+    prefixes.forEach(
+        prefix -> namedBuilder.builders.forEach(
+            (k, v) -> allBuilders.put(prefix.isEmpty() ? k : (prefix + NAME_SEPARATOR + k), v)
+        )
+    );
     return new NamedBuilder<>(allBuilders);
   }
 
@@ -162,13 +180,17 @@ public class NamedBuilder<X> {
       if (defaultSupplier != null) {
         return defaultSupplier.get();
       }
-      throw new BuilderException(String.format(
-          "No builder for %s: closest matches are %s",
-          map.getName(),
-          builders.keySet().stream()
-              .sorted((Comparator.comparing(s -> distance(s, map.getName()))))
-              .limit(3)
-              .collect(Collectors.joining(", "))));
+      throw new BuilderException(
+          String.format(
+              "No builder for %s: closest matches are %s",
+              map.getName(),
+              builders.keySet()
+                  .stream()
+                  .sorted((Comparator.comparing(s -> distance(s, map.getName()))))
+                  .limit(3)
+                  .collect(Collectors.joining(", "))
+          )
+      );
     }
     try {
       return (T) builders.get(map.getName()).build(map, this, index);
@@ -240,19 +262,25 @@ public class NamedBuilder<X> {
     }
     // fill map
     Map<MapNamedParamMap.TypedKey, Object> values = new HashMap<>();
-    for (DocumentedBuilder.ParamInfo p : builder.params().stream()
+    for (DocumentedBuilder.ParamInfo p : builder.params()
+        .stream()
         .sorted((p1, p2) -> p1.interpolationString() == null ? -1 : (p2.interpolationString() == null ? 1 : 0))
         .toList()) {
       if (p.injection() != Param.Injection.NONE) {
         continue;
       }
-      @SuppressWarnings({"unchecked", "rawtypes"})
-      Object value = map.value(p.name(), p.type(), (Class<Enum>) p.enumClass());
+      @SuppressWarnings({"unchecked", "rawtypes"}) Object value = map.value(
+          p.name(),
+          p.type(),
+          (Class<Enum>) p.enumClass()
+      );
       if (value == null) {
         value = p.defaultValue();
         if (value == null && p.type().equals(Type.STRING) && p.interpolationString() != null) {
           value = Interpolator.interpolate(
-              p.interpolationString(), new MapNamedParamMap(map.getName(), values));
+              p.interpolationString(),
+              new MapNamedParamMap(map.getName(), values)
+          );
         }
       }
       if (value instanceof NamedParamMap npm) {

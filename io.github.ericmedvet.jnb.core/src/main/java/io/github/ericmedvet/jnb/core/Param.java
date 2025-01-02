@@ -31,11 +31,7 @@ public @interface Param {
   String UNDEFAULTED_STRING = "UNDEFAULTED_STRING";
 
   enum Injection {
-    NONE,
-    MAP,
-    MAP_WITH_DEFAULTS,
-    BUILDER,
-    INDEX
+    NONE, MAP, MAP_WITH_DEFAULTS, BUILDER, INDEX
   }
 
   boolean dB() default false;

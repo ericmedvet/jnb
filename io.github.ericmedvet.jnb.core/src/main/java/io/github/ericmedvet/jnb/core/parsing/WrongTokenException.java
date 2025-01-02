@@ -32,10 +32,12 @@ public class WrongTokenException extends ParseException {
                 linearize(string, index, index + 1),
                 expectedTokenTypes.stream()
                     .map(tt -> "`%s`".formatted(tt.rendered()))
-                    .collect(Collectors.joining(" or "))),
+                    .collect(Collectors.joining(" or "))
+            ),
         null,
         index,
-        string);
+        string
+    );
     this.expectedTokenTypes = expectedTokenTypes;
   }
 

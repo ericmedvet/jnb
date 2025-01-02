@@ -24,19 +24,15 @@ import java.util.function.ToDoubleFunction;
 
 /** @author "Eric Medvet" on 2024/07/26 for jnb */
 public enum MathOp implements ToDoubleFunction<double[]> {
-  ADD(vs -> Arrays.stream(vs).sum()),
-  SUBTRACT(vs -> switch (vs.length) {
+  ADD(vs -> Arrays.stream(vs).sum()), SUBTRACT(vs -> switch (vs.length) {
     case 1 -> -vs[0];
     case 2 -> vs[0] - vs[1];
     default -> throw new IllegalArgumentException("Subtract expects 1 or 2 args, found %d".formatted(vs.length));
-  }),
-  MULTIPLY(vs -> Arrays.stream(vs).reduce(1, (p, v) -> p * v)),
-  DIVIDE(vs -> switch (vs.length) {
+  }), MULTIPLY(vs -> Arrays.stream(vs).reduce(1, (p, v) -> p * v)), DIVIDE(vs -> switch (vs.length) {
     case 1 -> 1 / vs[0];
     case 2 -> vs[0] / vs[1];
     default -> throw new IllegalArgumentException("Divide expects 1 or 2 args, found %d".formatted(vs.length));
-  }),
-  POWER(vs -> {
+  }), POWER(vs -> {
     if (vs.length == 2) {
       return Math.pow(vs[0], vs[1]);
     }

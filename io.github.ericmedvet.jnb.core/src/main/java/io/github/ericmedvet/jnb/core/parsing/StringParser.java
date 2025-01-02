@@ -68,41 +68,79 @@ public class StringParser {
 
   private static NamedParamMap from(ENode eNode) {
     Map<MapNamedParamMap.TypedKey, Object> values = new HashMap<>();
-    eNode.child().children().stream()
+    eNode.child()
+        .children()
+        .stream()
         .filter(n -> n.value() instanceof DNode)
-        .forEach(n -> values.put(
-            new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.DOUBLE),
-            ((DNode) n.value()).value().doubleValue()));
-    eNode.child().children().stream()
+        .forEach(
+            n -> values.put(
+                new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.DOUBLE),
+                ((DNode) n.value()).value().doubleValue()
+            )
+        );
+    eNode.child()
+        .children()
+        .stream()
         .filter(n -> n.value() instanceof SNode)
-        .forEach(n -> values.put(
-            new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.STRING), ((SNode) n.value()).value()));
-    eNode.child().children().stream()
+        .forEach(
+            n -> values.put(
+                new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.STRING),
+                ((SNode) n.value()).value()
+            )
+        );
+    eNode.child()
+        .children()
+        .stream()
         .filter(n -> n.value() instanceof ENode)
-        .forEach(n -> values.put(
-            new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.NAMED_PARAM_MAP), from((ENode) n.value())));
-    eNode.child().children().stream()
+        .forEach(
+            n -> values.put(
+                new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.NAMED_PARAM_MAP),
+                from((ENode) n.value())
+            )
+        );
+    eNode.child()
+        .children()
+        .stream()
         .filter(n -> n.value() instanceof LDNode)
-        .forEach(n -> values.put(
-            new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.DOUBLES),
-            ((LDNode) n.value())
-                .child.children().stream()
+        .forEach(
+            n -> values.put(
+                new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.DOUBLES),
+                ((LDNode) n.value()).child.children()
+                    .stream()
                     .map(c -> c.value().doubleValue())
-                    .toList()));
-    eNode.child().children().stream()
+                    .toList()
+            )
+        );
+    eNode.child()
+        .children()
+        .stream()
         .filter(n -> n.value() instanceof LSNode)
-        .forEach(n -> values.put(
-            new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.STRINGS),
-            ((LSNode) n.value())
-                .child().children().stream().map(SNode::value).toList()));
-    eNode.child().children().stream()
+        .forEach(
+            n -> values.put(
+                new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.STRINGS),
+                ((LSNode) n.value())
+                    .child()
+                    .children()
+                    .stream()
+                    .map(SNode::value)
+                    .toList()
+            )
+        );
+    eNode.child()
+        .children()
+        .stream()
         .filter(n -> n.value() instanceof LENode)
-        .forEach(n -> values.put(
-            new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.NAMED_PARAM_MAPS),
-            ((LENode) n.value())
-                .child().children().stream()
+        .forEach(
+            n -> values.put(
+                new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.NAMED_PARAM_MAPS),
+                ((LENode) n.value())
+                    .child()
+                    .children()
+                    .stream()
                     .map(StringParser::from)
-                    .toList()));
+                    .toList()
+            )
+        );
     return new MapNamedParamMap(eNode.name(), values);
   }
 
@@ -176,17 +214,25 @@ public class StringParser {
                 .formatted(min, max, step),
             null,
             i,
-            s);
+            s
+        );
       }
       List<DNode> dNodes = new ArrayList<>();
       for (double v = min; v <= max; v = v + step) {
-        dNodes.add(new DNode(
-            new Token(minDNode.token().start(), maxDNode.token().start()), v));
+        dNodes.add(
+            new DNode(
+                new Token(minDNode.token().start(), maxDNode.token().start()),
+                v
+            )
+        );
       }
       return new LDNode(
           new Token(openT.start(), closedT.end()),
           ListNode.from(
-              new Token(minDNode.token().start(), maxDNode.token().start()), dNodes));
+              new Token(minDNode.token().start(), maxDNode.token().start()),
+              dNodes
+          )
+      );
     } catch (WrongTokenException wte) {
       wtes.add(wte);
     }
@@ -217,48 +263,65 @@ public class StringParser {
       List<ENode> originalENodes = outerLENode.child().children();
       List<ENode> eNodes = new ArrayList<>();
       for (ENode originalENode : originalENodes) {
-        if (npNode.value() instanceof DNode
-            || npNode.value() instanceof SNode
-            || npNode.value() instanceof ENode) {
-          eNodes.add(new ENode(
-              originalENode.token(),
-              ListNode.from(
-                  originalENode.child().token(),
-                  withAppended(originalENode.child().children(), npNode)),
-              originalENode.name()));
+        if (npNode.value() instanceof DNode || npNode.value() instanceof SNode || npNode.value() instanceof ENode) {
+          eNodes.add(
+              new ENode(
+                  originalENode.token(),
+                  ListNode.from(
+                      originalENode.child().token(),
+                      withAppended(originalENode.child().children(), npNode)
+                  ),
+                  originalENode.name()
+              )
+          );
         } else {
           if (npNode.value() instanceof LDNode ldNode) {
             for (DNode dNode : ldNode.child().children()) {
-              eNodes.add(new ENode(
-                  originalENode.token(),
-                  ListNode.from(
-                      originalENode.child().token(),
-                      withAppended(
-                          originalENode.child().children(),
-                          new NPNode(ldNode.token(), npNode.name(), dNode))),
-                  originalENode.name()));
+              eNodes.add(
+                  new ENode(
+                      originalENode.token(),
+                      ListNode.from(
+                          originalENode.child().token(),
+                          withAppended(
+                              originalENode.child().children(),
+                              new NPNode(ldNode.token(), npNode.name(), dNode)
+                          )
+                      ),
+                      originalENode.name()
+                  )
+              );
             }
           } else if (npNode.value() instanceof LSNode lsNode) {
             for (SNode sNode : lsNode.child().children()) {
-              eNodes.add(new ENode(
-                  originalENode.token(),
-                  ListNode.from(
-                      originalENode.child().token(),
-                      withAppended(
-                          originalENode.child().children(),
-                          new NPNode(lsNode.token(), npNode.name(), sNode))),
-                  originalENode.name()));
+              eNodes.add(
+                  new ENode(
+                      originalENode.token(),
+                      ListNode.from(
+                          originalENode.child().token(),
+                          withAppended(
+                              originalENode.child().children(),
+                              new NPNode(lsNode.token(), npNode.name(), sNode)
+                          )
+                      ),
+                      originalENode.name()
+                  )
+              );
             }
           } else if (npNode.value() instanceof LENode leNode) {
             for (ENode eNode : leNode.child().children()) {
-              eNodes.add(new ENode(
-                  originalENode.token(),
-                  ListNode.from(
-                      originalENode.child().token(),
-                      withAppended(
-                          originalENode.child().children(),
-                          new NPNode(leNode.token(), npNode.name(), eNode))),
-                  originalENode.name()));
+              eNodes.add(
+                  new ENode(
+                      originalENode.token(),
+                      ListNode.from(
+                          originalENode.child().token(),
+                          withAppended(
+                              originalENode.child().children(),
+                              new NPNode(leNode.token(), npNode.name(), eNode)
+                          )
+                      ),
+                      originalENode.name()
+                  )
+              );
             }
           }
         }
@@ -267,8 +330,12 @@ public class StringParser {
           new Token(openT.start(), outerLENode.token().end()),
           ListNode.from(
               new Token(
-                  npNode.token().start(), outerLENode.token().end()),
-              eNodes));
+                  npNode.token().start(),
+                  outerLENode.token().end()
+              ),
+              eNodes
+          )
+      );
     } catch (WrongTokenException wte) {
       wtes.add(wte);
     }
@@ -288,8 +355,11 @@ public class StringParser {
           ListNode.from(
               new Token(
                   originalLENode.token().start(),
-                  originalLENode.token().end()),
-              eNodes));
+                  originalLENode.token().end()
+              ),
+              eNodes
+          )
+      );
     } catch (NumberFormatException e) {
       throw new ParseException(e.getMessage(), e, i, s);
     } catch (WrongTokenException wte) {
@@ -299,8 +369,7 @@ public class StringParser {
     try {
       Token firstConcatT = TokenType.LIST_CONCAT.next(s, i);
       LENode firstLENode = parseLE(firstConcatT.end());
-      Token secondConcatT =
-          TokenType.LIST_CONCAT.next(s, firstLENode.token().end());
+      Token secondConcatT = TokenType.LIST_CONCAT.next(s, firstLENode.token().end());
       LENode secondLENode = parseLE(secondConcatT.end());
       // concat
       return new LENode(
@@ -308,9 +377,12 @@ public class StringParser {
           ListNode.from(
               new Token(firstConcatT.start(), secondLENode.token().end()),
               Stream.concat(
-                      firstLENode.child().children().stream(),
-                      secondLENode.child().children().stream())
-                  .toList()));
+                  firstLENode.child().children().stream(),
+                  secondLENode.child().children().stream()
+              )
+                  .toList()
+          )
+      );
     } catch (WrongTokenException wte) {
       wtes.add(wte);
     }
@@ -335,8 +407,12 @@ public class StringParser {
   }
 
   private <N extends Node> ListNode<N> parseListNode(
-      int i, NodeParser<N> nodeParser, Class<N> nodeClass, boolean withSeparator, boolean withConstant)
-      throws ParseException {
+      int i,
+      NodeParser<N> nodeParser,
+      Class<N> nodeClass,
+      boolean withSeparator,
+      boolean withConstant
+  ) throws ParseException {
     List<N> children = new ArrayList<>();
     int j = i;
     while (true) {
@@ -351,12 +427,15 @@ public class StringParser {
                     .formatted(
                         s.substring(
                             node.token().start(),
-                            node.token().end()),
+                            node.token().end()
+                        ),
                         node.getClass().getSimpleName(),
-                        nodeClass.getSimpleName()),
+                        nodeClass.getSimpleName()
+                    ),
                 null,
                 node.token().start(),
-                s);
+                s
+            );
           }
           //noinspection unchecked
           child = (N) node;
@@ -406,7 +485,11 @@ public class StringParser {
     Node value = consts.get(constName);
     return switch (value) {
       case null -> throw new UndefinedConstantNameException(
-          i, s, constName, consts.keySet().stream().toList());
+          i,
+          s,
+          constName,
+          consts.keySet().stream().toList()
+      );
       case DNode dNode -> new DNode(tConstName, dNode.value());
       case ENode eNode -> new ENode(tConstName, eNode.child(), eNode.name());
       case SNode sNode -> new SNode(tConstName, sNode.value());
@@ -414,7 +497,11 @@ public class StringParser {
       case LENode leNode -> new LENode(tConstName, leNode.child());
       case LSNode lsNode -> new LSNode(tConstName, lsNode.child());
       default -> throw new ParseException(
-          "Unknown type %s of const %s".formatted(value.getClass().getSimpleName(), constName), null, i, s);
+          "Unknown type %s of const %s".formatted(value.getClass().getSimpleName(), constName),
+          null,
+          i,
+          s
+      );
     };
   }
 

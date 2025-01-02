@@ -30,14 +30,9 @@ public class Interpolator {
   private static final Logger L = Logger.getLogger(Interpolator.class.getName());
   private static final String FORMAT_REGEX = "%#?\\d*(\\.\\d+)?[sdf]";
   private static final String MAP_KEYS_REGEX = "[A-Za-z][A-Za-z0-9_]*";
-  private static final Pattern INTERPOLATOR = Pattern.compile("\\{(?<mapKeys>"
-      + MAP_KEYS_REGEX
-      + "(\\."
-      + MAP_KEYS_REGEX
-      + ")*)"
-      + "(:(?<format>"
-      + FORMAT_REGEX
-      + "))?\\}");
+  private static final Pattern INTERPOLATOR = Pattern.compile(
+      "\\{(?<mapKeys>" + MAP_KEYS_REGEX + "(\\." + MAP_KEYS_REGEX + ")*)" + "(:(?<format>" + FORMAT_REGEX + "))?\\}"
+  );
 
   private final String format;
   private final Matcher matcher;
@@ -79,7 +74,9 @@ public class Interpolator {
         String mapKeys = matcher.group("mapKeys");
         String f = matcher.group("format") != null ? matcher.group("format") : "%s";
         Object v = getKeyFromParamMap(
-            map, Arrays.stream(mapKeys.split("\\.")).toList());
+            map,
+            Arrays.stream(mapKeys.split("\\.")).toList()
+        );
         sb.append(f.formatted(v));
       } catch (RuntimeException e) {
         if (noValueDefault != null) {

@@ -31,7 +31,8 @@ public class ProjectInfoProvider {
 
   private static final Map<Class<?>, Optional<ProjectInfo>> CACHE = new HashMap<>();
 
-  private ProjectInfoProvider() {}
+  private ProjectInfoProvider() {
+  }
 
   public static Optional<ProjectInfo> of(Class<?> clazz) {
     return CACHE.computeIfAbsent(clazz, c -> {
@@ -54,12 +55,13 @@ public class ProjectInfoProvider {
             patchVersion = versionTokens[2];
           }
         }
-        return Optional.of(new ProjectInfo(
-            properties.getProperty("name") == null ? "" : properties.getProperty("name"),
-            new ProjectInfo.Version(majorVersion, minorVersion, patchVersion),
-            properties.getProperty("build.timestamp") == null
-                ? ""
-                : properties.getProperty("build.timestamp")));
+        return Optional.of(
+            new ProjectInfo(
+                properties.getProperty("name") == null ? "" : properties.getProperty("name"),
+                new ProjectInfo.Version(majorVersion, minorVersion, patchVersion),
+                properties.getProperty("build.timestamp") == null ? "" : properties.getProperty("build.timestamp")
+            )
+        );
       } catch (IOException e) {
         // info props not found: ignore
         return Optional.empty();

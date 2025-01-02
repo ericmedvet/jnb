@@ -34,20 +34,24 @@ public class GridUtils {
 
   private static final int ELONGATION_STEPS = 20;
 
-  private GridUtils() {}
+  private GridUtils() {
+  }
 
   public static Grid.Key center(Grid<?> grid) {
     return new Grid.Key(
-        (int) grid.entries().stream()
+        (int) grid.entries()
+            .stream()
             .filter(e -> e.value() != null)
             .mapToInt(e -> e.key().x())
             .average()
             .orElse(0d),
-        (int) grid.entries().stream()
+        (int) grid.entries()
+            .stream()
             .filter(e -> e.value() != null)
             .mapToInt(e -> e.key().y())
             .average()
-            .orElse(0d));
+            .orElse(0d)
+    );
   }
 
   public static <T> int count(Grid<T> g, Predicate<T> p) {
@@ -73,7 +77,7 @@ public class GridUtils {
         int currentY = entry.key().y();
         int adjacentCount = 0;
         // count how many of the Moore neighbors are true
-        for (int i : new int[] {1, -1}) {
+        for (int i : new int[]{1, -1}) {
           int neighborX = currentX;
           int neighborY = currentY + i;
           if (0 <= neighborY && neighborY < convexHull.h() && convexHull.get(neighborX, neighborY)) {
@@ -86,20 +90,14 @@ public class GridUtils {
           }
           neighborX = currentX + i;
           neighborY = currentY + i;
-          if (0 <= neighborX
-              && 0 <= neighborY
-              && neighborX < convexHull.w()
-              && neighborY < convexHull.h()
-              && convexHull.get(neighborX, neighborY)) {
+          if (0 <= neighborX && 0 <= neighborY && neighborX < convexHull.w() && neighborY < convexHull.h() && convexHull
+              .get(neighborX, neighborY)) {
             adjacentCount += 1;
           }
           neighborX = currentX + i;
           neighborY = currentY - i;
-          if (0 <= neighborX
-              && 0 <= neighborY
-              && neighborX < convexHull.w()
-              && neighborY < convexHull.h()
-              && convexHull.get(neighborX, neighborY)) {
+          if (0 <= neighborX && 0 <= neighborY && neighborX < convexHull.w() && neighborY < convexHull.h() && convexHull
+              .get(neighborX, neighborY)) {
             adjacentCount += 1;
           }
         }
@@ -123,14 +121,17 @@ public class GridUtils {
     } else if (n <= 0) {
       throw new IllegalArgumentException(String.format("Non-positive number of directions provided: %d", n));
     }
-    List<Grid.Key> coordinates =
-        g.stream().filter(e -> p.test(e.value())).map(Grid.Entry::key).toList();
+    List<Grid.Key> coordinates = g.stream().filter(e -> p.test(e.value())).map(Grid.Entry::key).toList();
     List<Double> diameters = new ArrayList<>();
     for (int i = 0; i < n; ++i) {
       double theta = (2 * i * Math.PI) / n;
       List<Grid.Key> rotatedCoordinates = coordinates.stream()
-          .map(k -> new Grid.Key((int) Math.round(k.x() * Math.cos(theta) - k.y() * Math.sin(theta)), (int)
-              Math.round(k.x() * Math.sin(theta) + k.y() * Math.cos(theta))))
+          .map(
+              k -> new Grid.Key(
+                  (int) Math.round(k.x() * Math.cos(theta) - k.y() * Math.sin(theta)),
+                  (int) Math.round(k.x() * Math.sin(theta) + k.y() * Math.cos(theta))
+              )
+          )
           .toList();
       double minX = rotatedCoordinates.stream()
           .min(Comparator.comparingInt(Grid.Key::x))
@@ -160,22 +161,26 @@ public class GridUtils {
   }
 
   public static <T> Grid<T> fit(Grid<T> g, Predicate<T> p) {
-    int minX = g.entries().stream()
+    int minX = g.entries()
+        .stream()
         .filter(e -> p.test(e.value()))
         .mapToInt(e -> e.key().x())
         .min()
         .orElseThrow();
-    int maxX = g.entries().stream()
+    int maxX = g.entries()
+        .stream()
         .filter(e -> p.test(e.value()))
         .mapToInt(e -> e.key().x())
         .max()
         .orElseThrow();
-    int minY = g.entries().stream()
+    int minY = g.entries()
+        .stream()
         .filter(e -> p.test(e.value()))
         .mapToInt(e -> e.key().y())
         .min()
         .orElseThrow();
-    int maxY = g.entries().stream()
+    int maxY = g.entries()
+        .stream()
         .filter(e -> p.test(e.value()))
         .mapToInt(e -> e.key().y())
         .max()
@@ -187,8 +192,7 @@ public class GridUtils {
     if (translate) {
       Grid.Key g1Center = center(g1);
       Grid.Key g2Center = center(g2);
-      Grid.Key newCenter =
-          new Grid.Key(Math.max(g1Center.x(), g2Center.x()), Math.max(g1Center.y(), g2Center.y()));
+      Grid.Key newCenter = new Grid.Key(Math.max(g1Center.x(), g2Center.x()), Math.max(g1Center.y(), g2Center.y()));
       g1 = GridUtils.translate(g1, new Grid.Key(newCenter.x() - g1Center.x(), newCenter.y() - g1Center.y()));
       g2 = GridUtils.translate(g2, new Grid.Key(newCenter.x() - g2Center.x(), newCenter.y() - g2Center.y()));
     }
@@ -212,7 +216,8 @@ public class GridUtils {
       }
     }
     // find largest
-    Integer maxIndex = counts.entrySet().stream()
+    Integer maxIndex = counts.entrySet()
+        .stream()
         .max(Comparator.comparingInt(Map.Entry::getValue))
         .map(Map.Entry::getKey)
         .orElse(null);
@@ -229,7 +234,8 @@ public class GridUtils {
     for (int x = 0; x < kGrid.w(); x++) {
       for (int y = 0; y < kGrid.h(); y++) {
         if (iGrid.get(x, y) == null) {
-          int index = iGrid.values().stream()
+          int index = iGrid.values()
+              .stream()
               .filter(Objects::nonNull)
               .mapToInt(i -> i)
               .max()

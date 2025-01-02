@@ -24,6 +24,5 @@ module io.github.ericmedvet.jnb.buildable {
 
   exports io.github.ericmedvet.jnb.buildable;
 
-  opens io.github.ericmedvet.jnb.buildable to
-      io.github.ericmedvet.jnb.core;
+  opens io.github.ericmedvet.jnb.buildable to io.github.ericmedvet.jnb.core;
 }

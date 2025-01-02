@@ -31,8 +31,10 @@ public class ParseException extends Exception {
             .formatted(
                 message,
                 StringPosition.from(string, index),
-                linearize(string, index - CONTEXT_SIZE, index + CONTEXT_SIZE)),
-        cause);
+                linearize(string, index - CONTEXT_SIZE, index + CONTEXT_SIZE)
+            ),
+        cause
+    );
     this.index = index;
     this.string = string;
   }

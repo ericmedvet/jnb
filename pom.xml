@@ -173,19 +173,11 @@
             <importOrder/>
             <trimTrailingWhitespace/>
             <removeUnusedImports/>
-            <palantirJavaFormat>
-              <version>2.39.0</version>
-              <formatJavadoc>true</formatJavadoc>
-            </palantirJavaFormat>
+            <eclipse>
+              <version>4.26</version>
+              <file>${maven.multiModuleProjectDirectory}/code-style.xml</file>
+            </eclipse>
             <formatAnnotations/>
-            <indent>
-              <tabs>true</tabs>
-              <spacesPerTab>4</spacesPerTab>
-            </indent>
-            <indent>
-              <spaces>true</spaces>
-              <spacesPerTab>2</spacesPerTab>
-            </indent>
           </java>
           <pom>
             <sortPom>

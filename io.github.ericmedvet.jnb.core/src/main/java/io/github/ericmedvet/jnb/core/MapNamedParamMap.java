@@ -51,26 +51,35 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
       } else if (e.getKey().type.equals(Type.BOOLEAN)) {
         this.values.put(
             new TypedKey(e.getKey().name, Type.STRING),
-            booleanValue(e.getValue().toString()).toString());
+            booleanValue(e.getValue().toString()).toString()
+        );
       } else if (e.getKey().type.equals(Type.ENUM)) {
         this.values.put(
             new TypedKey(e.getKey().name, Type.STRING),
-            ((Enum<?>) e.getValue()).name().toLowerCase());
+            ((Enum<?>) e.getValue()).name().toLowerCase()
+        );
       } else if (e.getKey().type.equals(Type.INTS)) {
         this.values.put(
             new TypedKey(e.getKey().name, Type.DOUBLES),
-            checkList((List<?>) e.getValue(), MapNamedParamMap::intValue));
+            checkList((List<?>) e.getValue(), MapNamedParamMap::intValue)
+        );
       } else if (e.getKey().type.equals(Type.BOOLEANS)) {
         this.values.put(
             new TypedKey(e.getKey().name, Type.STRINGS),
-            checkList((List<?>) e.getValue(), b -> booleanValue(b.toString())
-                .toString()));
+            checkList(
+                (List<?>) e.getValue(),
+                b -> booleanValue(b.toString())
+                    .toString()
+            )
+        );
       } else if (e.getKey().type.equals(Type.ENUMS)) {
         this.values.put(
             new TypedKey(e.getKey().name, Type.STRINGS),
             checkList(
                 (List<?>) e.getValue(),
-                v -> ((Enum<?>) v).name().toLowerCase()));
+                v -> ((Enum<?>) v).name().toLowerCase()
+            )
+        );
       } else {
         this.values.put(e.getKey(), e.getValue());
       }
@@ -85,7 +94,9 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
       case ENUM -> enumValue(values.get(new TypedKey(n, Type.STRING)), enumClass);
       case INTS -> checkList((List<?>) values.get(new TypedKey(n, Type.DOUBLES)), MapNamedParamMap::intValue);
       case BOOLEANS -> checkList(
-          (List<?>) values.get(new TypedKey(n, Type.STRINGS)), MapNamedParamMap::booleanValue);
+          (List<?>) values.get(new TypedKey(n, Type.STRINGS)),
+          MapNamedParamMap::booleanValue
+      );
       case ENUMS -> checkList((List<?>) values.get(new TypedKey(n, Type.STRINGS)), s -> enumValue(s, enumClass));
       default -> values.get(new TypedKey(n, type));
     };
@@ -95,8 +106,9 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     if (l == null) {
       return null;
     }
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    List<?> mappedL = l.stream().map(i -> ((Function) mapper).apply(i)).toList();
+    @SuppressWarnings({"rawtypes", "unchecked"}) List<?> mappedL = l.stream()
+        .map(i -> ((Function) mapper).apply(i))
+        .toList();
     if (mappedL.stream().anyMatch(Objects::isNull)) {
       return null;
     }
@@ -175,7 +187,13 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
   }
 
   private static void listContentToMultilineString(
-      StringBuilder sb, int maxW, int w, int indent, String space, List<?> l) {
+      StringBuilder sb,
+      int maxW,
+      int w,
+      int indent,
+      String space,
+      List<?> l
+  ) {
     for (int j = 0; j < l.size(); j++) {
       sb.append("\n").append(indent(w + indent + indent));
       if (l.get(j) instanceof NamedParamMap m) {
@@ -228,7 +246,13 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
   }
 
   private static void mapContentToMultilineString(
-      StringBuilder sb, int maxW, int w, int indent, String space, ParamMap map) {
+      StringBuilder sb,
+      int maxW,
+      int w,
+      int indent,
+      String space,
+      ParamMap map
+  ) {
     List<String> names = new ArrayList<>(map.names());
     for (int i = 0; i < names.size(); i++) {
       sb.append("\n")

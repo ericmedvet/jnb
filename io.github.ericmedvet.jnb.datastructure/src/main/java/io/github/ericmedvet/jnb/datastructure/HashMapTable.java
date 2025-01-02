@@ -72,16 +72,14 @@ public class HashMapTable<R, C, T> implements Table<R, C, T> {
   @Override
   public void removeRow(R rowIndex) {
     rowIndexes.remove(rowIndex);
-    List<Key<R, C>> toRemoveKeys =
-        map.keySet().stream().filter(k -> k.r.equals(rowIndex)).toList();
+    List<Key<R, C>> toRemoveKeys = map.keySet().stream().filter(k -> k.r.equals(rowIndex)).toList();
     toRemoveKeys.forEach(map.keySet()::remove);
   }
 
   @Override
   public void removeColumn(C columnIndex) {
     colIndexes.remove(columnIndex);
-    List<Key<R, C>> toRemoveKeys =
-        map.keySet().stream().filter(k -> k.c.equals(columnIndex)).toList();
+    List<Key<R, C>> toRemoveKeys = map.keySet().stream().filter(k -> k.c.equals(columnIndex)).toList();
     toRemoveKeys.forEach(map.keySet()::remove);
   }
 

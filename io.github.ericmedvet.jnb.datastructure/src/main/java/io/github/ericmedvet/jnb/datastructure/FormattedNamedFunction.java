@@ -66,12 +66,16 @@ public interface FormattedNamedFunction<T, R> extends NamedFunction<T, R>, Forma
     return from(
         t -> after.apply(apply(t)),
         FormattedFunction.format(after),
-        NamedFunction.composeNames(name(), NamedFunction.name(after)));
+        NamedFunction.composeNames(name(), NamedFunction.name(after))
+    );
   }
 
   @Override
   default <V> FormattedNamedFunction<V, R> compose(Function<? super V, ? extends T> before) {
     return from(
-        v -> apply(before.apply(v)), format(), NamedFunction.composeNames(NamedFunction.name(before), name()));
+        v -> apply(before.apply(v)),
+        format(),
+        NamedFunction.composeNames(NamedFunction.name(before), name())
+    );
   }
 }

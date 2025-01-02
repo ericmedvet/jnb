@@ -32,15 +32,17 @@ public class CompositeWrongTokenException extends WrongTokenException {
             .getIndex(),
         wtes.stream().findFirst().orElseThrow().getString(),
         wtes.stream()
-            .filter(wte -> wte.getIndex()
-                == wtes.stream()
+            .filter(
+                wte -> wte.getIndex() == wtes.stream()
                     .max(Comparator.comparingInt(WrongTokenException::getIndex))
                     .orElseThrow()
-                    .getIndex())
+                    .getIndex()
+            )
             .map(WrongTokenException::getExpectedTokenTypes)
             .flatMap(List::stream)
             .distinct()
             .sorted()
-            .toList());
+            .toList()
+    );
   }
 }

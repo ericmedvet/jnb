@@ -29,8 +29,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public record AutoBuiltDocumentedBuilder<T>(
-    String name, java.lang.reflect.Type builtType, List<ParamInfo> params, Executable origin, Builder<T> builder)
-    implements DocumentedBuilder<T> {
+    String name, java.lang.reflect.Type builtType, List<ParamInfo> params, Executable origin, Builder<T> builder
+) implements DocumentedBuilder<T> {
 
   private static Object buildDefaultValue(ParamMap.Type type, Class<?> clazz, Param pa) {
     if (type.equals(ParamMap.Type.INT) && pa.dI() != Integer.MIN_VALUE) {
@@ -82,14 +82,15 @@ public record AutoBuiltDocumentedBuilder<T>(
 
   @SuppressWarnings("unused")
   private static <E extends Enum<E>> Object buildOrDefaultParam(ParamInfo pi, ParamMap m, NamedBuilder<Object> nb) {
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    Object value = m.value(pi.name(), pi.type(), (Class) pi.enumClass());
+    @SuppressWarnings({"rawtypes", "unchecked"}) Object value = m.value(pi.name(), pi.type(), (Class) pi.enumClass());
     if (value != null) {
       return value;
     }
     if (m.names().contains(pi.name())) {
-      throw new IllegalArgumentException("Wrong type for param \"%s\": \"%s\" is not %s"
-          .formatted(pi.name(), m.value(pi.name()), pi.type().name()));
+      throw new IllegalArgumentException(
+          "Wrong type for param \"%s\": \"%s\" is not %s"
+              .formatted(pi.name(), m.value(pi.name()), pi.type().name())
+      );
     }
     if (pi.defaultValue() != null) {
       return pi.defaultValue();
@@ -139,26 +140,30 @@ public record AutoBuiltDocumentedBuilder<T>(
     } else {
       buildType = ((Constructor<?>) executable).getDeclaringClass();
       name = toLowerCamelCase(
-          ((Constructor<?>) executable).getDeclaringClass().getSimpleName());
+          ((Constructor<?>) executable).getDeclaringClass().getSimpleName()
+      );
     }
     if (builderMethodAnnotation != null && !builderMethodAnnotation.value().isEmpty()) {
       name = builderMethodAnnotation.value();
     }
     try {
       // check if has NamedBuilder parameter at the beginning
-      boolean hasNamedBuilder = executable.getParameters().length > 0
-          && executable.getParameters()[0].getType().equals(NamedBuilder.class);
+      boolean hasNamedBuilder = executable.getParameters().length > 0 && executable.getParameters()[0].getType()
+          .equals(NamedBuilder.class);
       // find parameters
       List<ParamInfo> paramInfos = Arrays.stream(executable.getParameters())
           .map(AutoBuiltDocumentedBuilder::from)
           .filter(Objects::nonNull)
           .toList();
       if (paramInfos.size() != executable.getParameters().length - (hasNamedBuilder ? 1 : 0)) {
-        throw new BuilderException("Cannot build builder \"%s\": %d on %d params are not valid"
-            .formatted(
-                name,
-                executable.getParameters().length - (hasNamedBuilder ? 1 : 0) - paramInfos.size(),
-                executable.getParameters().length - (hasNamedBuilder ? 1 : 0)));
+        throw new BuilderException(
+            "Cannot build builder \"%s\": %d on %d params are not valid"
+                .formatted(
+                    name,
+                    executable.getParameters().length - (hasNamedBuilder ? 1 : 0) - paramInfos.size(),
+                    executable.getParameters().length - (hasNamedBuilder ? 1 : 0)
+                )
+        );
       }
       // wrap and return
       String finalName = name;
@@ -183,13 +188,17 @@ public record AutoBuiltDocumentedBuilder<T>(
             try {
               //noinspection unchecked
               params[k] = buildParam(
-                  paramInfos.get(j), map, executable.getParameters()[k], (NamedBuilder<Object>)
-                      namedBuilder);
+                  paramInfos.get(j),
+                  map,
+                  executable.getParameters()[k],
+                  (NamedBuilder<Object>) namedBuilder
+              );
             } catch (RuntimeException e) {
               throw new BuilderException(
                   "Cannot build param \"%s\" for \"%s\""
                       .formatted(paramInfos.get(j).name(), finalName),
-                  e);
+                  e
+              );
             }
           }
         }
@@ -201,36 +210,48 @@ public record AutoBuiltDocumentedBuilder<T>(
             .toList()
             .forEach(exceedingParamNames::remove);
         if (!exceedingParamNames.isEmpty()) {
-          l.warning(String.format(
-              "Exceeding parameters while building %s: %s", finalName, exceedingParamNames));
+          l.warning(
+              String.format(
+                  "Exceeding parameters while building %s: %s",
+                  finalName,
+                  exceedingParamNames
+              )
+          );
         }
         try {
           if (executable instanceof Method method) {
             return method.invoke(null, params);
           }
           return ((Constructor<?>) executable).newInstance(params);
-        } catch (IllegalAccessException
-            | InvocationTargetException
-            | InstantiationException
-            | IllegalArgumentException e) {
+        } catch (IllegalAccessException | InvocationTargetException | InstantiationException |
+                 IllegalArgumentException e) {
           throw new BuilderException("Cannot build \"%s\"".formatted(finalName), e);
         }
       };
       AutoBuiltDocumentedBuilder<Object> mainBuilder = new AutoBuiltDocumentedBuilder<>(
-          finalName, buildType, paramInfos, executable, isCacheable ? builder.cached() : builder);
+          finalName,
+          buildType,
+          paramInfos,
+          executable,
+          isCacheable ? builder.cached() : builder
+      );
       Map<String, DocumentedBuilder<Object>> builders = new TreeMap<>();
       builders.put(mainBuilder.name(), mainBuilder);
       for (Alias alias : aliases) {
         String aliasName = fromAlias(alias, null).getName();
         DocumentedBuilder<Object> toAliasBuilder = builders.get(aliasName);
         if (toAliasBuilder == null) {
-          throw new BuilderException("Cannot build alias \"%s\" for builder \"%s\": known builders are %s"
-              .formatted(
-                  aliasName,
-                  mainBuilder.name,
-                  builders.keySet().stream()
-                      .map("\"%s\""::formatted)
-                      .collect(Collectors.joining(", "))));
+          throw new BuilderException(
+              "Cannot build alias \"%s\" for builder \"%s\": known builders are %s"
+                  .formatted(
+                      aliasName,
+                      mainBuilder.name,
+                      builders.keySet()
+                          .stream()
+                          .map("\"%s\""::formatted)
+                          .collect(Collectors.joining(", "))
+                  )
+          );
         }
         builders.put(alias.name(), toAliasBuilder.alias(alias.name(), alias));
       }
@@ -245,16 +266,14 @@ public record AutoBuiltDocumentedBuilder<T>(
     if (paramAnnotation == null) {
       return null;
     }
-    if (paramAnnotation.injection().equals(Param.Injection.MAP)
-        && !parameter.getType().equals(ParamMap.class)) {
+    if (paramAnnotation.injection().equals(Param.Injection.MAP) && !parameter.getType().equals(ParamMap.class)) {
       return null;
     }
-    if (paramAnnotation.injection().equals(Param.Injection.BUILDER)
-        && !parameter.getType().equals(NamedBuilder.class)) {
+    if (paramAnnotation.injection().equals(Param.Injection.BUILDER) && !parameter.getType()
+        .equals(NamedBuilder.class)) {
       return null;
     }
-    if (paramAnnotation.injection().equals(Param.Injection.INDEX)
-        && !parameter.getType().equals(Integer.TYPE)) {
+    if (paramAnnotation.injection().equals(Param.Injection.INDEX) && !parameter.getType().equals(Integer.TYPE)) {
       return null;
     }
     String name = paramAnnotation.value();
@@ -267,7 +286,8 @@ public record AutoBuiltDocumentedBuilder<T>(
             buildDefaultValue(ParamMap.Type.INT, Integer.class, paramAnnotation),
             null,
             paramAnnotation.injection(),
-            parameter.getParameterizedType());
+            parameter.getParameterizedType()
+        );
       }
       if (parameter.getType().equals(Double.class) || parameter.getType().equals(Double.TYPE)) {
         return new ParamInfo(
@@ -277,7 +297,8 @@ public record AutoBuiltDocumentedBuilder<T>(
             buildDefaultValue(ParamMap.Type.DOUBLE, Double.class, paramAnnotation),
             null,
             paramAnnotation.injection(),
-            parameter.getParameterizedType());
+            parameter.getParameterizedType()
+        );
       }
       if (parameter.getType().equals(String.class)) {
         return new ParamInfo(
@@ -287,7 +308,8 @@ public record AutoBuiltDocumentedBuilder<T>(
             buildDefaultValue(ParamMap.Type.STRING, String.class, paramAnnotation),
             paramAnnotation.iS().equals(Param.UNDEFAULTED_STRING) ? null : paramAnnotation.iS(),
             paramAnnotation.injection(),
-            parameter.getParameterizedType());
+            parameter.getParameterizedType()
+        );
       }
       if (parameter.getType().equals(Boolean.class) || parameter.getType().equals(Boolean.TYPE)) {
         return new ParamInfo(
@@ -297,7 +319,8 @@ public record AutoBuiltDocumentedBuilder<T>(
             buildDefaultValue(ParamMap.Type.BOOLEAN, Boolean.class, paramAnnotation),
             null,
             paramAnnotation.injection(),
-            parameter.getParameterizedType());
+            parameter.getParameterizedType()
+        );
       }
       if (parameter.getType().isEnum()) {
         return new ParamInfo(
@@ -307,10 +330,11 @@ public record AutoBuiltDocumentedBuilder<T>(
             buildDefaultValue(ParamMap.Type.ENUM, parameter.getType(), paramAnnotation),
             null,
             paramAnnotation.injection(),
-            parameter.getParameterizedType());
+            parameter.getParameterizedType()
+        );
       }
-      if (parameter.getType().equals(List.class)
-          && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
+      if (parameter.getType().equals(List.class) && parameter
+          .getParameterizedType() instanceof ParameterizedType parameterizedType) {
         if (parameterizedType.getActualTypeArguments()[0].equals(Integer.class)) {
           return new ParamInfo(
               ParamMap.Type.INTS,
@@ -319,11 +343,12 @@ public record AutoBuiltDocumentedBuilder<T>(
               buildDefaultValue(ParamMap.Type.INTS, Integer.class, paramAnnotation),
               null,
               paramAnnotation.injection(),
-              parameter.getParameterizedType());
+              parameter.getParameterizedType()
+          );
         }
       }
-      if (parameter.getType().equals(List.class)
-          && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
+      if (parameter.getType().equals(List.class) && parameter
+          .getParameterizedType() instanceof ParameterizedType parameterizedType) {
         if (parameterizedType.getActualTypeArguments()[0].equals(Double.class)) {
           return new ParamInfo(
               ParamMap.Type.DOUBLES,
@@ -332,11 +357,12 @@ public record AutoBuiltDocumentedBuilder<T>(
               buildDefaultValue(ParamMap.Type.DOUBLES, Double.class, paramAnnotation),
               null,
               paramAnnotation.injection(),
-              parameter.getParameterizedType());
+              parameter.getParameterizedType()
+          );
         }
       }
-      if (parameter.getType().equals(List.class)
-          && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
+      if (parameter.getType().equals(List.class) && parameter
+          .getParameterizedType() instanceof ParameterizedType parameterizedType) {
         if (parameterizedType.getActualTypeArguments()[0].equals(String.class)) {
           return new ParamInfo(
               ParamMap.Type.STRINGS,
@@ -345,11 +371,12 @@ public record AutoBuiltDocumentedBuilder<T>(
               buildDefaultValue(ParamMap.Type.STRINGS, String.class, paramAnnotation),
               null,
               paramAnnotation.injection(),
-              parameter.getParameterizedType());
+              parameter.getParameterizedType()
+          );
         }
       }
-      if (parameter.getType().equals(List.class)
-          && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
+      if (parameter.getType().equals(List.class) && parameter
+          .getParameterizedType() instanceof ParameterizedType parameterizedType) {
         if (parameterizedType.getActualTypeArguments()[0].equals(Boolean.class)) {
           return new ParamInfo(
               ParamMap.Type.BOOLEANS,
@@ -358,11 +385,12 @@ public record AutoBuiltDocumentedBuilder<T>(
               buildDefaultValue(ParamMap.Type.BOOLEANS, Boolean.class, paramAnnotation),
               null,
               paramAnnotation.injection(),
-              parameter.getParameterizedType());
+              parameter.getParameterizedType()
+          );
         }
       }
-      if (parameter.getType().equals(List.class)
-          && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
+      if (parameter.getType().equals(List.class) && parameter
+          .getParameterizedType() instanceof ParameterizedType parameterizedType) {
         Class<?> clazz = Objects.class;
         if (!parameterizedType.getActualTypeArguments()[0].getTypeName().contains("<")) {
           try {
@@ -379,11 +407,12 @@ public record AutoBuiltDocumentedBuilder<T>(
               buildDefaultValue(ParamMap.Type.ENUMS, clazz, paramAnnotation),
               null,
               paramAnnotation.injection(),
-              parameter.getParameterizedType());
+              parameter.getParameterizedType()
+          );
         }
       }
-      if (parameter.getType().equals(List.class)
-          && parameter.getParameterizedType() instanceof ParameterizedType parameterizedType) {
+      if (parameter.getType().equals(List.class) && parameter
+          .getParameterizedType() instanceof ParameterizedType parameterizedType) {
         if (parameterizedType.getActualTypeArguments()[0].equals(NamedParamMap.class)) {
           return new ParamInfo(
               ParamMap.Type.NAMED_PARAM_MAPS,
@@ -392,11 +421,11 @@ public record AutoBuiltDocumentedBuilder<T>(
               buildDefaultValue(ParamMap.Type.NAMED_PARAM_MAPS, NamedParamMap.class, paramAnnotation),
               null,
               paramAnnotation.injection(),
-              parameter.getParameterizedType());
+              parameter.getParameterizedType()
+          );
         }
       }
-      if (parameter.getType().equals(List.class)
-          && parameter.getParameterizedType() instanceof ParameterizedType) {
+      if (parameter.getType().equals(List.class) && parameter.getParameterizedType() instanceof ParameterizedType) {
         return new ParamInfo(
             ParamMap.Type.NAMED_PARAM_MAPS,
             null,
@@ -404,7 +433,8 @@ public record AutoBuiltDocumentedBuilder<T>(
             buildDefaultValue(ParamMap.Type.NAMED_PARAM_MAPS, Object.class, paramAnnotation),
             null,
             paramAnnotation.injection(),
-            parameter.getParameterizedType());
+            parameter.getParameterizedType()
+        );
       }
       return new ParamInfo(
           ParamMap.Type.NAMED_PARAM_MAP,
@@ -413,7 +443,8 @@ public record AutoBuiltDocumentedBuilder<T>(
           buildDefaultValue(ParamMap.Type.NAMED_PARAM_MAP, Object.class, paramAnnotation),
           null,
           paramAnnotation.injection(),
-          parameter.getParameterizedType());
+          parameter.getParameterizedType()
+      );
     } catch (Exception ex) {
       throw new BuilderException("Cannot build param info for \"%s\"".formatted(name), ex);
     }
@@ -431,21 +462,22 @@ public record AutoBuiltDocumentedBuilder<T>(
   }
 
   static NamedParamMap fromAlias(Alias alias, ParamMap map) {
-    BiFunction<String, ParamMap.Type, String> quoter =
-        (s, t) -> t.equals(ParamMap.Type.STRING) ? "\"%s\"".formatted(s) : s;
+    BiFunction<String, ParamMap.Type, String> quoter = (s, t) -> t.equals(ParamMap.Type.STRING) ? "\"%s\"".formatted(
+        s
+    ) : s;
     String consts = Arrays.stream(alias.passThroughParams())
-        .map(p -> StringParser.CONST_NAME_PREFIX
-            + "%s = %s"
+        .map(
+            p -> StringParser.CONST_NAME_PREFIX + "%s = %s"
                 .formatted(
                     p.name(),
                     quoter.apply(
-                        map == null
-                            ? (p.value().isEmpty() ? "null" : p.value())
-                            : (map.value(p.name()) == null
-                                ? p.value()
-                                : map.value(p.name())
-                                    .toString()),
-                        p.type())))
+                        map == null ? (p.value().isEmpty() ? "null" : p.value()) : (map.value(p.name()) == null ? p
+                            .value() : map.value(p.name())
+                                .toString()),
+                        p.type()
+                    )
+                )
+        )
         .collect(Collectors.joining("\n"));
     consts = consts + "\n" + alias.value();
     return StringParser.parse(consts);
@@ -458,9 +490,6 @@ public record AutoBuiltDocumentedBuilder<T>(
 
   @Override
   public String toString() {
-    return "("
-        + params().stream().map(ParamInfo::toString).collect(Collectors.joining("; "))
-        + ") -> "
-        + builtType();
+    return "(" + params().stream().map(ParamInfo::toString).collect(Collectors.joining("; ")) + ") -> " + builtType();
   }
 }

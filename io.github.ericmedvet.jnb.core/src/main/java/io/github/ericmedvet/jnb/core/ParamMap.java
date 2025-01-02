@@ -30,18 +30,10 @@ import java.util.stream.Stream;
 public interface ParamMap {
 
   enum Type {
-    INT("i"),
-    DOUBLE("d"),
-    STRING("s"),
-    BOOLEAN("b"),
-    ENUM("e"),
-    NAMED_PARAM_MAP("npm"),
-    INTS("i[]"),
-    DOUBLES("d[]"),
-    STRINGS("s[]"),
-    BOOLEANS("b[]"),
-    ENUMS("e[]"),
-    NAMED_PARAM_MAPS("npm[]");
+    INT("i"), DOUBLE("d"), STRING("s"), BOOLEAN("b"), ENUM("e"), NAMED_PARAM_MAP("npm"), INTS("i[]"), DOUBLES(
+        "d[]"
+    ), STRINGS("s[]"), BOOLEANS("b[]"), ENUMS("e[]"), NAMED_PARAM_MAPS("npm[]");
+
     private final String rendered;
 
     Type(String rendered) {
@@ -71,7 +63,8 @@ public interface ParamMap {
 
   private static int hash(ParamMap pm) {
     return Objects.hash(
-        pm.names().stream().map(n -> Map.entry(n, pm.value(n))).toArray(Object[]::new));
+        pm.names().stream().map(n -> Map.entry(n, pm.value(n))).toArray(Object[]::new)
+    );
   }
 
   default ParamMap and(ParamMap other) {

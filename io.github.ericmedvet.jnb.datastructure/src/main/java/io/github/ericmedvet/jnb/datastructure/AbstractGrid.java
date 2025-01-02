@@ -46,7 +46,8 @@ public abstract class AbstractGrid<T> implements Grid<T> {
   protected void checkValidity(Key key) {
     if (!isValid(key)) {
       throw new IllegalArgumentException(
-          "Invalid coords (%d,%d) on a %dx%d grid".formatted(key.x(), key.y(), w(), h()));
+          "Invalid coords (%d,%d) on a %dx%d grid".formatted(key.x(), key.y(), w(), h())
+      );
     }
   }
 
@@ -72,8 +73,10 @@ public abstract class AbstractGrid<T> implements Grid<T> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o)
+      return true;
+    if (o == null || getClass() != o.getClass())
+      return false;
     AbstractGrid<?> that = (AbstractGrid<?>) o;
     return w == that.w && h == that.h;
   }

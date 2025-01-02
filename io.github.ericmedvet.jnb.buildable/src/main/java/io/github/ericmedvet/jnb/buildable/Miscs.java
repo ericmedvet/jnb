@@ -30,7 +30,8 @@ import java.util.random.RandomGenerator;
 @Discoverable(prefixTemplate = "misc|m")
 public class Miscs {
 
-  private Miscs() {}
+  private Miscs() {
+  }
 
   @SuppressWarnings("unused")
   public static RandomGenerator defaultRG(@Param(value = "seed", dI = 0) int seed) {
@@ -41,7 +42,8 @@ public class Miscs {
   public static <T> Grid<T> grid(@Param("w") int w, @Param("h") int h, @Param("items") List<T> items) {
     if (items.size() != w * h) {
       throw new IllegalArgumentException(
-          "Wrong number of items: %d x %d = %d expected, %d found".formatted(w, h, w * h, items.size()));
+          "Wrong number of items: %d x %d = %d expected, %d found".formatted(w, h, w * h, items.size())
+      );
     }
     return Grid.create(w, h, items);
   }
@@ -56,7 +58,8 @@ public class Miscs {
   public static <T> Supplier<T> supplier(
       @Param("of") T target,
       @Param(value = "", injection = Param.Injection.MAP) ParamMap map,
-      @Param(value = "", injection = Param.Injection.BUILDER) NamedBuilder<?> builder) {
+      @Param(value = "", injection = Param.Injection.BUILDER) NamedBuilder<?> builder
+  ) {
     //noinspection unchecked
     return () -> (T) builder.build((NamedParamMap) map.value("of", ParamMap.Type.NAMED_PARAM_MAP));
   }

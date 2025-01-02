@@ -28,24 +28,28 @@ public class Starter {
   public record Office(
       @Param("roomNumbers") List<Integer> roomNumbers,
       @Param("head") Person head,
-      @Param("staff") List<Person> staff) {}
+      @Param("staff") List<Person> staff
+  ) {}
 
   @Discoverable
   @Alias(name = "namedPerson", value = "person(name = name)")
   public record Person(
-      @Param("name") String name, @Param("age") int age, @Param("nicknames") List<String> nicknames) {}
+      @Param("name") String name, @Param("age") int age, @Param("nicknames") List<String> nicknames
+  ) {}
 
   @Discoverable(prefixTemplate = "p|persons")
   public static class Persons {
 
-    private Persons() {}
+    private Persons() {
+    }
 
     @Alias(name = "mathusalem", value = "old(name = Mathusalem; age = 199)")
     @Alias(name = "friendlyMathusalem", value = "mathusalem(nicknames=[Math])")
     public static Person old(
         @Param("name") String name,
         @Param(value = "age", dI = 55) int age,
-        @Param("nicknames") List<String> nicknames) {
+        @Param("nicknames") List<String> nicknames
+    ) {
       return new Person(name, age, nicknames);
     }
 

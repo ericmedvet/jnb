@@ -80,24 +80,31 @@ public interface DocumentedBuilder<T> extends Builder<T> {
   default DocumentedBuilder<T> alias(String name, Alias alias) {
     NamedParamMap preMap = AutoBuiltDocumentedBuilder.fromAlias(alias, null);
     List<ParamInfo> newParams = Stream.concat(
-            params().stream()
-                .map(pi -> new ParamInfo(
+        params().stream()
+            .map(
+                pi -> new ParamInfo(
                     pi.type,
                     pi.enumClass,
                     pi.name,
                     preMap.names().contains(pi.name) ? preMap.value(pi.name) : pi.defaultValue,
                     pi.interpolationString,
                     pi.injection,
-                    pi.javaType)),
-            Arrays.stream(alias.passThroughParams())
-                .map(p -> new ParamInfo(
+                    pi.javaType
+                )
+            ),
+        Arrays.stream(alias.passThroughParams())
+            .map(
+                p -> new ParamInfo(
                     p.type(),
                     null,
                     p.name(),
                     aliasedParamDefaultValue(p.type(), p.enumClass(), p.value()),
                     null,
                     Injection.NONE,
-                    String.class)))
+                    String.class
+                )
+            )
+    )
         .toList();
     // descriptions for passThroughParams and defaulted params using do not show that
     // they are linked. however, drastic changes are needed in parsing result to fix this
@@ -108,11 +115,15 @@ public interface DocumentedBuilder<T> extends Builder<T> {
         origin(),
         (map, namedBuilder, index) -> build(
             map.and(AutoBuiltDocumentedBuilder.fromAlias(alias, map))
-                .without(Arrays.stream(alias.passThroughParams())
-                    .map(PassThroughParam::name)
-                    .toArray(String[]::new)),
+                .without(
+                    Arrays.stream(alias.passThroughParams())
+                        .map(PassThroughParam::name)
+                        .toArray(String[]::new)
+                ),
             namedBuilder,
-            index));
+            index
+        )
+    );
   }
 
   record ParamInfo(
@@ -122,7 +133,8 @@ public interface DocumentedBuilder<T> extends Builder<T> {
       Object defaultValue,
       String interpolationString,
       Param.Injection injection,
-      java.lang.reflect.Type javaType) {
+      java.lang.reflect.Type javaType
+  ) {
 
     @Override
     public String toString() {
@@ -132,11 +144,10 @@ public interface DocumentedBuilder<T> extends Builder<T> {
       }
       return String.format(
           "%s = %s%s",
-          injection.equals(Param.Injection.NONE)
-              ? name
-              : injection.toString().toLowerCase(),
+          injection.equals(Param.Injection.NONE) ? name : injection.toString().toLowerCase(),
           type.rendered(),
-          defaultValueString.isEmpty() ? "" : ("[" + defaultValueString + "]"));
+          defaultValueString.isEmpty() ? "" : ("[" + defaultValueString + "]")
+      );
     }
   }
 }
