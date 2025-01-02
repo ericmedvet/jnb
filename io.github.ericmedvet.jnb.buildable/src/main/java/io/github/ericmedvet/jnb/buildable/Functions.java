@@ -303,9 +303,7 @@ public class Functions {
     return NamedFunction.from(f, NamedFunction.IDENTITY_NAME);
   }
 
-  @SuppressWarnings("unused")
-  @Cacheable
-  public static <X, T> FormattedNamedFunction<X, T> key(
+  public static <X, T> FormattedNamedFunction<X, T> keyedValue(
       @Param("key") String key,
       @Param(value = "of", dNPM = "f.identity()") Function<X, Map<String, T>> beforeF,
       @Param(value = "format", dS = "%s") String format
@@ -390,6 +388,17 @@ public class Functions {
   ) {
     Function<List<T>, T> f = ts -> n >= 0 ? ts.get(n) : ts.get(ts.size() + n);
     return FormattedNamedFunction.from(f, format, "[%d]".formatted(n)).compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X, T> FormattedNamedFunction<X, T> nThKeyedValue(
+      @Param("n") int n,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, SequencedMap<String, T>> beforeF,
+      @Param(value = "format", dS = "%s") String format
+  ) {
+    Function<Map<String, T>, T> f = m -> m.values().stream().toList().get(n);
+    return FormattedNamedFunction.from(f, format, "%d".formatted(n)).compose(beforeF);
   }
 
   @SuppressWarnings("unused")
