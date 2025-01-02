@@ -277,6 +277,16 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
+  public static <X, T> FormattedNamedFunction<X, T> key(
+      @Param("key") String key,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Map<String, T>> beforeF,
+      @Param(value = "format", dS = "%s") String format) {
+    Function<Map<String, T>, T> f = m -> m.get(key);
+    return FormattedNamedFunction.from(f, format, key).compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
   public static <X> FormattedNamedFunction<X, Double> mathConst(
       @Param("v") double v, @Param(value = "format", dS = "%.1f") String format) {
     return FormattedNamedFunction.from(x -> v, format, format.formatted(v));
