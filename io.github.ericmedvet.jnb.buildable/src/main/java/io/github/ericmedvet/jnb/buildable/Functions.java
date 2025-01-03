@@ -303,7 +303,9 @@ public class Functions {
     return NamedFunction.from(f, NamedFunction.IDENTITY_NAME);
   }
 
-  public static <X, T> FormattedNamedFunction<X, T> keyedValue(
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X, T> FormattedNamedFunction<X, T> mapValue(
       @Param("key") String key,
       @Param(value = "of", dNPM = "f.identity()") Function<X, Map<String, T>> beforeF,
       @Param(value = "format", dS = "%s") String format
@@ -392,7 +394,7 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
-  public static <X, T> FormattedNamedFunction<X, T> nThKeyedValue(
+  public static <X, T> FormattedNamedFunction<X, T> nThMapValue(
       @Param("n") int n,
       @Param(value = "of", dNPM = "f.identity()") Function<X, SequencedMap<String, T>> beforeF,
       @Param(value = "format", dS = "%s") String format
