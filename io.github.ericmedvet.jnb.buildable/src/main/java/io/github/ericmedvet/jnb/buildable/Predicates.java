@@ -84,6 +84,33 @@ public class Predicates {
 
   @SuppressWarnings("unused")
   @Cacheable
+  public static <X> Predicate<X> eqD(
+      @Param(value = "f", dNPM = "f.identity()") Function<X, Double> function,
+      @Param("v") Double v
+  ) {
+    return named(x -> function.apply(x).equals(v), "%s==%s".formatted(NamedFunction.name(function), v));
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X> Predicate<X> eqI(
+      @Param(value = "f", dNPM = "f.identity()") Function<X, Integer> function,
+      @Param("v") Integer v
+  ) {
+    return named(x -> function.apply(x).equals(v), "%s==%s".formatted(NamedFunction.name(function), v));
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X> Predicate<X> eqS(
+      @Param(value = "f", dNPM = "f.identity()") Function<X, String> function,
+      @Param("v") String v
+  ) {
+    return named(x -> function.apply(x).equals(v), "%s==%s".formatted(NamedFunction.name(function), v));
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
   public static <X> Predicate<X> gt(
       @Param(value = "f", dNPM = "f.identity()") Function<X, ? extends Number> function,
       @Param("t") double t
