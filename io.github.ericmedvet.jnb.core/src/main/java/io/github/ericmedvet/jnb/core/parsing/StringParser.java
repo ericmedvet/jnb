@@ -275,8 +275,8 @@ public class StringParser {
               )
           );
         } else {
-          if (npNode.value() instanceof LDNode ldNode) {
-            for (DNode dNode : ldNode.child().children()) {
+          if (npNode.value() instanceof LDNode(Token token,ListNode<DNode>child)) {
+            for (DNode dNode : child.children()) {
               eNodes.add(
                   new ENode(
                       originalENode.token(),
@@ -284,15 +284,15 @@ public class StringParser {
                           originalENode.child().token(),
                           withAppended(
                               originalENode.child().children(),
-                              new NPNode(ldNode.token(), npNode.name(), dNode)
+                              new NPNode(token, npNode.name(), dNode)
                           )
                       ),
                       originalENode.name()
                   )
               );
             }
-          } else if (npNode.value() instanceof LSNode lsNode) {
-            for (SNode sNode : lsNode.child().children()) {
+          } else if (npNode.value() instanceof LSNode(Token token,ListNode<SNode>child)) {
+            for (SNode sNode : child.children()) {
               eNodes.add(
                   new ENode(
                       originalENode.token(),
@@ -300,15 +300,15 @@ public class StringParser {
                           originalENode.child().token(),
                           withAppended(
                               originalENode.child().children(),
-                              new NPNode(lsNode.token(), npNode.name(), sNode)
+                              new NPNode(token, npNode.name(), sNode)
                           )
                       ),
                       originalENode.name()
                   )
               );
             }
-          } else if (npNode.value() instanceof LENode leNode) {
-            for (ENode eNode : leNode.child().children()) {
+          } else if (npNode.value() instanceof LENode(Token token,ListNode<ENode>child)) {
+            for (ENode eNode : child.children()) {
               eNodes.add(
                   new ENode(
                       originalENode.token(),
@@ -316,7 +316,7 @@ public class StringParser {
                           originalENode.child().token(),
                           withAppended(
                               originalENode.child().children(),
-                              new NPNode(leNode.token(), npNode.name(), eNode)
+                              new NPNode(token, npNode.name(), eNode)
                           )
                       ),
                       originalENode.name()
