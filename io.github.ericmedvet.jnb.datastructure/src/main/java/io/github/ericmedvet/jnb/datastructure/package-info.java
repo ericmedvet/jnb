@@ -1,8 +1,8 @@
 /*-
  * ========================LICENSE_START=================================
- * jgea-core
+ * jnb-datastructure
  * %%
- * Copyright (C) 2018 - 2024 Eric Medvet
+ * Copyright (C) 2023 - 2025 Eric Medvet
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,8 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
+/// Provides interfaces and classes for modeling a few data structures (e.g.,
+/// [io.github.ericmedvet.jnb.datastructure.Grid], [io.github.ericmedvet.jnb.datastructure.Table]) and useful
+/// concepts (e.g., [io.github.ericmedvet.jnb.datastructure.NamedFunction],
+/// [io.github.ericmedvet.jnb.datastructure.Parametrized]).
 package io.github.ericmedvet.jnb.datastructure;
-
-import java.io.Serializable;
-
-/// A pair of two elements of (in general) different types.
-///
-/// @param first the first element of the pair
-/// @param second the second element of the pair
-/// @param <F> the type of the first element
-/// @param <S> the type of the second element
-public record Pair<F, S>(F first, S second) implements Serializable {}
