@@ -30,7 +30,7 @@ import java.util.stream.DoubleStream;
 /// @param max the upper bound of the interval
 public record DoubleRange(double min, double max) implements Serializable {
 
-  /// The interval `$[0,1]$`.
+  /// The interval $\[0,1\]$.
   public static final DoubleRange UNIT = new DoubleRange(0, 1);
   /// The interval `$[-1,1]$`.
   public static final DoubleRange SYMMETRIC_UNIT = new DoubleRange(-1, 1);
