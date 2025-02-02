@@ -32,9 +32,9 @@ public record DoubleRange(double min, double max) implements Serializable {
 
   /// The interval $\[0,1\]$.
   public static final DoubleRange UNIT = new DoubleRange(0, 1);
-  /// The interval `$[-1,1]$`.
+  /// The interval $\[-1,1\]$.
   public static final DoubleRange SYMMETRIC_UNIT = new DoubleRange(-1, 1);
-  /// The unbound interval `$[-\infty,\infty]$`.
+  /// The unbound interval $\[-\infty,\infty\]$.
   public static final DoubleRange UNBOUNDED = new DoubleRange(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
 
   /// Default constructor.
@@ -82,7 +82,7 @@ public record DoubleRange(double min, double max) implements Serializable {
   }
 
   /// Clips (i.e., clamps) the given `value` into this interval.
-  /// Returns `value` if `value`>=`min` and `value`<=`max`, else `min` if `value`<`min`, else `max`.
+  /// Returns `value` if `value` >= `min` and `value` <= `max`, else `min` if `value` < `min`, else `max`.
   ///
   /// @param value the input value
   /// @return the clipped value
@@ -108,7 +108,7 @@ public record DoubleRange(double min, double max) implements Serializable {
   }
 
   /// Returns a new interval which is shifted by the given `offset` with respect to this interval.
-  /// If this interval is `$[a,b]$` and `offset` is `$\delta$`, then returns `$[a+\delta,b+\delta]$`.
+  /// If this interval is $\[a,b\]$ and `offset` is $\delta$, then returns $\[a+\delta,b+\delta]$.
   ///
   /// @param offset the offset to shift
   /// @return another interval shifted by an `offset`
@@ -117,16 +117,16 @@ public record DoubleRange(double min, double max) implements Serializable {
   }
 
   /// Denormalizes, by shifting and rescaling, the given normalized `value` to this interval.
-  /// If this interval is `$[a,b]$` and `value` is `$v \in [0,1]$`, then returns `$a+v(b-a)$`.
+  /// If this interval is $\[a,b\]$ and `value` is $v \in \[0,1\]$, then returns $a+v(b-a)$.
   ///
-  /// @param value the normalized, i.e., in `$[0,1]$` value
+  /// @param value the normalized, i.e., in $\[0,1\]$ value
   /// @return the denormalized value
   public double denormalize(double value) {
     return clip(value * extent() + min());
   }
 
   /// Returns a new interval which is extended by a factor `r` with respect to this interval but with the same center.
-  /// If this interval is `$[a,b]$` and `r` is `$r$`, then returns `$[(a+b)/2-r(b-a)/2,(a+b)/2+r(b-a)/2]$`.
+  /// If this interval is $\[a,b\]$ and `r` is $r$, then returns $\[\frac{a+b}{2}-\frac{r}{2}(b-a),\frac{a+b}{2}+\frac{r}{2}(b-a)\]$.
   ///
   /// @param r the extent rescaling factor
   /// @return the extended interval
@@ -135,7 +135,7 @@ public record DoubleRange(double min, double max) implements Serializable {
   }
 
   /// Returns the extent of this interval.
-  /// If this interval is `$[a,b]$`, then returns `$b-a$`.
+  /// If this interval is $\[a,b\]$, then returns $b-a$.
   ///
   /// @return the extent
   public double extent() {
@@ -145,7 +145,7 @@ public record DoubleRange(double min, double max) implements Serializable {
   /// Returns an interval which has the highest lower bound of this and the `other` interval and the lowest upper
   /// bound of this and the `other` interval.
   /// The returned interval is the intersection of this and the `other` interval, if not empty.
-  /// If this interval is `$[a,b]$` and `other` is `$[c,d]$`, then returns `$[\max(a,c),\min(b,d)]$`.
+  /// If this interval is $\[a_1,b_2\]$ and `other` is $\[a_2,b_2\]$, then returns $\[\max(a_1,a_2),\min(b_1,b_2)\]$.
   ///
   /// @param other the other interval
   /// @return the intersection of this and `other`
@@ -158,10 +158,10 @@ public record DoubleRange(double min, double max) implements Serializable {
   }
 
   /// Normalizes, by shifting and rescaling, the given `value` to this interval.
-  /// If this interval is `$[a,b]$` and `value` is `$v \in [a,b]$`, then returns `$(v-a)/(b-a)$`.
+  /// If this interval is $\[a,b\]$ and `value` is $v \in \[a,b\]$, then returns $\frac{v-a}{b-a}$.
   ///
   /// @param value the value in this interval to be normalized
-  /// @return the normalized value, i.e., a number in `$[0,1]$`
+  /// @return the normalized value, i.e., a number in $\[0,1\]$
   public double normalize(double value) {
     return (clip(value) - min) / (max - min);
   }
@@ -192,7 +192,7 @@ public record DoubleRange(double min, double max) implements Serializable {
   /// Returns an interval which has the lowest lower bound of this and the `other` interval and the highest upper
   /// bound of this and the `other` interval.
   /// The returned interval is the smallest interval that contains both this and the `other` interval.
-  /// If this interval is `$[a,b]$` and `other` is `$[c,d]$`, then returns `$[\min(a,c),\max(b,d)]$`.
+  /// If this interval is $\[a_1,b_2\]$ and `other` is $\[a_2,b_2\]$, then returns $\[\min(a_1,a_2),\max(b_1,b_2)\]$.
   ///
   /// @param other the other interval
   /// @return the smallest interval containing this and `other`
