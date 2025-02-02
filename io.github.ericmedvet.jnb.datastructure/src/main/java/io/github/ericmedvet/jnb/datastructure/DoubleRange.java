@@ -50,16 +50,6 @@ public record DoubleRange(double min, double max) implements Serializable {
     }
   }
 
-  /// Builds an interval which has the lowest lower bound across all the input intervals and the highest upper
-  /// bound across all the input intervals.
-  /// The returned interval is the smallest interval that contains all the input intervals.
-  ///
-  /// @param ranges the input intervals
-  /// @return the smallest interval that contains all the input intervals
-  public static DoubleRange largest(List<DoubleRange> ranges) {
-    return ranges.stream().reduce(DoubleRange::largest).orElseThrow();
-  }
-
   /// Builds an interval which has the highest lower bound across all the input intervals and the lowest upper
   /// bound across all the input intervals.
   /// The built interval is the intersection of all the input intervals, if not empty.
@@ -67,8 +57,18 @@ public record DoubleRange(double min, double max) implements Serializable {
   /// @param ranges the input intervals
   /// @return the intersection of all the input intervals
   /// @throws IllegalArgumentException if the intersection of `ranges` is empty
-  public static DoubleRange smallest(List<DoubleRange> ranges) {
-    return ranges.stream().reduce(DoubleRange::smallest).orElseThrow();
+  public static DoubleRange intersection(List<DoubleRange> ranges) {
+    return ranges.stream().reduce(DoubleRange::intersectionWith).orElseThrow();
+  }
+
+  /// Builds an interval which has the lowest lower bound across all the input intervals and the highest upper
+  /// bound across all the input intervals.
+  /// The returned interval is the smallest interval that contains all the input intervals.
+  ///
+  /// @param ranges the input intervals
+  /// @return the smallest interval that contains all the input intervals
+  public static DoubleRange union(List<DoubleRange> ranges) {
+    return ranges.stream().reduce(DoubleRange::unionWith).orElseThrow();
   }
 
   /// Returns the center of the interval, i.e., (`min`+`max`)/2.
@@ -142,15 +142,19 @@ public record DoubleRange(double min, double max) implements Serializable {
     return max - min;
   }
 
-  /// Returns an interval which has the lowest lower bound of this and the `other` interval and the highest upper
+  /// Returns an interval which has the highest lower bound of this and the `other` interval and the lowest upper
   /// bound of this and the `other` interval.
-  /// The returned interval is the smallest interval that contains both this and the `other` interval.
-  /// If this interval is `$[a,b]$` and `other` is `$[c,d]$`, then returns `$[\min(a,c),\max(b,d)]$`.
+  /// The returned interval is the intersection of this and the `other` interval, if not empty.
+  /// If this interval is `$[a,b]$` and `other` is `$[c,d]$`, then returns `$[\max(a,c),\min(b,d)]$`.
   ///
   /// @param other the other interval
-  /// @return the smallest interval containing this and `other`
-  public DoubleRange largest(DoubleRange other) {
-    return new DoubleRange(Math.min(min, other.min), Math.max(max, other.max));
+  /// @return the intersection of this and `other`
+  /// @throws IllegalArgumentException if the intersection of this and `other` is empty
+  public DoubleRange intersectionWith(DoubleRange other) {
+    if (Math.max(min, other.min) > Math.min(max, other.max)) {
+      throw new IllegalArgumentException("Empty intersection");
+    }
+    return new DoubleRange(Math.max(min, other.min), Math.min(max, other.max));
   }
 
   /// Normalizes, by shifting and rescaling, the given `value` to this interval.
@@ -185,18 +189,14 @@ public record DoubleRange(double min, double max) implements Serializable {
     return DoubleStream.iterate(min, v -> v <= max, v -> v + step);
   }
 
-  /// Returns an interval which has the highest lower bound of this and the `other` interval and the lowest upper
+  /// Returns an interval which has the lowest lower bound of this and the `other` interval and the highest upper
   /// bound of this and the `other` interval.
-  /// The returned interval is the intersection of this and the `other` interval, if not empty.
-  /// If this interval is `$[a,b]$` and `other` is `$[c,d]$`, then returns `$[\max(a,c),\min(b,d)]$`.
+  /// The returned interval is the smallest interval that contains both this and the `other` interval.
+  /// If this interval is `$[a,b]$` and `other` is `$[c,d]$`, then returns `$[\min(a,c),\max(b,d)]$`.
   ///
   /// @param other the other interval
-  /// @return the intersection of this and `other`
-  /// @throws IllegalArgumentException if the intersection of this and `other` is empty
-  public DoubleRange smallest(DoubleRange other) {
-    if (Math.max(min, other.min) > Math.min(max, other.max)) {
-      throw new IllegalArgumentException("Empty intersection");
-    }
-    return new DoubleRange(Math.max(min, other.min), Math.min(max, other.max));
+  /// @return the smallest interval containing this and `other`
+  public DoubleRange unionWith(DoubleRange other) {
+    return new DoubleRange(Math.min(min, other.min), Math.max(max, other.max));
   }
 }
