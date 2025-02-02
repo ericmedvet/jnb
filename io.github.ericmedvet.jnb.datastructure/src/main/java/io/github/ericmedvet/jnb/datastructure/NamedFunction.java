@@ -23,18 +23,24 @@ import java.util.Arrays;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/// A [Function] with a name.
+/// A function with a name.
+/// This function works like [Function], but provides a name in the form of a [String].
 ///
 /// @param <T> the type of the input of the function
 /// @param <R> the type of the output of the function
 public interface NamedFunction<T, R> extends Function<T, R> {
 
-  /// The default name when a name is not provided.
+  /// The default name to use when a name is not provided.
   String UNNAMED_NAME = "unnamed";
   /// The name for the identity `NamedFunction`.
   String IDENTITY_NAME = "identity";
   /// The string used as joiner when doing the composition of two `NamedFunction` objects.
   String NAME_JOINER = "→";
+
+  /// Returns the name of this named function.
+  ///
+  /// @return the name of this named function
+  String name();
 
   /// Returns a string which is the concatenation of an array of strings taken as names.
   /// Takes the strings in `names` which are not the name of the unnamed or the identity functions and joins them
@@ -58,13 +64,13 @@ public interface NamedFunction<T, R> extends Function<T, R> {
   static <T, R> NamedFunction<T, R> from(Function<T, R> f, String name) {
     return new NamedFunction<>() {
       @Override
-      public String name() {
-        return name;
+      public R apply(T t) {
+        return f.apply(t);
       }
 
       @Override
-      public R apply(T t) {
-        return f.apply(t);
+      public String name() {
+        return name;
       }
 
       @Override
@@ -74,7 +80,8 @@ public interface NamedFunction<T, R> extends Function<T, R> {
     };
   }
 
-  /// Builds a named function given a function with a default unnamed name (being [NamedFunction#UNNAMED_NAME]).
+  /// Builds a named function given a function, possibly with a default unnamed name.
+  /// If the input function `f` is a `NamedFunction`, simply returns `f`; otherwise, call [NamedFunction#from(Function, String)] with the [NamedFunction#UNNAMED_NAME] as name.
   ///
   /// @param f   the function
   /// @param <T> the type of the input of the function
@@ -100,15 +107,17 @@ public interface NamedFunction<T, R> extends Function<T, R> {
     return UNNAMED_NAME;
   }
 
-  /// @return the name of this named function
-  String name();
-
-  /// Returns a named function operating as this function but renamed with the provided name.
+  /// Returns a composed named function that first applies the `before` function to its input, and then applies this
+  /// named function to the result.
+  /// If the `before` function is a named function, the name of the returned function is a composition of the two
+  /// names, through [NamedFunction#composeNames(String...)].
   ///
-  /// @param name the new name
-  /// @return the renamed named function
-  default NamedFunction<T, R> renamed(String name) {
-    return from(this, name);
+  /// @param before the function to apply before this function is applied
+  /// @param <V>    the type of input of the `before` function, and of the composed function
+  /// @return the composed named function
+  @Override
+  default <V> NamedFunction<V, R> compose(Function<? super V, ? extends T> before) {
+    return from(v -> apply(before.apply(v)), composeNames(name(before), name()));
   }
 
   /// Returns a composed named function that first applies this named function to its input, and then applies the `
@@ -131,16 +140,11 @@ public interface NamedFunction<T, R> extends Function<T, R> {
     return from(t -> after.apply(apply(t)), composeNames(name(), name(after)));
   }
 
-  /// Returns a composed named function that first applies the `before` function to its input, and then applies this
-  /// named function to the result.
-  /// If the `before` function is a named function, the name of the returned function is a composition of the two
-  /// names, through [NamedFunction#composeNames(String...)].
+  /// Returns a named function operating as this function but renamed with the provided name.
   ///
-  /// @param before the function to apply before this function is applied
-  /// @param <V>    the type of input of the `before` function, and of the composed function
-  /// @return the composed named function
-  @Override
-  default <V> NamedFunction<V, R> compose(Function<? super V, ? extends T> before) {
-    return from(v -> apply(before.apply(v)), composeNames(name(before), name()));
+  /// @param name the new name
+  /// @return the renamed named function
+  default NamedFunction<T, R> renamed(String name) {
+    return from(this, name);
   }
 }
