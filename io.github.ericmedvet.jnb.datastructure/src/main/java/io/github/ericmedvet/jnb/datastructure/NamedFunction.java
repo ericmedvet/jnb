@@ -81,7 +81,7 @@ public interface NamedFunction<T, R> extends Function<T, R> {
   }
 
   /// Builds a named function given a function, possibly with a default unnamed name.
-  /// If the input function `f` is a `NamedFunction`, simply returns `f`; otherwise, call [NamedFunction#from(Function, String)] with the [NamedFunction#UNNAMED_NAME] as name.
+  /// If the input function `f` is a `NamedFunction`, simply returns `f`; otherwise, calls [NamedFunction#from(Function, String)] with the [NamedFunction#UNNAMED_NAME] as name.
   ///
   /// @param f   the function
   /// @param <T> the type of the input of the function
@@ -95,7 +95,7 @@ public interface NamedFunction<T, R> extends Function<T, R> {
   }
 
   /// Returns the name of a function.
-  /// If the function is a `NamedFunction`, returns the result of [NamedFunction#name()]; otherwise, return
+  /// If the function is a `NamedFunction`, returns the result of [NamedFunction#name()]; otherwise, returns
   ///  [NamedFunction#UNNAMED_NAME].
   ///
   /// @param f the function

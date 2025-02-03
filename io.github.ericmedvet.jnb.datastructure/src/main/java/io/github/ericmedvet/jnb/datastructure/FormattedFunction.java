@@ -79,7 +79,7 @@ public interface FormattedFunction<T, R> extends Function<T, R> {
   }
 
   /// Builds a formatted function given a function, possibly with the default format.
-  /// If the input function `f` is a `FormattedFunction`, simply returns `f`; otherwise, call
+  /// If the input function `f` is a `FormattedFunction`, simply returns `f`; otherwise, calls
   ///  [FormattedFunction#from(Function, String)] with the default format [FormattedFunction#UNFORMATTED_FORMAT] as
   /// format.
   ///
@@ -123,8 +123,7 @@ public interface FormattedFunction<T, R> extends Function<T, R> {
   }
 
   /// Returns a composed formatted function that first applies this formatted function to its input, and then applies
-  ///  the `
-  /// after` function to the result.
+  ///  the `after` function to the result.
   /// If the `after` function is a formatted function, the format of the returned function is the one of `after`;
   /// otherwise, it is the default format [FormattedFunction#UNFORMATTED_FORMAT].
   ///
