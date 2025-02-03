@@ -36,10 +36,11 @@ public interface Parametrized<T extends Parametrized<T, P>, P> {
   void setParams(P param);
 
   /// Returns this object with the parameter reset to the provided value.
+  /// Internally calls [Parametrized#setParams(Object)] and then returns `this`.
   /// Useful for adopting the chain invocation.
   ///
   /// @param param the new parameter value
-  /// @return
+  /// @return this object after having set the parameter value`
   default T withParams(P param) {
     setParams(param);
     //noinspection unchecked
