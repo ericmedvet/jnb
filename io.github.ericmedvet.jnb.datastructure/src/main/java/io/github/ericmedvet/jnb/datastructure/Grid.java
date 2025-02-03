@@ -36,7 +36,7 @@ import java.util.stream.StreamSupport;
 
 /// An object that maps bi-dimensional integer coordinates defined in a finite domain to values, as in a *grid* like
 /// structure.
-/// A coordinate $k$ acts as a key and is defined in $\{0,\dots,w-1\} \times \{0,\dots,h-1\}$, where $w$ and $h$ are
+/// A coordinate $k$ acts as a key and is defined in $\\{0,\dots,w-1\\} \times \\{0,\dots,h-1\\}$, where $w$ and $h$ are
 /// immutable and retrievable through [Grid#w()] and [Grid#h()], respectively.
 /// Values mapped to (i.e., stored ) by a grid may be `null` and can be set or retrieved through [Grid#get(Key)] and
 /// [Grid#set(Key, Object)].
