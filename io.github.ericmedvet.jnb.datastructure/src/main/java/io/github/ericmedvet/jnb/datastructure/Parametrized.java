@@ -20,13 +20,28 @@
 
 package io.github.ericmedvet.jnb.datastructure;
 
+/// An object which has a modifiable parameter of type `P`.
+///
+/// @param <T> the type of the object being parametrized
+/// @param <P> the type of the parameter
 public interface Parametrized<T extends Parametrized<T, P>, P> {
+  /// Gets the parameter value.
+  ///
+  /// @return the parameter value
   P getParams();
 
-  void setParams(P params);
+  /// Sets the parameter to a new value.
+  ///
+  /// @param param the new parameter value
+  void setParams(P param);
 
-  default T withParams(P params) {
-    setParams(params);
+  /// Returns this object with the parameter reset to the provided value.
+  /// Useful for adopting the chain invocation.
+  ///
+  /// @param param the new parameter value
+  /// @return
+  default T withParams(P param) {
+    setParams(param);
     //noinspection unchecked
     return (T) this;
   }
