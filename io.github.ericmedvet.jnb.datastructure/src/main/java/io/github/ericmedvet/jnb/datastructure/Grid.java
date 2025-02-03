@@ -34,11 +34,27 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+/// An object that maps bi-dimensional integer coordinates defined in a finite domain to values, as in a *grid* like
+/// structure.
+/// A coordinate $k$ acts as a key and is defined in $\{0,\dots,w-1\} \times \{0,\dots,h-1\}$, where $w$ and $h$ are
+/// immutable and retrievable through [Grid#w()] and [Grid#h()], respectively.
+/// Values mapped to (i.e., stored ) by a grid may be `null` and can be set or retrieved through [Grid#get(Key)] and
+/// [Grid#set(Key, Object)].
+/// Grid cells including coordinates and values are modeled through [Grid.Entry].
+/// Cells (entries) can be iterated on as a grid is an `Iterable<Grid.Entry<T>>`.
+/// Several read-only views of the grid can be obtained through, e.g., [Grid#rows()], [Grid#columns()].
+///
+/// @param <T> the type of mapped values
 public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   char FULL_CELL_B_CHAR = '█';
   char EMPTY_CELL_B_CHAR = '░';
   char EMPTY_CELL_C_CHAR = '.';
 
+  /// A grid entry, i.e., a pair of a coordinate `key` and a value `value` describing a cell of the grid.
+  ///
+  /// @param key   the coordinate of the entry
+  /// @param value the value of the entry
+  /// @param <V>   the type of the value
   record Entry<V>(Key key, V value) implements Serializable {
     @Override
     public String toString() {
@@ -46,15 +62,31 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
     }
   }
 
+  /// The coordinate of a grid, defined by two `int`s `x` and `y`.
+  ///
+  /// @param x the x-coordinate
+  /// @param y the y-coordinate
   record Key(int x, int y) implements Serializable {
+    /// Builds a new coordinate by translated this by a `dX`, `dY` offset.
+    ///
+    /// @param dX the offset on the x-coordinate
+    /// @param dY the offset on the y-coordinate
+    /// @return the new coordinate
     public Key translated(int dX, int dY) {
       return new Key(x + dX, y + dY);
     }
 
+    /// Builds a new coordinate by translated this by the offset 'deltaKey`.
+    ///
+    /// @param deltaKey the offset coordinate
+    /// @return the new coordinate
     public Key translated(Key deltaKey) {
       return translated(deltaKey.x(), deltaKey.y());
     }
 
+    /// Returns the string representation of this coordinate as `(x,y)`.
+    ///
+    /// @return the string representation of this coordinate
     @Override
     public String toString() {
       return "(" + x + ',' + y + ')';
@@ -70,19 +102,22 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   int w();
 
   static <T> Collector<Entry<T>, ?, Grid<T>> collector() {
-    return Collectors.collectingAndThen(Collectors.toList(), list -> {
-      int maxX = list.stream()
-          .map(e -> e.key().x())
-          .max(Comparator.comparingInt(v -> v))
-          .orElse(0);
-      int maxY = list.stream()
-          .map(e -> e.key().y())
-          .max(Comparator.comparingInt(v -> v))
-          .orElse(0);
-      Grid<T> grid = create(maxX + 1, maxY + 1);
-      list.forEach(e -> grid.set(e.key(), e.value()));
-      return grid;
-    });
+    return Collectors.collectingAndThen(
+        Collectors.toList(),
+        list -> {
+          int maxX = list.stream()
+              .map(e -> e.key().x())
+              .max(Comparator.comparingInt(v -> v))
+              .orElse(0);
+          int maxY = list.stream()
+              .map(e -> e.key().y())
+              .max(Comparator.comparingInt(v -> v))
+              .orElse(0);
+          Grid<T> grid = create(maxX + 1, maxY + 1);
+          list.forEach(e -> grid.set(e.key(), e.value()));
+          return grid;
+        }
+    );
   }
 
   static <K> Grid<K> create(int w, int h, K k) {

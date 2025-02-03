@@ -24,7 +24,7 @@ package io.github.ericmedvet.jnb.datastructure;
 /// @param <I1> the type of the first input argument
 /// @param <I2> the type of the second input argument
 /// @param <I3> the type of the third input argument
-/// @param <O>  the type of the result of the
+/// @param <O> the type of the result of the
 @FunctionalInterface
 public interface TriFunction<I1, I2, I3, O> {
   /// Applies the function to the given arguments.
