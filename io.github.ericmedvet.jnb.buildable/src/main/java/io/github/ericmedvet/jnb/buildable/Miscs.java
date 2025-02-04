@@ -55,6 +55,12 @@ public class Miscs {
   }
 
   @SuppressWarnings("unused")
+  @Cacheable
+  public static RandomGenerator sharedRG(@Param(value = "seed", dI = 0) int seed) {
+    return seed >= 0 ? new Random(seed) : new Random();
+  }
+
+  @SuppressWarnings("unused")
   public static <T> Supplier<T> supplier(
       @Param("of") T target,
       @Param(value = "", injection = Param.Injection.MAP) ParamMap map,
