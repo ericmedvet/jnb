@@ -302,7 +302,6 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   }
 
   /// Creates a new grid with the same size and the same content (i.e., cell values) of this grid.
-  /// Internally calls [Grid#map(Function)] with the identity.
   ///
   /// @return a copy of this grid
   default Grid<T> copy() {

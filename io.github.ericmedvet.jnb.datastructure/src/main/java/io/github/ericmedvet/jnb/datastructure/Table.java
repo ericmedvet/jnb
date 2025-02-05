@@ -19,11 +19,7 @@
  */
 package io.github.ericmedvet.jnb.datastructure;
 
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -33,9 +29,9 @@ import java.util.stream.Stream;
 
 /// An object that stores elements of type `T` in a modifiable table like structure where cells are
 /// indexed through pairs of coordinates `R`,`C`. `R` is the type of row indexes, `C` is the type of
-/// column indexes. It provides methods for modifying the content of the cells ([#set(Object,
-/// Object, Object)]) or the content and the structure ([#addRow(Object, Map)], [#addColumn(Object,
-/// Map)], [#removeRow(Object)], [#removeColumn(Object)]). It also provides methods for obtaining
+/// column indexes. It provides methods for modifying the content of the cells
+/// ([#set(Object, Object, Object)]) or the content and the structure ([#clear()], [#addRow(Object, Map)],
+/// [#addColumn(Object, Map)], [#removeRow(Object)], [#removeColumn(Object)]). It also provides methods for obtaining
 /// views of (parts) of the table.
 ///
 /// Rows and columns have a well-defined encounter order.
@@ -147,20 +143,49 @@ public interface Table<R, C, T> {
   /// @param columnIndex the index of the column to remove
   void removeColumn(C columnIndex);
 
+  /// Removes the row at `rowIndex`, if any, from this table.
+  /// If the table has no row at `rowIndex`, invoking this method has no effect.
+  ///
+  /// @param rowIndex the index of the column to remove
   void removeRow(R rowIndex);
 
+  /// Returns the list of row indexes.
+  ///
+  /// @return the list of row indexes
   List<R> rowIndexes();
 
+  /// Set the value at the cell given by the provided row and column indexes.
+  /// If there is not a row at `rowIndex`, adds the row as last row.
+  /// If there is not a column at `columnIndex`, adds the column as last column.
+  ///
+  /// @param rowIndex    the index of the row of the cell
+  /// @param columnIndex the index of the column of the cell
   void set(R rowIndex, C columnIndex, T t);
-
-  static <R1, C1, T1> Table<R1, C1, T1> copyOf(Table<R1, C1, T1> table) {
-    return table.map(Function.identity());
-  }
 
   private static <T> T first(T t1, T t2) {
     return t1;
   }
 
+  private static String justify(String s, int length) {
+    if (s.length() > length) {
+      return s.substring(0, length);
+    }
+    StringBuilder sBuilder = new StringBuilder(s);
+    while (sBuilder.length() < length) {
+      sBuilder.insert(0, " ");
+    }
+    s = sBuilder.toString();
+    return s;
+  }
+
+  /// Creates a new unmodifiable table based on the values provided in `map`.
+  ///
+  /// @param map the values to put in the table, organized in a map of rows, each being a map of column indexes to
+  ///                                             values
+  /// @param <R> the type of row indexes
+  /// @param <C> the type of column indexes
+  /// @param <T> the type of values in the cells
+  /// @return the new unmodifiable table
   static <R, C, T> Table<R, C, T> of(Map<R, Map<C, T>> map) {
     List<R> rowIndexes = map.keySet().stream().toList();
     List<C> colIndexes = map.values()
@@ -169,6 +194,7 @@ public interface Table<R, C, T> {
         .flatMap(Set::stream)
         .distinct()
         .toList();
+    HashMap<R, Map<C, T>> localMap = new HashMap<>(map);
     return new Unmodifiable<>() {
 
       @Override
@@ -178,7 +204,7 @@ public interface Table<R, C, T> {
 
       @Override
       public T get(R rowIndex, C columnIndex) {
-        return map.getOrDefault(rowIndex, Map.of()).get(columnIndex);
+        return localMap.getOrDefault(rowIndex, Map.of()).get(columnIndex);
       }
 
       @Override
@@ -188,14 +214,27 @@ public interface Table<R, C, T> {
     };
   }
 
-  default <T1, K> Table<R, C, T1> aggregate(
-      Function<Map<C, T>, K> rowKey,
+  /// Creates a new unmodifiable table by aggregating this table by rows.
+  /// First, rows are partitioned using `rowKeyFunction`, using the equivalence of `K` as relation.
+  /// Then, rows in each partition are sorted using `comparator`.
+  /// Finally, each ordered partition is fed to `aggregatorFunction` to obtain a single row where values are of type
+  ///  `T1`.
+  /// Depending on `aggregatorFunction`, the created table may have more or less columns of this table.
+  ///
+  /// @param rowKeyFunction     the function to partition rows
+  /// @param comparator         the comparator to sort rows within each partition
+  /// @param aggregatorFunction the function to aggregate ordered rows in new rows
+  /// @param <T1>               the type of values of cells in the new table
+  /// @param <K>                the type of keys to partition rows
+  /// @return the new unmodifiable table
+  default <T1, K> Table<R, C, T1> aggregateRows(
+      Function<Map.Entry<R, Map<C, T>>, K> rowKeyFunction,
       Comparator<R> comparator,
-      Function<List<Map<C, T>>, Map<C, T1>> aggregator
+      Function<List<Map.Entry<R, Map<C, T>>>, Map<C, T1>> aggregatorFunction
   ) {
     Map<R, Map<C, T1>> map = rowIndexes().stream()
         .map(ri -> Map.entry(ri, row(ri)))
-        .collect(Collectors.groupingBy(e -> rowKey.apply(e.getValue())))
+        .collect(Collectors.groupingBy(rowKeyFunction))
         .values()
         .stream()
         .map(l -> {
@@ -203,9 +242,7 @@ public interface Table<R, C, T> {
               .sorted((e1, e2) -> comparator.compare(e1.getKey(), e2.getKey()))
               .toList();
           R ri = list.stream().map(Map.Entry::getKey).min(comparator).orElseThrow();
-          Map<C, T1> row = aggregator.apply(
-              list.stream().map(Map.Entry::getValue).toList()
-          );
+          Map<C, T1> row = aggregatorFunction.apply(list);
           return Map.entry(ri, row);
         })
         .collect(
@@ -219,24 +256,79 @@ public interface Table<R, C, T> {
     return Table.of(map);
   }
 
-  default <T1, K> Table<R, C, T1> aggregateByIndex(
-      Function<R, K> rowKey,
+  /// Creates a new unmodifiable table by aggregating this table by row contents.
+  /// First, rows are partitioned using `rowKeyFunction`, using the equivalence of `K` as relation.
+  /// Then, rows in each partition are sorted using `comparator`.
+  /// Finally, each ordered partition is fed to `aggregatorFunction` to obtain a single row where values are of type
+  ///  `T1`.
+  /// Depending on `aggregatorFunction`, the created table may have more or less columns of this table.
+  /// Internally calls [Table#aggregateRows(Function, Comparator, Function)].
+  ///
+  /// @param rowKeyFunction     the function to partition rows
+  /// @param comparator         the comparator to sort rows within each partition
+  /// @param aggregatorFunction the function to aggregate ordered rows in new rows
+  /// @param <T1>               the type of values of cells in the new table
+  /// @param <K>                the type of keys to partition rows
+  /// @return the new unmodifiable table
+  default <T1, K> Table<R, C, T1> aggregateRowsByContent(
+      Function<Map<C, T>, K> rowKeyFunction,
       Comparator<R> comparator,
-      Function<List<Map.Entry<R, Map<C, T>>>, Map<C, T1>> aggregator
+      Function<List<Map.Entry<R, Map<C, T>>>, Map<C, T1>> aggregatorFunction
   ) {
-    Map<R, Map<C, T1>> map = rowIndexes().stream()
-        .map(ri -> Map.entry(ri, row(ri)))
-        .collect(Collectors.groupingBy(e -> rowKey.apply(e.getKey())))
-        .values()
+    return aggregateRows(e -> rowKeyFunction.apply(e.getValue()), comparator, aggregatorFunction);
+  }
+
+  /// Creates a new unmodifiable table by aggregating this table by row contents and processing columns independently.
+  /// First, rows are partitioned using `rowKeyFunction`, using the equivalence of `K` as relation.
+  /// Then, rows in each partition are sorted using `comparator`.
+  /// Finally, for each column index of this table, the corresponding cell values of each ordered partition are fed
+  /// to `aggregatorFunction` to obtain a single value are of type `T1`.
+  /// The created table will have the same number of columns of this table.
+  /// Internally calls [Table#aggregateRowsByContentSingle(Function, Comparator, BiFunction)].
+  ///
+  /// @param rowKeyFunction     the function to partition rows
+  /// @param comparator         the comparator to sort rows within each partition
+  /// @param aggregatorFunction the function to aggregate ordered rows in new rows
+  /// @param <T1>               the type of values of cells in the new table
+  /// @param <K>                the type of keys to partition rows
+  /// @return the new unmodifiable table
+  default <T1, K> Table<R, C, T1> aggregateRowsByContentSingle(
+      Function<Map<C, T>, K> rowKeyFunction,
+      Comparator<R> comparator,
+      Function<List<T>, T1> aggregatorFunction
+  ) {
+    return aggregateRowsByContentSingle(rowKeyFunction, comparator, (c, values) -> aggregatorFunction.apply(values));
+  }
+
+  /// Creates a new unmodifiable table by aggregating this table by row contents and processing columns independently.
+  /// First, rows are partitioned using `rowKeyFunction`, using the equivalence of `K` as relation.
+  /// Then, rows in each partition are sorted using `comparator`.
+  /// Finally, for each column index of this table, the corresponding cell values of each ordered partition are fed
+  /// to `aggregatorFunction` to obtain a single value are of type `T1`.
+  /// The created table will have the same number of columns of this table.
+  /// Internally calls [Table#aggregateRowsByContent(Function, Comparator, Function)].
+  ///
+  /// @param rowKeyFunction     the function to partition rows
+  /// @param comparator         the comparator to sort rows within each partition
+  /// @param aggregatorFunction the function to aggregate ordered rows in new rows
+  /// @param <T1>               the type of values of cells in the new table
+  /// @param <K>                the type of keys to partition rows
+  /// @return the new unmodifiable table
+  default <T1, K> Table<R, C, T1> aggregateRowsByContentSingle(
+      Function<Map<C, T>, K> rowKeyFunction,
+      Comparator<R> comparator,
+      BiFunction<C, List<T>, T1> aggregatorFunction
+  ) {
+    Function<List<Map.Entry<R, Map<C, T>>>, Map<C, T1>> rowAggregator = entries -> entries.getFirst()
+        .getValue()
+        .keySet()
         .stream()
-        .map(l -> {
-          List<Map.Entry<R, Map<C, T>>> list = l.stream()
-              .sorted((e1, e2) -> comparator.compare(e1.getKey(), e2.getKey()))
-              .toList();
-          R ri = list.stream().map(Map.Entry::getKey).min(comparator).orElseThrow();
-          Map<C, T1> row = aggregator.apply(list);
-          return Map.entry(ri, row);
-        })
+        .map(
+            c -> Map.entry(
+                c,
+                aggregatorFunction.apply(c, entries.stream().map(e -> e.getValue().get(c)).toList())
+            )
+        )
         .collect(
             Collectors.toMap(
                 Map.Entry::getKey,
@@ -245,13 +337,49 @@ public interface Table<R, C, T> {
                 LinkedHashMap::new
             )
         );
-    return Table.of(map);
+    return aggregateRowsByContent(rowKeyFunction, comparator, rowAggregator);
   }
 
-  default <T1, K> Table<R, C, T1> aggregateByIndexSingle(
-      Function<R, K> rowKey,
+  /// Creates a new unmodifiable table by aggregating this table by row indexes.
+  /// First, rows are partitioned using `rowKeyFunction`, using the equivalence of `K` as relation.
+  /// Then, rows in each partition are sorted using `comparator`.
+  /// Finally, each ordered partition is fed to `aggregatorFunction` to obtain a single row where values are of type
+  ///  `T1`.
+  /// Depending on `aggregatorFunction`, the created table may have more or less columns of this table.
+  /// Internally calls [Table#aggregateRows(Function, Comparator, Function)].
+  ///
+  /// @param rowKeyFunction     the function to partition rows
+  /// @param comparator         the comparator to sort rows within each partition
+  /// @param aggregatorFunction the function to aggregate ordered rows in new rows
+  /// @param <T1>               the type of values of cells in the new table
+  /// @param <K>                the type of keys to partition rows
+  /// @return the new unmodifiable table
+  default <T1, K> Table<R, C, T1> aggregateRowsByIndex(
+      Function<R, K> rowKeyFunction,
       Comparator<R> comparator,
-      BiFunction<C, List<Map.Entry<R, T>>, T1> aggregator
+      Function<List<Map.Entry<R, Map<C, T>>>, Map<C, T1>> aggregatorFunction
+  ) {
+    return aggregateRows(e -> rowKeyFunction.apply(e.getKey()), comparator, aggregatorFunction);
+  }
+
+  /// Creates a new unmodifiable table by aggregating this table by row indexes and processing columns independently.
+  /// First, rows are partitioned using `rowKeyFunction`, using the equivalence of `K` as relation.
+  /// Then, rows in each partition are sorted using `comparator`.
+  /// Finally, for each column index of this table, the corresponding cell values of each ordered partition are fed
+  /// to `aggregatorFunction` to obtain a single value are of type `T1`.
+  /// The created table will have the same number of columns of this table.
+  /// Internally calls [Table#aggregateRowsByIndex(Function, Comparator, Function)].
+  ///
+  /// @param rowKeyFunction     the function to partition rows
+  /// @param comparator         the comparator to sort rows within each partition
+  /// @param aggregatorFunction the function to aggregate ordered cell values in new values
+  /// @param <T1>               the type of values of cells in the new table
+  /// @param <K>                the type of keys to partition rows
+  /// @return the new unmodifiable table
+  default <T1, K> Table<R, C, T1> aggregateRowsByIndexSingle(
+      Function<R, K> rowKeyFunction,
+      Comparator<R> comparator,
+      BiFunction<C, List<Map.Entry<R, T>>, T1> aggregatorFunction
   ) {
     Function<List<Map.Entry<R, Map<C, T>>>, Map<C, T1>> rowAggregator = rows -> rows.getFirst()
         .getValue()
@@ -260,7 +388,7 @@ public interface Table<R, C, T> {
         .map(
             c -> Map.entry(
                 c,
-                aggregator.apply(
+                aggregatorFunction.apply(
                     c,
                     rows.stream()
                         .map(
@@ -281,68 +409,33 @@ public interface Table<R, C, T> {
                 LinkedHashMap::new
             )
         );
-    return aggregateByIndex(rowKey, comparator, rowAggregator);
+    return aggregateRowsByIndex(rowKeyFunction, comparator, rowAggregator);
   }
 
-  default <T1, K> Table<R, C, T1> aggregateByIndexSingle(
-      Function<R, K> rowKey,
+  /// Creates a new unmodifiable table by aggregating this table by row indexes and processing columns independently.
+  /// First, rows are partitioned using `rowKeyFunction`, using the equivalence of `K` as relation.
+  /// Then, rows in each partition are sorted using `comparator`.
+  /// Finally, for each column index of this table, the corresponding cell values of each ordered partition are fed
+  /// to `aggregatorFunction` to obtain a single value are of type `T1`.
+  /// The created table will have the same number of columns of this table.
+  /// Internally calls [Table#aggregateRowsByIndexSingle(Function, Comparator, Function)].
+  ///
+  /// @param rowKeyFunction     the function to partition rows
+  /// @param comparator         the comparator to sort rows within each partition
+  /// @param aggregatorFunction the function to aggregate ordered cell values in new values
+  /// @param <T1>               the type of values of cells in the new table
+  /// @param <K>                the type of keys to partition rows
+  /// @return the new unmodifiable table
+  default <T1, K> Table<R, C, T1> aggregateRowsByIndexSingle(
+      Function<R, K> rowKeyFunction,
       Comparator<R> comparator,
-      Function<List<Map.Entry<R, T>>, T1> aggregator
+      Function<List<Map.Entry<R, T>>, T1> aggregatorFunction
   ) {
-    BiFunction<C, List<Map.Entry<R, T>>, T1> rowAggregator = (c, rows) -> aggregator.apply(rows);
-    return aggregateByIndexSingle(rowKey, comparator, rowAggregator);
+    BiFunction<C, List<Map.Entry<R, T>>, T1> rowAggregator = (c, rows) -> aggregatorFunction.apply(rows);
+    return aggregateRowsByIndexSingle(rowKeyFunction, comparator, rowAggregator);
   }
 
-  default <T1, K> Table<R, C, T1> aggregateSingle(
-      Function<Map<C, T>, K> rowKey,
-      Comparator<R> comparator,
-      Function<List<T>, T1> aggregator
-  ) {
-    Function<List<Map<C, T>>, Map<C, T1>> rowAggregator = maps -> maps.getFirst()
-        .keySet()
-        .stream()
-        .map(
-            c -> Map.entry(
-                c,
-                aggregator.apply(maps.stream().map(m -> m.get(c)).toList())
-            )
-        )
-        .collect(
-            Collectors.toMap(
-                Map.Entry::getKey,
-                Map.Entry::getValue,
-                Table::first,
-                LinkedHashMap::new
-            )
-        );
-    return aggregate(rowKey, comparator, rowAggregator);
-  }
-
-  default <T1, K> Table<R, C, T1> aggregateSingle(
-      Function<Map<C, T>, K> rowKey,
-      Comparator<R> comparator,
-      BiFunction<C, List<T>, T1> aggregator
-  ) {
-    Function<List<Map<C, T>>, Map<C, T1>> rowAggregator = maps -> maps.getFirst()
-        .keySet()
-        .stream()
-        .map(
-            c -> Map.entry(
-                c,
-                aggregator.apply(c, maps.stream().map(m -> m.get(c)).toList())
-            )
-        )
-        .collect(
-            Collectors.toMap(
-                Map.Entry::getKey,
-                Map.Entry::getValue,
-                Table::first,
-                LinkedHashMap::new
-            )
-        );
-    return aggregate(rowKey, comparator, rowAggregator);
-  }
-
+  /// Clear the table by removing all the rows.
   default void clear() {
     rowIndexes().forEach(this::removeRow);
   }
@@ -408,6 +501,10 @@ public interface Table<R, C, T> {
   default List<T> columnValues(C columnIndex) {
     Map<R, T> column = column(columnIndex);
     return rowIndexes().stream().map(column::get).toList();
+  }
+
+  default List<Map<R, T>> columns() {
+    return colIndexes().stream().map(this::column).toList();
   }
 
   default <C1, T1> Table<R, C1, T1> expandColumn(C columnIndex, BiFunction<R, T, Map<C1, T1>> f) {
@@ -646,6 +743,10 @@ public interface Table<R, C, T> {
     return colIndexes().stream().map(row::get).toList();
   }
 
+  default List<Map<C, T>> rows() {
+    return rowIndexes().stream().map(this::row).toList();
+  }
+
   default Table<R, C, T> select(Predicate<C> predicate) {
     return of(
         rowIndexes().stream()
@@ -668,20 +769,6 @@ public interface Table<R, C, T> {
                 )
             )
     );
-  }
-
-  default List<Map<C, T>> rows() {
-    return rowIndexes().stream().map(this::row).toList();
-  }
-
-  default List<Map<R, T>> columns() {
-    return colIndexes().stream().map(this::column).toList();
-  }
-
-  default List<T> values() {
-    return rowIndexes().stream()
-        .flatMap(ri -> colIndexes().stream().map(ci -> get(ri, ci)))
-        .toList();
   }
 
   default Table<R, C, T> select(List<C> columnIndexes) {
@@ -798,6 +885,12 @@ public interface Table<R, C, T> {
     };
   }
 
+  default List<T> values() {
+    return rowIndexes().stream()
+        .flatMap(ri -> colIndexes().stream().map(ci -> get(ri, ci)))
+        .toList();
+  }
+
   default <R1, C1> Table<R1, C1, T> wider(Function<R, R1> rowKey, BiFunction<R, C, C1> spreader) {
     return of(
         rowIndexes().stream()
@@ -885,17 +978,5 @@ public interface Table<R, C, T> {
         return thisTable.rowIndexes();
       }
     };
-  }
-
-  private static String justify(String s, int length) {
-    if (s.length() > length) {
-      return s.substring(0, length);
-    }
-    StringBuilder sBuilder = new StringBuilder(s);
-    while (sBuilder.length() < length) {
-      sBuilder.insert(0, " ");
-    }
-    s = sBuilder.toString();
-    return s;
   }
 }
