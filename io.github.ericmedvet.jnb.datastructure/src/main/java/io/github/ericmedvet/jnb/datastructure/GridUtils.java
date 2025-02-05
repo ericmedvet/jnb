@@ -276,7 +276,7 @@ public class GridUtils {
   }
 
   public static <T> Grid<T> translate(Grid<T> grid, Grid.Key deltaKey) {
-    Grid<T> translated = new HashGrid<>(grid.w() + deltaKey.x(), grid.h() + deltaKey.y());
+    Grid<T> translated = new HashMapGrid<>(grid.w() + deltaKey.x(), grid.h() + deltaKey.y());
     grid.keys().forEach(k -> {
       if (translated.isValid(k.translated(deltaKey))) {
         translated.set(k.translated(deltaKey), grid.get(k));

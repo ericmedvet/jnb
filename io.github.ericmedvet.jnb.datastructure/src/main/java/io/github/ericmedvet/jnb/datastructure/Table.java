@@ -31,43 +31,120 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+/// An object that stores elements of type `T` in a modifiable table like structure where cells are
+/// indexed through pairs of coordinates `R`,`C`. `R` is the type of row indexes, `C` is the type of
+/// column indexes. It provides methods for modifying the content of the cells ([#set(Object,
+/// Object, Object)]) or the content and the structure ([#addRow(Object, Map)], [#addColumn(Object,
+/// Map)], [#removeRow(Object)], [#removeColumn(Object)]). It also provides methods for obtaining
+/// views of (parts) of the table.
+///
+/// Rows and columns have a well-defined encounter order.
+///
+/// @param <R> the type of row indexes
+/// @param <C> the type of column indexes
+/// @param <T> the type of values in the cells
 public interface Table<R, C, T> {
 
+  /// A read-only table for which all the methods for modifying the content throw an
+  /// [UnsupportedOperationException]. Many methods of [Table] return views which are read-only
+  /// tables.
+  ///
+  /// @param <R> the type of row indexes
+  /// @param <C> the type of column indexes
+  /// @param <T> the type of values in the cells
   interface Unmodifiable<R, C, T> extends Table<R, C, T> {
+
+    /// Throws an exception, as the table is read-only.
+    ///
+    /// @param columnIndex the index of the new column
+    /// @param values      a map of the values of the new column indexed by row indexes
+    /// @throws UnsupportedOperationException always
     @Override
     default void addColumn(C columnIndex, Map<R, T> values) {
       throw new UnsupportedOperationException("This is a read only table");
     }
 
+    /// Throws an exception, as the table is read-only.
+    ///
+    /// @param rowIndex the index of the new row
+    /// @param values   a map of the values of the new row indexed by column indexes
+    /// @throws UnsupportedOperationException always
     @Override
     default void addRow(R rowIndex, Map<C, T> values) {
       throw new UnsupportedOperationException("This is a read only table");
     }
 
+    /// Throws an exception, as the table is read-only.
+    ///
+    /// @param columnIndex the index of the column to be removed
+    /// @throws UnsupportedOperationException always
     @Override
     default void removeColumn(C columnIndex) {
       throw new UnsupportedOperationException("This is a read only table");
     }
 
+    /// Throws an exception, as the table is read-only.
+    ///
+    /// @param rowIndex the index of the row to be removed
+    /// @throws UnsupportedOperationException always
     @Override
     default void removeRow(R rowIndex) {
       throw new UnsupportedOperationException("This is a read only table");
     }
 
+    /// Throws an exception, as the table is read-only.
+    ///
+    /// @param rowIndex    the row index of cell where to set the value
+    /// @param columnIndex the column index of cell where to set the value
+    /// @param t           the new value
+    /// @throws UnsupportedOperationException always
     @Override
     default void set(R rowIndex, C columnIndex, T t) {
       throw new UnsupportedOperationException("This is a read only table");
     }
   }
 
+  /// Adds or modifies a column to this table. If the table already contains a column of index
+  /// `columnIndex`, adds the provided column as the last column in the table. Otherwise, it
+  /// modifies the column at `columnIndex` with the provided values. The new column is given as a
+  /// `Map<R,T> values` where keys are row indexes. If `values` contains row indexes that are not in
+  /// this table, this method adds the corresponding rows to the table, in the order the map
+  /// iterator encounters the corresponding keys.
+  ///
+  /// @param columnIndex the index of the new column
+  /// @param values      a map of the values of the new column indexed by row indexes
   void addColumn(C columnIndex, Map<R, T> values);
 
+  /// Adds or modifies a row to this table. If the table already contains a row of index `rowIndex`,
+  /// adds the provided row as the last row in the table. Otherwise, it modifies the row at
+  /// `rowIndex` with the provided values. The new row is given as a `Map<C,T> values` where keys
+  /// are column indexes. If `values` contains column indexes that are not in this table, this
+  /// method adds the corresponding columns to the table, in the order the map iterator encounters
+  /// the corresponding keys.
+  ///
+  /// @param rowIndex the index of the new row
+  /// @param values   a map of the values of the new column indexed by row indexes
   void addRow(R rowIndex, Map<C, T> values);
 
+  /// Returns the list of column indexes.
+  ///
+  /// @return the list of column indexes
   List<C> colIndexes();
 
+  /// Returns the value at the cell given by the provided row and column indexes, if any. Returns
+  /// `null` if the cell value is actually `null` or if the table does not have a column at
+  /// `columnIndex` or a row at `rowIndex`.
+  ///
+  /// @param rowIndex    the index of the row of the cell
+  /// @param columnIndex the index of the column of the cell
+  /// @return the value at the cell given by the provided row and column indexes, or `null` if no
+  ///  value
   T get(R rowIndex, C columnIndex);
 
+  /// Removes the column at `columnIndex`, if any, from this table.
+  /// If the table has no column at `columnIndex`, invoking this method has no effect.
+  ///
+  /// @param columnIndex the index of the column to remove
   void removeColumn(C columnIndex);
 
   void removeRow(R rowIndex);
@@ -131,7 +208,14 @@ public interface Table<R, C, T> {
           );
           return Map.entry(ri, row);
         })
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, Table::first, LinkedHashMap::new));
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                Map.Entry::getValue,
+                Table::first,
+                LinkedHashMap::new
+            )
+        );
     return Table.of(map);
   }
 
@@ -153,7 +237,14 @@ public interface Table<R, C, T> {
           Map<C, T1> row = aggregator.apply(list);
           return Map.entry(ri, row);
         })
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, Table::first, LinkedHashMap::new));
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                Map.Entry::getValue,
+                Table::first,
+                LinkedHashMap::new
+            )
+        );
     return Table.of(map);
   }
 
@@ -216,7 +307,14 @@ public interface Table<R, C, T> {
                 aggregator.apply(maps.stream().map(m -> m.get(c)).toList())
             )
         )
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, Table::first, LinkedHashMap::new));
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                Map.Entry::getValue,
+                Table::first,
+                LinkedHashMap::new
+            )
+        );
     return aggregate(rowKey, comparator, rowAggregator);
   }
 
@@ -234,7 +332,14 @@ public interface Table<R, C, T> {
                 aggregator.apply(c, maps.stream().map(m -> m.get(c)).toList())
             )
         )
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, Table::first, LinkedHashMap::new));
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                Map.Entry::getValue,
+                Table::first,
+                LinkedHashMap::new
+            )
+        );
     return aggregate(rowKey, comparator, rowAggregator);
   }
 
@@ -290,7 +395,14 @@ public interface Table<R, C, T> {
     }
     return rowIndexes().stream()
         .filter(ri -> get(ri, columnIndex) != null)
-        .collect(Collectors.toMap(ri -> ri, ri -> get(ri, columnIndex), Table::first, LinkedHashMap::new));
+        .collect(
+            Collectors.toMap(
+                ri -> ri,
+                ri -> get(ri, columnIndex),
+                Table::first,
+                LinkedHashMap::new
+            )
+        );
   }
 
   default List<T> columnValues(C columnIndex) {
@@ -302,7 +414,14 @@ public interface Table<R, C, T> {
     return of(
         rowIndexes().stream()
             .map(ri -> Map.entry(ri, f.apply(ri, get(ri, columnIndex))))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, Table::first, LinkedHashMap::new))
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    Map.Entry::getValue,
+                    Table::first,
+                    LinkedHashMap::new
+                )
+            )
     );
   }
 
@@ -328,7 +447,14 @@ public interface Table<R, C, T> {
                         )
                 )
             )
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, Table::first, LinkedHashMap::new))
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    Map.Entry::getValue,
+                    Table::first,
+                    LinkedHashMap::new
+                )
+            )
     );
   }
 
@@ -481,7 +607,14 @@ public interface Table<R, C, T> {
     return of(
         rowIndexes().stream()
             .map(ri -> Map.entry(f.apply(ri, row(ri)), row(ri)))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, Table::first, LinkedHashMap::new))
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    Map.Entry::getValue,
+                    Table::first,
+                    LinkedHashMap::new
+                )
+            )
     );
   }
 
@@ -492,7 +625,9 @@ public interface Table<R, C, T> {
   default Map<C, T> row(R rowIndex) {
     return colIndexes().stream()
         .filter(ci -> get(rowIndex, ci) != null)
-        .collect(Collectors.toMap(ci -> ci, ci -> get(rowIndex, ci), Table::first, LinkedHashMap::new));
+        .collect(
+            Collectors.toMap(ci -> ci, ci -> get(rowIndex, ci), Table::first, LinkedHashMap::new)
+        );
   }
 
   default <T1> Table<R, C, T1> rowSlide(int n, Function<List<T>, T1> aggregator) {
@@ -695,7 +830,11 @@ public interface Table<R, C, T> {
     );
   }
 
-  default <R1, C1> Table<R1, C1, T> wider(Function<R, R1> rowKey, C colIndex, Function<R, C1> spreader) {
+  default <R1, C1> Table<R1, C1, T> wider(
+      Function<R, R1> rowKey,
+      C colIndex,
+      Function<R, C1> spreader
+  ) {
     return of(
         rowIndexes().stream()
             .collect(Collectors.groupingBy(rowKey))

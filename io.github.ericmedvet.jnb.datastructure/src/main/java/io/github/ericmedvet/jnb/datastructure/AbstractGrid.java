@@ -23,7 +23,6 @@ package io.github.ericmedvet.jnb.datastructure;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 /// A partly abstract implementation of [Grid]. It provides the concrete implementation of a few
 /// methods, but does not specify how data is stored. Internally, this implementation stores the

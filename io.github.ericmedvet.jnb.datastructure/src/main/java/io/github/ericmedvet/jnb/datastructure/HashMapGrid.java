@@ -25,10 +25,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class HashGrid<T> extends AbstractGrid<T> implements Serializable {
+/// An implementation of [Grid] which internally stores the elements with an [HashMap] where keys are grid coordinates.
+///
+/// @param <T> the type of cell values
+public class HashMapGrid<T> extends AbstractGrid<T> implements Serializable {
   private final Map<Grid.Key, T> map;
 
-  public HashGrid(int w, int h) {
+  /// Builds an empty grid with the provided width and height.
+  ///
+  /// @param w the width of the grid
+  /// @param h the height of the grid
+  public HashMapGrid(int w, int h) {
     super(w, h);
     this.map = new HashMap<>(w * h);
   }
@@ -47,11 +54,21 @@ public class HashGrid<T> extends AbstractGrid<T> implements Serializable {
     }
   }
 
+  /// Returns the hash code value for this grid.
+  ///
+  /// @return the hash code value for this grid
   @Override
   public int hashCode() {
     return Objects.hash(super.hashCode(), map);
   }
 
+  /// Compares the specified object with this grid for equality. Two grids are considered equal if
+  /// both the following condition hold:
+  /// - they have the same width and height
+  /// - for each cell, the elements in the two grid are either `null` or equal
+  ///
+  /// @param o the object to be compared for equality with this list
+  /// @return true if the specified object is equal to this grid, false otherwise
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -60,7 +77,7 @@ public class HashGrid<T> extends AbstractGrid<T> implements Serializable {
       return false;
     if (!super.equals(o))
       return false;
-    HashGrid<?> hashGrid = (HashGrid<?>) o;
-    return map.equals(hashGrid.map);
+    HashMapGrid<?> hashMapGrid = (HashMapGrid<?>) o;
+    return map.equals(hashMapGrid.map);
   }
 }

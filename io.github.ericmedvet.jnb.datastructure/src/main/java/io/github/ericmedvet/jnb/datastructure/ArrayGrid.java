@@ -23,7 +23,7 @@ package io.github.ericmedvet.jnb.datastructure;
 import java.io.Serializable;
 import java.util.Arrays;
 
-/// An implementation of [Grid] which internally stores the elements with a array.
+/// An implementation of [Grid] which internally stores the elements with an array.
 ///
 /// @param <T> the type of cell values
 public class ArrayGrid<T> extends AbstractGrid<T> implements Serializable {
@@ -68,7 +68,7 @@ public class ArrayGrid<T> extends AbstractGrid<T> implements Serializable {
   /// - for each cell, the elements in the two grid are either `null` or equal
   ///
   /// @param o the object to be compared for equality with this list
-  /// @return true if the specified object is equal to to this grid, false otherwise
+  /// @return true if the specified object is equal to this grid, false otherwise
   @Override
   public boolean equals(Object o) {
     if (this == o) {
