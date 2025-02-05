@@ -61,7 +61,7 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
     }
   }
 
-  /// The coordinate of a grid, defined by two `int`s `x` and `y`.
+  /// A coordinate of a grid, defined by two `int`s `x` and `y`.
   ///
   /// @param x the x-coordinate
   /// @param y the y-coordinate
