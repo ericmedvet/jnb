@@ -20,6 +20,7 @@
 package io.github.ericmedvet.jnb.datastructure;
 
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -50,9 +51,9 @@ public interface Table<R, C, T> {
   /// @param <T> the type of values in the cells
   interface Unmodifiable<R, C, T> extends Table<R, C, T> {
 
-    /// Creates a new unmodifiable table based on the provided `rowIndexes`, `colIndexes`, and `retriever`.
-    /// The `retriever` is used for retrieve table values; the returned table does not actually store values,
-    ///  but instead retrieve them through `retriever`.
+    /// Creates a new unmodifiable table based on the provided `rowIndexes`, `colIndexes`, and
+    /// `retriever`. The `retriever` is used for retrieve table values; the returned table does not
+    /// actually store values, but instead retrieve them through `retriever`.
     ///
     /// @param rowIndexes the row indexes of the new unmodifiable table
     /// @param colIndexes the col indexes of the new unmodifiable table
@@ -74,7 +75,10 @@ public interface Table<R, C, T> {
 
         @Override
         public T get(R rowIndex, C colIndex) {
-          return retriever.apply(rowIndex, colIndex);
+          if (rowIndexes.contains(rowIndex) && colIndexes.contains(colIndex)) {
+            return retriever.apply(rowIndex, colIndex);
+          }
+          return null;
         }
 
         @Override
@@ -208,8 +212,8 @@ public interface Table<R, C, T> {
     return t1;
   }
 
-  /// Creates a new unmodifiable table based on the values provided in `map`, organized in a map of rows, each being
-  /// a map of column indexes to values.
+  /// Creates a new unmodifiable table based on the values provided in `map`, organized in a map of
+  /// rows, each being a map of column indexes to values.
   ///
   /// @param map the values to put in the table
   /// @param <R> the type of row indexes
@@ -219,15 +223,17 @@ public interface Table<R, C, T> {
   static <R, C, T> Table<R, C, T> from(SequencedMap<R, ? extends SequencedMap<C, T>> map) {
     SequencedSet<R> rowIndexes = Collections.unmodifiableSequencedSet(
         new LinkedHashSet<>(map.keySet()));
-    SequencedSet<C> colIndexes = Collections.unmodifiableSequencedSet((SequencedSet<? extends C>) map.values()
-        .stream()
-        .map(Map::keySet)
-        .flatMap(Set::stream)
-        .collect(Collectors.toCollection(LinkedHashSet::new)));
+    SequencedSet<C> colIndexes = Collections.unmodifiableSequencedSet(
+        (SequencedSet<? extends C>) map.values()
+            .stream()
+            .map(Map::keySet)
+            .flatMap(Set::stream)
+            .collect(Collectors.toCollection(LinkedHashSet::new)));
     HashMap<R, Map<C, T>> localMap = new HashMap<>(map);
     localMap.keySet().retainAll(rowIndexes);
     localMap.values().forEach(row -> row.keySet().retainAll(colIndexes));
-    return Unmodifiable.of(rowIndexes, colIndexes, (ri, ci) -> localMap.getOrDefault(ri, Map.of()).get(ci));
+    return Unmodifiable.of(rowIndexes, colIndexes,
+        (ri, ci) -> localMap.getOrDefault(ri, Map.of()).get(ci));
   }
 
   /// Creates a new unmodifiable table based on the values provided in `columns`.
@@ -240,7 +246,8 @@ public interface Table<R, C, T> {
   static <R, C, T> Table<R, C, T> fromColumns(List<Series<C, R, T>> columns) {
     SequencedMap<R, SequencedMap<C, T>> map = new LinkedHashMap<>();
     columns.forEach(col -> col.values
-        .forEach((ri, t) -> map.computeIfAbsent(ri, lri -> new LinkedHashMap<>()).put(col.primaryIndex, t)));
+        .forEach((ri, t) -> map.computeIfAbsent(ri, lri -> new LinkedHashMap<>())
+            .put(col.primaryIndex, t)));
     return from(map);
   }
 
@@ -274,10 +281,11 @@ public interface Table<R, C, T> {
   }
 
   /// Returns a new unmodifiable table by aggregating this table by rows. First, rows are
-  /// partitioned using `classifier`, using the equivalence of `K` as relation. Then, rows in
-  /// each partition are sorted using `comparator`. Finally, each ordered partition is fed to
-  /// `aggregator` to obtain a single row where values are of type `T1` and the row index is the first one of
-  ///  the partition. Depending on `aggregator`, the created table may have more or less columns of this table.
+  /// partitioned using `classifier`, using the equivalence of `K` as relation. Then, rows in each
+  /// partition are sorted using `comparator`. Finally, each ordered partition is fed to
+  /// `aggregator` to obtain a single row where values are of type `T1` and the row index is the
+  /// first one of the partition. Depending on `aggregator`, the created table may have more or less
+  /// columns of this table.
   ///
   /// @param classifier the function to partition rows
   /// @param comparator the comparator to sort rows within each partition
@@ -307,11 +315,12 @@ public interface Table<R, C, T> {
   }
 
   /// Returns a new unmodifiable table by aggregating this table by row contents. First, rows are
-  /// partitioned using `classifier`, using the equivalence of `K` as relation. Then, rows in
-  /// each partition are sorted using `comparator`. Finally, each ordered partition is fed to
-  /// `aggregator` to obtain a single row where values are of type `T1` and the row index is the first one of
-  /// the partition. Depending on `aggregator`, the created table may have more or less columns of this table.
-  /// Internally calls [Table#aggregateRows(Function, Comparator, Function)].
+  /// partitioned using `classifier`, using the equivalence of `K` as relation. Then, rows in each
+  /// partition are sorted using `comparator`. Finally, each ordered partition is fed to
+  /// `aggregator` to obtain a single row where values are of type `T1` and the row index is the
+  /// first one of the partition. Depending on `aggregator`, the created table may have more or less
+  /// columns of this table. Internally calls [Table#aggregateRows(Function, Comparator,
+  /// Function)].
   ///
   /// @param classifier the function to partition rows
   /// @param comparator the comparator to sort rows within each partition
@@ -328,12 +337,12 @@ public interface Table<R, C, T> {
   }
 
   /// Returns a new unmodifiable table by aggregating this table by row contents and processing
-  /// columns independently. First, rows are partitioned using `classifier`, using the
-  /// equivalence of `K` as relation. Then, rows in each partition are sorted using `comparator`.
-  /// Finally, for each column index of this table, the corresponding cell values of each ordered
-  /// partition are fed to `aggregator` to obtain a single value are of type `T1` and the row index is the
-  /// first one of the partition. The created table will have the same number of columns of this table. Internally calls
-  /// [Table#aggregateRowsByContentSingle(Function, Comparator, BiFunction)].
+  /// columns independently. First, rows are partitioned using `classifier`, using the equivalence
+  /// of `K` as relation. Then, rows in each partition are sorted using `comparator`. Finally, for
+  /// each column index of this table, the corresponding cell values of each ordered partition are
+  /// fed to `aggregator` to obtain a single value are of type `T1` and the row index is the first
+  /// one of the partition. The created table will have the same number of columns of this table.
+  /// Internally calls [Table#aggregateRowsByContentSingle(Function, Comparator, BiFunction)].
   ///
   /// @param classifier the function to partition rows
   /// @param comparator the comparator to sort rows within each partition
@@ -353,12 +362,12 @@ public interface Table<R, C, T> {
   }
 
   /// Returns a new unmodifiable table by aggregating this table by row contents and processing
-  /// columns independently. First, rows are partitioned using `classifier`, using the
-  /// equivalence of `K` as relation. Then, rows in each partition are sorted using `comparator`.
-  /// Finally, for each column index of this table, the corresponding cell values of each ordered
-  /// partition are fed to `aggregator` to obtain a single value are of type `T1` and the row index is the
-  /// first one of the partition. The created table will have the same number of columns of this table. Internally calls
-  /// [Table#aggregateRowsByContent(Function, Comparator, Function)].
+  /// columns independently. First, rows are partitioned using `classifier`, using the equivalence
+  /// of `K` as relation. Then, rows in each partition are sorted using `comparator`. Finally, for
+  /// each column index of this table, the corresponding cell values of each ordered partition are
+  /// fed to `aggregator` to obtain a single value are of type `T1` and the row index is the first
+  /// one of the partition. The created table will have the same number of columns of this table.
+  /// Internally calls [Table#aggregateRowsByContent(Function, Comparator, Function)].
   ///
   /// @param classifier the function to partition rows
   /// @param comparator the comparator to sort rows within each partition
@@ -393,11 +402,12 @@ public interface Table<R, C, T> {
   }
 
   /// Returns a new unmodifiable table by aggregating this table by row indexes. First, rows are
-  /// partitioned using `classifier`, using the equivalence of `K` as relation. Then, rows in
-  /// each partition are sorted using `comparator`. Finally, each ordered partition is fed to
-  /// `aggregator` to obtain a single row where values are of type `T1` and the row index is the first in the
-  ///  partition. Depending on `aggregator`, the created table may have more or less columns of this table.
-  /// Internally calls [Table#aggregateRows(Function, Comparator, Function)].
+  /// partitioned using `classifier`, using the equivalence of `K` as relation. Then, rows in each
+  /// partition are sorted using `comparator`. Finally, each ordered partition is fed to
+  /// `aggregator` to obtain a single row where values are of type `T1` and the row index is the
+  /// first in the partition. Depending on `aggregator`, the created table may have more or less
+  /// columns of this table. Internally calls [Table#aggregateRows(Function, Comparator,
+  /// Function)].
   ///
   /// @param classifier the function to partition rows
   /// @param comparator the comparator to sort rows within each partition
@@ -414,12 +424,12 @@ public interface Table<R, C, T> {
   }
 
   /// Returns a new unmodifiable table by aggregating this table by row indexes and processing
-  /// columns independently. First, rows are partitioned using `classifier`, using the
-  /// equivalence of `K` as relation. Then, rows in each partition are sorted using `comparator`.
-  /// Finally, for each column index of this table, the corresponding cell values of each ordered
-  /// partition are fed to `aggregator` to obtain a single value of type `T1` to be put in a row with index
-  /// as the first row in the partition. The created table will have the same number of columns of this table.
-  /// Internally calls [Table#aggregateRowsByIndex(Function, Comparator, Function)].
+  /// columns independently. First, rows are partitioned using `classifier`, using the equivalence
+  /// of `K` as relation. Then, rows in each partition are sorted using `comparator`. Finally, for
+  /// each column index of this table, the corresponding cell values of each ordered partition are
+  /// fed to `aggregator` to obtain a single value of type `T1` to be put in a row with index as the
+  /// first row in the partition. The created table will have the same number of columns of this
+  /// table. Internally calls [Table#aggregateRowsByIndex(Function, Comparator, Function)].
   ///
   /// @param classifier the function to partition rows
   /// @param comparator the comparator to sort rows within each partition
@@ -464,12 +474,12 @@ public interface Table<R, C, T> {
   }
 
   /// Returns a new unmodifiable table by aggregating this table by row indexes and processing
-  /// columns independently. First, rows are partitioned using `classifier`, using the
-  /// equivalence of `K` as relation. Then, rows in each partition are sorted using `comparator`.
-  /// Finally, for each column index of this table, the corresponding cell values of each ordered
-  /// partition are fed to `aggregator` to obtain a single value of type `T1` to be put in a row with index
-  /// as the first row in the partition. The created table will have the same number of columns of this table.
-  /// Internally calls [Table#aggregateRowsByIndexSingle(Function, Comparator, Function)].
+  /// columns independently. First, rows are partitioned using `classifier`, using the equivalence
+  /// of `K` as relation. Then, rows in each partition are sorted using `comparator`. Finally, for
+  /// each column index of this table, the corresponding cell values of each ordered partition are
+  /// fed to `aggregator` to obtain a single value of type `T1` to be put in a row with index as the
+  /// first row in the partition. The created table will have the same number of columns of this
+  /// table. Internally calls [Table#aggregateRowsByIndexSingle(Function, Comparator, Function)].
   ///
   /// @param classifier the function to partition rows
   /// @param comparator the comparator to sort rows within each partition
@@ -492,11 +502,10 @@ public interface Table<R, C, T> {
     rowIndexes().forEach(this::removeRow);
   }
 
-  /// Returns a new unmodifiable table which has the row indexes of this table and the union of the column indexes of
-  ///  this and the `other` table.
-  /// In each cell of the new table at row $r$ and column $c$, the value is the one of this table, if present, or the
-  ///  other table, if present, or empty.
-  /// All the new column indexes are added after the ones of this table in the new table.
+  /// Returns a new unmodifiable table which has the row indexes of this table and the union of the
+  /// column indexes of this and the `other` table. In each cell of the new table at row $r$ and
+  /// column $c$, the value is the one of this table, if present, or the other table, if present, or
+  /// empty. All the new column indexes are added after the ones of this table in the new table.
   ///
   /// @param other the other table to join on the left to this one
   /// @return the new unmodifiable table
@@ -519,10 +528,9 @@ public interface Table<R, C, T> {
     );
   }
 
-  /// Returns a new unmodifiable table built by collapsing values in sliding windows of `n` columns of this table using
-  /// the `aggregator` function.
-  /// The new table has the same row indexes of this table but `n`-1 columns.
-  /// The first column index of the new table is the `n`-th of this table.
+  /// Returns a new unmodifiable table built by collapsing values in sliding windows of `n` columns
+  /// of this table using the `aggregator` function. The new table has the same row indexes of this
+  /// table but `n`-1 columns. The first column index of the new table is the `n`-th of this table.
   ///
   /// @param n          the size of slice, i.e., the number of adjacent columns to collapse
   /// @param aggregator the function for collapsing values in a single value
@@ -534,7 +542,8 @@ public interface Table<R, C, T> {
             ri,
             IntStream.range(n, cis.size()).boxed().collect(Collectors.toMap(
                 cis::get,
-                i -> aggregator.apply(IntStream.range(i - n, i).mapToObj(j -> get(ri, cis.get(j))).toList()),
+                i -> aggregator.apply(
+                    IntStream.range(i - n, i).mapToObj(j -> get(ri, cis.get(j))).toList()),
                 Table::first,
                 LinkedHashMap::new
             ))
@@ -543,10 +552,9 @@ public interface Table<R, C, T> {
     return Table.fromRows(rows);
   }
 
-  /// Returns a new unmodifiable table built by collapsing values in sliding windows of `n` rows of this table using
-  /// the `aggregator` function.
-  /// The new table has the same column indexes of this table but `n`-1 rows.
-  /// The first row index of the new table is the `n`-th of this table.
+  /// Returns a new unmodifiable table built by collapsing values in sliding windows of `n` rows of
+  /// this table using the `aggregator` function. The new table has the same column indexes of this
+  /// table but `n`-1 rows. The first row index of the new table is the `n`-th of this table.
   ///
   /// @param n          the size of slice, i.e., the number of adjacent rows to collapse
   /// @param aggregator the function for collapsing values in a single value
@@ -558,7 +566,8 @@ public interface Table<R, C, T> {
             ci,
             IntStream.range(n, ris.size()).boxed().collect(Collectors.toMap(
                 ris::get,
-                i -> aggregator.apply(IntStream.range(i - n, i).mapToObj(j -> get(ris.get(j), ci)).toList()),
+                i -> aggregator.apply(
+                    IntStream.range(i - n, i).mapToObj(j -> get(ris.get(j), ci)).toList()),
                 Table::first,
                 LinkedHashMap::new
             ))
@@ -567,7 +576,8 @@ public interface Table<R, C, T> {
     return Table.fromColumns(columns);
   }
 
-  /// Returns an unmodifiable view of the column at `colIndex` of this table, or an empty map if no such column exists.
+  /// Returns an unmodifiable view of the column at `colIndex` of this table, or an empty map if no
+  /// such column exists.
   ///
   /// @param colIndex the index of the column
   /// @return a map with the values in the cells of the column indexed by row indexes
@@ -575,20 +585,21 @@ public interface Table<R, C, T> {
     if (!colIndexes().contains(colIndex)) {
       return Collections.unmodifiableSequencedMap(new LinkedHashMap<>());
     }
-    return Collections.unmodifiableSequencedMap((SequencedMap<? extends R, ? extends T>) rowIndexes().stream()
-        .filter(ri -> get(ri, colIndex) != null)
-        .collect(
-            Collectors.toMap(
-                ri -> ri,
-                ri -> get(ri, colIndex),
-                Table::first,
-                LinkedHashMap::new
-            )
-        ));
+    return Collections.unmodifiableSequencedMap(
+        (SequencedMap<? extends R, ? extends T>) rowIndexes().stream()
+            .filter(ri -> get(ri, colIndex) != null)
+            .collect(
+                Collectors.toMap(
+                    ri -> ri,
+                    ri -> get(ri, colIndex),
+                    Table::first,
+                    LinkedHashMap::new
+                )
+            ));
   }
 
-  /// Returns an unmodifiable view of the values in the column at `colIndex` of this table, or an empty list if no
-  /// such column exists.
+  /// Returns an unmodifiable view of the values in the column at `colIndex` of this table, or an
+  /// empty list if no such column exists.
   ///
   /// @param colIndex the index of the column
   /// @return the values in the column
@@ -603,24 +614,23 @@ public interface Table<R, C, T> {
     return colIndexes().stream().map(this::column).toList();
   }
 
-  /// Returns a new unmodifiable table built by expanding the column at `colIndex` using the `expander`
-  ///  function.
-  /// The new table will have the same row indexes of this table.
+  /// Returns a new unmodifiable table built by expanding the column at `colIndex` using the
+  /// `expander` function. The new table will have the same row indexes of this table.
   ///
   /// @param colIndex the index of the column to expand
   /// @param expander the function to apply to expand each column value
   /// @param <C1>     the type of the new table column indexes
   /// @param <T1>     the type of the new table values
   /// @return the new unmodifiable table
-  default <C1, T1> Table<R, C1, T1> expandColumn(C colIndex, BiFunction<R, T, SequencedMap<C1, T1>> expander) {
+  default <C1, T1> Table<R, C1, T1> expandColumn(C colIndex,
+      BiFunction<R, T, SequencedMap<C1, T1>> expander) {
     return fromRows(rowIndexes().stream()
         .map(ri -> new Series<>(ri, expander.apply(ri, get(ri, colIndex))))
         .toList());
   }
 
   /// Returns a new unmodifiable table built by expanding the row indexes using the `expander`
-  ///  function.
-  /// The new table will have the same row indexes of this table.
+  /// function. The new table will have the same row indexes of this table.
   ///
   /// @param expander the function to apply to expand each row index
   /// @param <C1>     the type of the new table column indexes
@@ -632,8 +642,8 @@ public interface Table<R, C, T> {
         .toList());
   }
 
-  /// Returns a new unmodifiable table that contains all and only the columns of this table which match the provided
-  /// `colPredicate`.
+  /// Returns a new unmodifiable table that contains all and only the columns of this table which
+  /// match the provided `colPredicate`.
   ///
   /// @param colPredicate the predicate to filter columns
   /// @return the new unmodifiable table
@@ -644,8 +654,8 @@ public interface Table<R, C, T> {
         .toList());
   }
 
-  /// Returns a new unmodifiable table that contains all and only the rows of this table for which the value at
-  /// the column `colIndex` matches the provided `predicate`.
+  /// Returns a new unmodifiable table that contains all and only the rows of this table for which
+  /// the value at the column `colIndex` matches the provided `predicate`.
   ///
   /// @param predicate the predicate to filter rows
   /// @return the new unmodifiable table
@@ -653,8 +663,8 @@ public interface Table<R, C, T> {
     return filterColumnsByValues(c -> predicate.test(c.get(rowIndex)));
   }
 
-  /// Returns a new unmodifiable table that contains all and only the rows of this table whose values match the provided
-  /// `predicate`.
+  /// Returns a new unmodifiable table that contains all and only the rows of this table whose
+  /// values match the provided `predicate`.
   ///
   /// @param predicate the predicate to filter rows
   /// @return the new unmodifiable table
@@ -662,8 +672,8 @@ public interface Table<R, C, T> {
     return filterColumns(c -> predicate.test(c.values));
   }
 
-  /// Returns a new unmodifiable table that contains all and only the rows of this table which match the provided
-  /// `rowPredicate`.
+  /// Returns a new unmodifiable table that contains all and only the rows of this table which match
+  /// the provided `rowPredicate`.
   ///
   /// @param rowPredicate the predicate to filter rows
   /// @return the new unmodifiable table
@@ -674,8 +684,8 @@ public interface Table<R, C, T> {
         .toList());
   }
 
-  /// Returns a new unmodifiable table that contains all and only the rows of this table for which the value at
-  /// the column `colIndex` matches the provided `predicate`.
+  /// Returns a new unmodifiable table that contains all and only the rows of this table for which
+  /// the value at the column `colIndex` matches the provided `predicate`.
   ///
   /// @param predicate the predicate to filter rows
   /// @return the new unmodifiable table
@@ -683,8 +693,8 @@ public interface Table<R, C, T> {
     return filterRowsByValues(r -> predicate.test(r.get(colIndex)));
   }
 
-  /// Returns a new unmodifiable table that contains all and only the rows of this table whose values match the provided
-  /// `predicate`.
+  /// Returns a new unmodifiable table that contains all and only the rows of this table whose
+  /// values match the provided `predicate`.
   ///
   /// @param predicate the predicate to filter rows
   /// @return the new unmodifiable table
@@ -692,9 +702,10 @@ public interface Table<R, C, T> {
     return filterRows(row -> predicate.test(row.values));
   }
 
-  /// Returns the value at the cell given by the provided column sequential index `x` and row sequential index `y`,
-  /// if any. Returns `null` if the cell value is actually `null`; throws an exception if `x`,`y` is not valid,
-  /// i.e., if the table has fewer than `x`+1 columns or fewer than `y`+1 rows or if `x` or `y` are negative.
+  /// Returns the value at the cell given by the provided column sequential index `x` and row
+  /// sequential index `y`, if any. Returns `null` if the cell value is actually `null`; throws an
+  /// exception if `x`,`y` is not valid, i.e., if the table has fewer than `x`+1 columns or fewer
+  /// than `y`+1 rows or if `x` or `y` are negative.
   ///
   /// @param x the column sequential index
   /// @param y the row sequential index
@@ -718,8 +729,8 @@ public interface Table<R, C, T> {
   }
 
   /// Returns a new unmodifiable table built by applying the `mapper` to row indexes of this table.
-  /// The new table will have the same column indexes of this table and the same values; but could have, in general
-  /// fewer columns, if `mapper` is not injective for row indexes of this table.
+  /// The new table will have the same column indexes of this table and the same values; but could
+  /// have, in general fewer columns, if `mapper` is not injective for row indexes of this table.
   ///
   /// @param mapper the function to map row indexes to new row indexes
   /// @param <R1>   the type of the new table row indexes
@@ -731,8 +742,8 @@ public interface Table<R, C, T> {
   }
 
   /// Returns a new unmodifiable table built by applying the `mapper` to row indexes of this table.
-  /// The new table will have the same column indexes of this table and the same values; but could have, in general
-  /// fewer columns, if `mapper` is not injective for row indexes of this table.
+  /// The new table will have the same column indexes of this table and the same values; but could
+  /// have, in general fewer columns, if `mapper` is not injective for row indexes of this table.
   ///
   /// @param mapper the function to map row indexes to new row indexes
   /// @param <R1>   the type of the new table row indexes
@@ -741,11 +752,11 @@ public interface Table<R, C, T> {
     return mapRowIndexes((ri, values) -> mapper.apply(ri));
   }
 
-  /// Returns a new unmodifiable table built by applying the `mapper` lazily and cell-wise to this table.
-  /// The new table will have the same row indexes and column indexes of this table.
-  /// The `mapper` is actually applied to a cell value only if it is actually retrieved (with, e.g.,
-  /// [#get(Object, Object)]), at the first retrieval.
-  /// This makes the built table potentially a view of the original (this) table.
+  /// Returns a new unmodifiable table built by applying the `mapper` lazily and cell-wise to this
+  /// table. The new table will have the same row indexes and column indexes of this table. The
+  /// `mapper` is actually applied to a cell value only if it is actually retrieved (with, e.g.,
+  /// [#get(Object, Object)]), at the first retrieval. This makes the built table potentially a view
+  /// of the original (this) table.
   ///
   /// @param mapper the function to map cells to new cell values
   /// @param <T1>   the type of the new table values
@@ -757,16 +768,17 @@ public interface Table<R, C, T> {
         colIndexes(),
         (ri, ci) -> map.computeIfAbsent(
             new Pair<>(ri, ci),
-            lCoords -> mapper.apply(lCoords.first(), lCoords.second(), get(lCoords.first(), lCoords.second()))
+            lCoords -> mapper.apply(lCoords.first(), lCoords.second(),
+                get(lCoords.first(), lCoords.second()))
         )
     );
   }
 
-  /// Returns a new unmodifiable table built by applying the `mapper` lazily and cell-wise to this table.
-  /// The new table will have the same row indexes and column indexes of this table.
-  /// The `mapper` is actually applied to a cell value only if it is actually retrieved (with, e.g.,
-  /// [#get(Object, Object)]), at the first retrieval.
-  /// This makes the built table potentially a view of the original (this) table.
+  /// Returns a new unmodifiable table built by applying the `mapper` lazily and cell-wise to this
+  /// table. The new table will have the same row indexes and column indexes of this table. The
+  /// `mapper` is actually applied to a cell value only if it is actually retrieved (with, e.g.,
+  /// [#get(Object, Object)]), at the first retrieval. This makes the built table potentially a view
+  /// of the original (this) table.
   ///
   /// @param mapper the function to map cell values to new cell values
   /// @param <T1>   the type of the new table values
@@ -789,15 +801,13 @@ public interface Table<R, C, T> {
     return rowIndexes().size();
   }
 
-  /// Returns a human-readable representation of this table, in a way one would expect to see a table.
-  /// The returned string contains $n+1$ (with $n$ being the number of rows) lines, the first one for the header,
-  ///  then one for each row.
-  /// The content of the lines is formatted to make cell values and the initial row index aligned.
-  /// Individual values, row indexes, and col indexes are transformed to strings through the provided formatted
-  /// functions.
-  /// Those functions are expected not to return multi-line strings.
-  /// One convenient way to provide the formatters is through method reference to the [String#formatted(Object...)]
-  ///  method, e.g.:
+  /// Returns a human-readable representation of this table, in a way one would expect to see a
+  /// table. The returned string contains $n+1$ (with $n$ being the number of rows) lines, the first
+  /// one for the header, then one for each row. The content of the lines is formatted to make cell
+  /// values and the initial row index aligned. Individual values, row indexes, and col indexes are
+  /// transformed to strings through the provided formatted functions. Those functions are expected
+  /// not to return multi-line strings. One convenient way to provide the formatters is through
+  /// method reference to the [String#formatted(Object...)] method, e.g.:
   /// ```java
   /// Table<Integer, String, Double> table = /* ... */
   /// System.out.println(table.prettyToString(
@@ -870,18 +880,19 @@ public interface Table<R, C, T> {
     return sb.toString();
   }
 
-  /// Returns a human-readable representation of this table, in a way one would expect to see a table.
-  /// The returned string contains $n+1$ (with $n$ being the number of rows) lines, the first one for the header,
-  ///  then one for each row.
-  /// The content of the lines is formatted to make cell values and the initial row index aligned.
-  /// Individual values, row indexes, and col indexes are transformed to strings through [Object#toString()].
+  /// Returns a human-readable representation of this table, in a way one would expect to see a
+  /// table. The returned string contains $n+1$ (with $n$ being the number of rows) lines, the first
+  /// one for the header, then one for each row. The content of the lines is formatted to make cell
+  /// values and the initial row index aligned. Individual values, row indexes, and col indexes are
+  /// transformed to strings through [Object#toString()].
   ///
   /// @return a human-readable string representation of this table
   default String prettyToString() {
     return prettyToString(Objects::toString, Objects::toString, Objects::toString);
   }
 
-  /// Returns an unmodifiable view of the row at `rowIndex` of this table, or an empty map if no such row exists.
+  /// Returns an unmodifiable view of the row at `rowIndex` of this table, or an empty map if no
+  /// such row exists.
   ///
   /// @param rowIndex the index of the column
   /// @return a map with the values in the cells of the row indexed by column indexes
@@ -889,15 +900,17 @@ public interface Table<R, C, T> {
     if (!rowIndexes().contains(rowIndex)) {
       return Collections.unmodifiableSequencedMap(new LinkedHashMap<>());
     }
-    return Collections.unmodifiableSequencedMap((SequencedMap<? extends C, ? extends T>) colIndexes().stream()
-        .filter(ci -> get(rowIndex, ci) != null)
-        .collect(
-            Collectors.toMap(ci -> ci, ci -> get(rowIndex, ci), Table::first, LinkedHashMap::new)
-        ));
+    return Collections.unmodifiableSequencedMap(
+        (SequencedMap<? extends C, ? extends T>) colIndexes().stream()
+            .filter(ci -> get(rowIndex, ci) != null)
+            .collect(
+                Collectors.toMap(ci -> ci, ci -> get(rowIndex, ci), Table::first,
+                    LinkedHashMap::new)
+            ));
   }
 
-  /// Returns an unmodifiable view of the values in the row at `rowIndex` of this table, or an empty list if no
-  /// such row exists.
+  /// Returns an unmodifiable view of the values in the row at `rowIndex` of this table, or an empty
+  /// list if no such row exists.
   ///
   /// @param rowIndex the index of the row
   /// @return the values in the row
@@ -912,10 +925,9 @@ public interface Table<R, C, T> {
     return rowIndexes().stream().map(this::row).toList();
   }
 
-  /// Set the value at the cell given by the provided column sequential index `x` and row sequential index `y`,
-  /// if any.
-  /// Throws an exception if `x`,`y` is not valid, i.e., if the table has fewer than `x`+1 columns or fewer than
-  /// `y`+1 rows or if `x` or `y` are negative.
+  /// Set the value at the cell given by the provided column sequential index `x` and row sequential
+  /// index `y`, if any. Throws an exception if `x`,`y` is not valid, i.e., if the table has fewer
+  /// than `x`+1 columns or fewer than `y`+1 rows or if `x` or `y` are negative.
   ///
   /// @param x the column sequential index
   /// @param y the row sequential index
@@ -937,71 +949,76 @@ public interface Table<R, C, T> {
     set(ri, ci, t);
   }
 
-  /// Returns a values-only view of this table where rows are sorted according to the provided `comparator`.
-  /// A values-only view is one where values in the cells reflect the changes of the original (this) table, but the
-  /// structure of the view table is the one at creation.
-  /// That is, row indexes and col indexes stay the same in values and order once the view is created.
+  /// Returns a values-only view of this table where rows are sorted according to the provided
+  /// `comparator`. A values-only view is one where values in the cells reflect the changes of the
+  /// original (this) table, but the structure of the view table is the one at creation. That is,
+  /// row indexes and col indexes stay the same in values and order once the view is created.
   ///
   /// @param comparator the comparator for ordering row indexes
   /// @return the values-only view of this table
   default Unmodifiable<R, C, T> sortedByRowIndex(Comparator<R> comparator) {
     return Unmodifiable.of(
-        rowIndexes().stream().sorted(comparator).collect(Collectors.toCollection(LinkedHashSet::new)),
+        rowIndexes().stream().sorted(comparator)
+            .collect(Collectors.toCollection(LinkedHashSet::new)),
         colIndexes(),
         this::get
     );
   }
 
-  /// Returns a new unmodifiable where rows are sorted according to the provided `comparator` applied to values of the column at `colIndex`.
+  /// Returns a new unmodifiable where rows are sorted according to the provided `comparator`
+  /// applied to values of the column at `colIndex`.
   ///
   /// @param comparator the comparator for ordering values
   /// @return the values-only view of this table
   default Unmodifiable<R, C, T> sortedByValue(C colIndex, Comparator<T> comparator) {
-    // TODO copy these values to a new map
+    Map<R, Map<C, T>> map = rowIndexes().stream().collect(Collectors.toMap(
+        ri -> ri,
+        this::row
+    ));
     return Unmodifiable.of(
         rowIndexes().stream().sorted(
             Comparator.comparing(ri -> row(ri).get(colIndex), comparator)
         ).collect(Collectors.toCollection(LinkedHashSet::new)),
         colIndexes(),
-        this::get
+        (ri, ci) -> map.getOrDefault(ri, Map.of()).get(ci)
     );
   }
+
+  /// Returns a list containing all the values of this table, by concatenating the values from the
+  /// first to the last row.
+  ///
+  /// @return all the values of this table
   default List<T> values() {
     return rowIndexes().stream()
         .flatMap(ri -> colIndexes().stream().map(ci -> get(ri, ci)))
         .toList();
   }
 
-  default <R1, C1> Table<R1, C1, T> wider(Function<R, R1> rowKey, BiFunction<R, C, C1> spreader) {
-    return fromRows(
-        rowIndexes().stream()
-            .collect(Collectors.groupingBy(rowKey))
-            .entrySet()
-            .stream()
-            .collect(
-                Collectors.toMap(
-                    Map.Entry::getKey,
-                    e -> e.getValue()
-                        .stream()
-                        .map(
-                            ri -> colIndexes().stream()
-                                .map(ci -> Map.entry(spreader.apply(ri, ci), get(ri, ci)))
-                                .toList()
-                        )
-                        .flatMap(List::stream)
-                        .collect(
-                            Collectors.toMap(
-                                Map.Entry::getKey,
-                                Map.Entry::getValue,
-                                Table::first,
-                                LinkedHashMap::new
-                            )
-                        ),
-                    Table::first,
-                    LinkedHashMap::new
+  default <R1, C1> Table<R1, C1, T> wider(Function<R, R1> classifier,
+      BiFunction<R, C, C1> spreader) {
+    return fromRows(rowIndexes().stream()
+        .collect(Collectors.groupingBy(classifier))
+        .entrySet()
+        .stream()
+        .map(e -> new Series<>(
+            e.getKey(),
+            e.getValue()
+                .stream()
+                .map(
+                    ri -> colIndexes().stream()
+                        .map(ci -> Map.entry(spreader.apply(ri, ci), get(ri, ci)))
+                        .toList()
                 )
-            )
-    );
+                .flatMap(List::stream)
+                .collect(
+                    Collectors.toMap(
+                        Entry::getKey,
+                        Entry::getValue,
+                        Table::first,
+                        LinkedHashMap::new
+                    )
+                )
+        )).toList());
   }
 
   default <R1, C1> Table<R1, C1, T> wider(
@@ -1009,55 +1026,37 @@ public interface Table<R, C, T> {
       C colIndex,
       Function<R, C1> spreader
   ) {
-    return fromRows(
-        rowIndexes().stream()
-            .collect(Collectors.groupingBy(rowKey))
-            .entrySet()
-            .stream()
-            .collect(
-                Collectors.toMap(
-                    Map.Entry::getKey,
-                    e -> e.getValue()
-                        .stream()
-                        .collect(
-                            Collectors.toMap(
-                                spreader,
-                                r -> get(r, colIndex),
-                                Table::first,
-                                LinkedHashMap::new
-                            )
-                        ),
-                    Table::first,
-                    LinkedHashMap::new
-                )
-            )
-    );
+    return fromRows(rowIndexes().stream()
+        .collect(Collectors.groupingBy(rowKey))
+        .entrySet()
+        .stream()
+        .map(e -> new Series<>(
+            e.getKey(),
+            e.getValue()
+                .stream()
+                .collect(
+                    Collectors.toMap(
+                        spreader,
+                        r -> get(r, colIndex),
+                        Table::first,
+                        LinkedHashMap::new
+                    )
+                )))
+        .toList());
   }
 
-  default Table<R, C, T> with(C newColumnIndex, T newT) {
-    List<C> newColIndexes = Stream.of(colIndexes(), List.of(newColumnIndex))
-        .flatMap(List::stream)
-        .toList();
-    Table<R, C, T> thisTable = this;
-    return new Unmodifiable<>() {
-
-      @Override
-      public List<C> colIndexes() {
-        return newColIndexes;
-      }
-
-      @Override
-      public T get(R rowIndex, C colIndex) {
-        if (colIndex.equals(newColumnIndex)) {
-          return newT;
+  default Unmodifiable<R, C, T> with(C newColumnIndex, T newT) {
+    SequencedSet<C> colIndexes = new LinkedHashSet<>(colIndexes());
+    colIndexes.add(newColumnIndex);
+    return Unmodifiable.of(
+        rowIndexes(),
+        colIndexes,
+        (ri, ci) -> {
+          if (ci.equals(newColumnIndex)) {
+            return newT;
+          }
+          return get(ri, ci);
         }
-        return thisTable.get(rowIndex, colIndex);
-      }
-
-      @Override
-      public List<R> rowIndexes() {
-        return thisTable.rowIndexes();
-      }
-    };
+    );
   }
 }
