@@ -23,13 +23,13 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.SequencedSet;
 
-/** @author "Eric Medvet" on 2023/11/03 for jgea */
 public class HashMapTable<R, C, T> implements Table<R, C, T> {
 
   private final Map<Key<R, C>, T> map;
-  private final LinkedHashSet<R> rowIndexes;
-  private final LinkedHashSet<C> colIndexes;
+  private final SequencedSet<R> rowIndexes;
+  private final SequencedSet<C> colIndexes;
 
   public HashMapTable() {
     this.map = new HashMap<>();
@@ -37,36 +37,34 @@ public class HashMapTable<R, C, T> implements Table<R, C, T> {
     colIndexes = new LinkedHashSet<>();
   }
 
-  private record Key<R, C>(R r, C c) {}
+  private record Key<R, C>(R r, C c) {
 
-  @Override
-  public List<R> rowIndexes() {
-    return rowIndexes.stream().toList();
   }
 
   @Override
-  public List<C> colIndexes() {
-    return colIndexes.stream().toList();
+  public SequencedSet<R> rowIndexes() {
+    return rowIndexes;
   }
 
   @Override
-  public void addColumn(C columnIndex, Map<R, T> values) {
-    if (colIndexes.contains(columnIndex)) {
-      throw new IllegalArgumentException("Column %s is already in the table".formatted(columnIndex));
-    }
-    colIndexes.add(columnIndex);
-    rowIndexes.addAll(values.keySet());
-    values.forEach((rowIndex, value) -> map.put(new Key<>(rowIndex, columnIndex), value));
+  public SequencedSet<C> colIndexes() {
+    return colIndexes;
   }
 
   @Override
-  public void addRow(R rowIndex, Map<C, T> values) {
-    if (rowIndexes.contains(rowIndex)) {
-      throw new IllegalArgumentException("Row %s is already in the table".formatted(rowIndex));
-    }
-    rowIndexes.add(rowIndex);
-    colIndexes.addAll(values.keySet());
-    values.forEach((colIndex, value) -> map.put(new Key<>(rowIndex, colIndex), value));
+  public void addColumn(Series<C, R, T> column) {
+    colIndexes.add(column.primaryIndex());
+    rowIndexes.addAll(column.values().keySet());
+    column.values()
+        .forEach((rowIndex, value) -> map.put(new Key<>(rowIndex, column.primaryIndex()), value));
+  }
+
+  @Override
+  public void addRow(Series<R, C, T> row) {
+    rowIndexes.add(row.primaryIndex());
+    colIndexes.addAll(row.values().keySet());
+    row.values()
+        .forEach((colIndex, value) -> map.put(new Key<>(row.primaryIndex(), colIndex), value));
   }
 
   @Override
