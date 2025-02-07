@@ -77,26 +77,26 @@ public class HashMapTable<R, C, T> implements Table<R, C, T> {
   }
 
   @Override
-  public void removeColumn(C columnIndex) {
-    colIndexes.remove(columnIndex);
-    List<Key<R, C>> toRemoveKeys = map.keySet().stream().filter(k -> k.c.equals(columnIndex)).toList();
+  public void removeColumn(C colIndex) {
+    colIndexes.remove(colIndex);
+    List<Key<R, C>> toRemoveKeys = map.keySet().stream().filter(k -> k.c.equals(colIndex)).toList();
     toRemoveKeys.forEach(map.keySet()::remove);
   }
 
   @Override
-  public T get(R rowIndex, C columnIndex) {
-    return map.get(new Key<>(rowIndex, columnIndex));
+  public T get(R rowIndex, C colIndex) {
+    return map.get(new Key<>(rowIndex, colIndex));
   }
 
   @Override
-  public void set(R rowIndex, C columnIndex, T t) {
+  public void set(R rowIndex, C colIndex, T t) {
     rowIndexes.add(rowIndex);
-    colIndexes.add(columnIndex);
-    map.put(new Key<>(rowIndex, columnIndex), t);
+    colIndexes.add(colIndex);
+    map.put(new Key<>(rowIndex, colIndex), t);
   }
 
   @Override
   public String toString() {
-    return "Table[%dx%d]".formatted(nRows(), nColumns());
+    return "Table[%dx%d]".formatted(nOfRows(), nOfColumns());
   }
 }
