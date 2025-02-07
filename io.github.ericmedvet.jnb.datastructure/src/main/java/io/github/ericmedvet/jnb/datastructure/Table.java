@@ -41,18 +41,6 @@ import java.util.stream.Stream;
 /// @param <T> the type of values in the cells
 public interface Table<R, C, T> {
 
-  /// A series of values of tells, representing either a row or a column. If used to represent a
-  /// row, the `primaryIndex` is the row index; otherwise, it is the column index.
-  ///
-  /// @param primaryIndex the row/column index of the series
-  /// @param values       the values in the series
-  /// @param <P>          the type of the primary (row/column) index
-  /// @param <S>          the type of the secondary (column/row) index
-  /// @param <T>          the type of values in the cells
-  record Series<P, S, T>(P primaryIndex, SequencedMap<S, T> values) {
-
-  }
-
   /// A read-only table for which all the methods for modifying the content throw an
   /// [UnsupportedOperationException]. Many methods of [Table] return views which are read-only
   /// tables.
@@ -61,6 +49,40 @@ public interface Table<R, C, T> {
   /// @param <C> the type of column indexes
   /// @param <T> the type of values in the cells
   interface Unmodifiable<R, C, T> extends Table<R, C, T> {
+
+    /// Creates a new unmodifiable table based on the provided `rowIndexes`, `colIndexes`, and `retriever`.
+    /// The `retriever` is used for retrieve table values; the returned table does not actually store values,
+    ///  but instead retrieve them through `retriever`.
+    ///
+    /// @param rowIndexes the row indexes of the new unmodifiable table
+    /// @param colIndexes the col indexes of the new unmodifiable table
+    /// @param retriever  the function used to retrieve the value of the
+    /// @param <R>        the type of row indexes
+    /// @param <C>        the type of column indexes
+    /// @param <T>        the type of values in the cells
+    /// @return the new unmodifiable table
+    static <R, C, T> Unmodifiable<R, C, T> of(
+        SequencedSet<R> rowIndexes,
+        SequencedSet<C> colIndexes,
+        BiFunction<R, C, T> retriever
+    ) {
+      return new Unmodifiable<>() {
+        @Override
+        public SequencedSet<C> colIndexes() {
+          return colIndexes;
+        }
+
+        @Override
+        public T get(R rowIndex, C colIndex) {
+          return retriever.apply(rowIndex, colIndex);
+        }
+
+        @Override
+        public SequencedSet<R> rowIndexes() {
+          return rowIndexes;
+        }
+      };
+    }
 
     /// Throws an exception, as the table is read-only.
     ///
@@ -108,40 +130,18 @@ public interface Table<R, C, T> {
     default void set(R rowIndex, C colIndex, T t) {
       throw new UnsupportedOperationException("This is a read only table");
     }
+  }
 
-    /// Creates a new unmodifiable table based on the provided `rowIndexes`, `colIndexes`, and `retriever`.
-    /// The `retriever` is used for retrieve table values; the returned table does not actually store values,
-    ///  but instead retrieve them through `retriever`.
-    ///
-    /// @param rowIndexes the row indexes of the new unmodifiable table
-    /// @param colIndexes the col indexes of the new unmodifiable table
-    /// @param retriever  the function used to retrieve the value of the
-    /// @param <R>        the type of row indexes
-    /// @param <C>        the type of column indexes
-    /// @param <T>        the type of values in the cells
-    /// @return the new unmodifiable table
-    static <R, C, T> Unmodifiable<R, C, T> of(
-        SequencedSet<R> rowIndexes,
-        SequencedSet<C> colIndexes,
-        BiFunction<R, C, T> retriever
-    ) {
-      return new Unmodifiable<>() {
-        @Override
-        public SequencedSet<C> colIndexes() {
-          return colIndexes;
-        }
+  /// A series of values of tells, representing either a row or a column. If used to represent a
+  /// row, the `primaryIndex` is the row index; otherwise, it is the column index.
+  ///
+  /// @param primaryIndex the row/column index of the series
+  /// @param values       the values in the series
+  /// @param <P>          the type of the primary (row/column) index
+  /// @param <S>          the type of the secondary (column/row) index
+  /// @param <T>          the type of values in the cells
+  record Series<P, S, T>(P primaryIndex, SequencedMap<S, T> values) {
 
-        @Override
-        public T get(R rowIndex, C colIndex) {
-          return retriever.apply(rowIndex, colIndex);
-        }
-
-        @Override
-        public SequencedSet<R> rowIndexes() {
-          return rowIndexes;
-        }
-      };
-    }
   }
 
   /// Adds or modifies a column into this table. If the table already contains a column with the
@@ -208,29 +208,10 @@ public interface Table<R, C, T> {
     return t1;
   }
 
-  private static String justify(String s, int length) {
-    if (s.length() > length) {
-      return s.substring(0, length);
-    }
-    StringBuilder sBuilder = new StringBuilder(s);
-    while (sBuilder.length() < length) {
-      sBuilder.insert(0, " ");
-    }
-    s = sBuilder.toString();
-    return s;
-  }
-
-  /// Creates a new unmodifiable table based on the values provided in `map`.
+  /// Creates a new unmodifiable table based on the values provided in `map`, organized in a map of rows, each being
+  /// a map of column indexes to values.
   ///
-  /// @param map the values to put in the table, organized in a map of rows, each being a map of
-  ///
-  ///
-  ///                                                                                                    column
-  ///
-  ///
-  /// indexes to
-  ///
-  ///            values
+  /// @param map the values to put in the table
   /// @param <R> the type of row indexes
   /// @param <C> the type of column indexes
   /// @param <T> the type of values in the cells
@@ -247,6 +228,20 @@ public interface Table<R, C, T> {
     localMap.keySet().retainAll(rowIndexes);
     localMap.values().forEach(row -> row.keySet().retainAll(colIndexes));
     return Unmodifiable.of(rowIndexes, colIndexes, (ri, ci) -> localMap.getOrDefault(ri, Map.of()).get(ci));
+  }
+
+  /// Creates a new unmodifiable table based on the values provided in `columns`.
+  ///
+  /// @param columns the columns containing the values to be put in the table
+  /// @param <R>     the type of row indexes
+  /// @param <C>     the type of column indexes
+  /// @param <T>     the type of values in the cells
+  /// @return the new unmodifiable table
+  static <R, C, T> Table<R, C, T> fromColumns(List<Series<C, R, T>> columns) {
+    SequencedMap<R, SequencedMap<C, T>> map = new LinkedHashMap<>();
+    columns.forEach(col -> col.values
+        .forEach((ri, t) -> map.computeIfAbsent(ri, lri -> new LinkedHashMap<>()).put(col.primaryIndex, t)));
+    return from(map);
   }
 
   /// Creates a new unmodifiable table based on the values provided in `rows`.
@@ -266,18 +261,16 @@ public interface Table<R, C, T> {
     return from(map);
   }
 
-  /// Creates a new unmodifiable table based on the values provided in `columns`.
-  ///
-  /// @param columns the columns containing the values to be put in the table
-  /// @param <R>     the type of row indexes
-  /// @param <C>     the type of column indexes
-  /// @param <T>     the type of values in the cells
-  /// @return the new unmodifiable table
-  static <R, C, T> Table<R, C, T> fromColumns(List<Series<C, R, T>> columns) {
-    SequencedMap<R, SequencedMap<C, T>> map = new LinkedHashMap<>();
-    columns.forEach(col -> col.values
-        .forEach((ri, t) -> map.computeIfAbsent(ri, lri -> new LinkedHashMap<>()).put(col.primaryIndex, t)));
-    return from(map);
+  private static String justify(String s, int length) {
+    if (s.length() > length) {
+      return s.substring(0, length);
+    }
+    StringBuilder sBuilder = new StringBuilder(s);
+    while (sBuilder.length() < length) {
+      sBuilder.insert(0, " ");
+    }
+    s = sBuilder.toString();
+    return s;
   }
 
   /// Returns a new unmodifiable table by aggregating this table by rows. First, rows are
@@ -594,7 +587,8 @@ public interface Table<R, C, T> {
         ));
   }
 
-  /// Returns an unmodifiable view of the column at `colIndex` of this table, or an empty list if no such column exists.
+  /// Returns an unmodifiable view of the values in the column at `colIndex` of this table, or an empty list if no
+  /// such column exists.
   ///
   /// @param colIndex the index of the column
   /// @return the values in the column
@@ -638,18 +632,6 @@ public interface Table<R, C, T> {
         .toList());
   }
 
-  /// Returns a new unmodifiable table that contains all and only the rows of this table which match the provided
-  /// `rowPredicate`.
-  ///
-  /// @param rowPredicate the predicate to filter rows
-  /// @return the new unmodifiable table
-  default Table<R, C, T> filterRows(Predicate<Series<R, C, T>> rowPredicate) {
-    return fromRows(rowIndexes().stream()
-        .map(ri -> new Series<>(ri, row(ri)))
-        .filter(rowPredicate)
-        .toList());
-  }
-
   /// Returns a new unmodifiable table that contains all and only the columns of this table which match the provided
   /// `colPredicate`.
   ///
@@ -662,13 +644,34 @@ public interface Table<R, C, T> {
         .toList());
   }
 
+  /// Returns a new unmodifiable table that contains all and only the rows of this table for which the value at
+  /// the column `colIndex` matches the provided `predicate`.
+  ///
+  /// @param predicate the predicate to filter rows
+  /// @return the new unmodifiable table
+  default Table<R, C, T> filterColumnsByRowValue(R rowIndex, Predicate<T> predicate) {
+    return filterColumnsByValues(c -> predicate.test(c.get(rowIndex)));
+  }
+
   /// Returns a new unmodifiable table that contains all and only the rows of this table whose values match the provided
   /// `predicate`.
   ///
   /// @param predicate the predicate to filter rows
   /// @return the new unmodifiable table
-  default Table<R, C, T> filterRowsByValues(Predicate<SequencedMap<C, T>> predicate) {
-    return filterRows(row -> predicate.test(row.values));
+  default Table<R, C, T> filterColumnsByValues(Predicate<SequencedMap<R, T>> predicate) {
+    return filterColumns(c -> predicate.test(c.values));
+  }
+
+  /// Returns a new unmodifiable table that contains all and only the rows of this table which match the provided
+  /// `rowPredicate`.
+  ///
+  /// @param rowPredicate the predicate to filter rows
+  /// @return the new unmodifiable table
+  default Table<R, C, T> filterRows(Predicate<Series<R, C, T>> rowPredicate) {
+    return fromRows(rowIndexes().stream()
+        .map(ri -> new Series<>(ri, row(ri)))
+        .filter(rowPredicate)
+        .toList());
   }
 
   /// Returns a new unmodifiable table that contains all and only the rows of this table for which the value at
@@ -685,29 +688,18 @@ public interface Table<R, C, T> {
   ///
   /// @param predicate the predicate to filter rows
   /// @return the new unmodifiable table
-  default Table<R, C, T> filterColumnsByValues(Predicate<SequencedMap<R, T>> predicate) {
-    return filterColumns(c -> predicate.test(c.values));
-  }
-
-  /// Returns a new unmodifiable table that contains all and only the rows of this table for which the value at
-  /// the column `colIndex` matches the provided `predicate`.
-  ///
-  /// @param predicate the predicate to filter rows
-  /// @return the new unmodifiable table
-  default Table<R, C, T> filterColumnsByRowValue(R rowIndex, Predicate<T> predicate) {
-    return filterColumnsByValues(c -> predicate.test(c.get(rowIndex)));
+  default Table<R, C, T> filterRowsByValues(Predicate<SequencedMap<C, T>> predicate) {
+    return filterRows(row -> predicate.test(row.values));
   }
 
   /// Returns the value at the cell given by the provided column sequential index `x` and row sequential index `y`,
-  /// if any. Returns `null` if the cell value is actually `null`.
+  /// if any. Returns `null` if the cell value is actually `null`; throws an exception if `x`,`y` is not valid,
+  /// i.e., if the table has fewer than `x`+1 columns or fewer than `y`+1 rows or if `x` or `y` are negative.
   ///
   /// @param x the column sequential index
   /// @param y the row sequential index
   /// @return the value at the cell, or `null` if no  value
-  /// @throws IndexOutOfBoundsException if the table has less than `x`+1 columns or less than `y`+1 rows or if `x` or
-  ///
-  ///                                                             `y` are
-  ///                                                                     negative
+  /// @throws IndexOutOfBoundsException if `x`,`y` is not valid
   default T get(int x, int y) {
     if (x >= colIndexes().size() || x < 0 || y >= rowIndexes().size() || y < 0) {
       throw new IndexOutOfBoundsException(
@@ -725,13 +717,40 @@ public interface Table<R, C, T> {
     return get(ri, ci);
   }
 
-  /// Returns a new unmodifiable table built by applying the `mapper` lazily and cell-wise to this table
+  /// Returns a new unmodifiable table built by applying the `mapper` to row indexes of this table.
+  /// The new table will have the same column indexes of this table and the same values; but could have, in general
+  /// fewer columns, if `mapper` is not injective for row indexes of this table.
+  ///
+  /// @param mapper the function to map row indexes to new row indexes
+  /// @param <R1>   the type of the new table row indexes
+  /// @return the new unmodifiable table
+  default <R1> Table<R1, C, T> mapRowIndexes(BiFunction<R, SequencedMap<C, T>, R1> mapper) {
+    return fromRows(rowIndexes().stream()
+        .map(ri -> new Series<>(mapper.apply(ri, row(ri)), row(ri)))
+        .toList());
+  }
+
+  /// Returns a new unmodifiable table built by applying the `mapper` to row indexes of this table.
+  /// The new table will have the same column indexes of this table and the same values; but could have, in general
+  /// fewer columns, if `mapper` is not injective for row indexes of this table.
+  ///
+  /// @param mapper the function to map row indexes to new row indexes
+  /// @param <R1>   the type of the new table row indexes
+  /// @return the new unmodifiable table
+  default <R1> Table<R1, C, T> mapRowIndexes(Function<R, R1> mapper) {
+    return mapRowIndexes((ri, values) -> mapper.apply(ri));
+  }
+
+  /// Returns a new unmodifiable table built by applying the `mapper` lazily and cell-wise to this table.
   /// The new table will have the same row indexes and column indexes of this table.
+  /// The `mapper` is actually applied to a cell value only if it is actually retrieved (with, e.g.,
+  /// [#get(Object, Object)]), at the first retrieval.
+  /// This makes the built table potentially a view of the original (this) table.
   ///
   /// @param mapper the function to map cells to new cell values
   /// @param <T1>   the type of the new table values
   /// @return the new unmodifiable table
-  default <T1> Table<R, C, T1> map(TriFunction<R, C, T, T1> mapper) {
+  default <T1> Table<R, C, T1> mapValues(TriFunction<R, C, T, T1> mapper) {
     Map<Pair<R, C>, T1> map = new HashMap<>();
     return Unmodifiable.of(
         rowIndexes(),
@@ -743,14 +762,17 @@ public interface Table<R, C, T> {
     );
   }
 
-  /// Returns a new unmodifiable table built by applying the `mapper` lazily and cell-wise to this table
+  /// Returns a new unmodifiable table built by applying the `mapper` lazily and cell-wise to this table.
   /// The new table will have the same row indexes and column indexes of this table.
+  /// The `mapper` is actually applied to a cell value only if it is actually retrieved (with, e.g.,
+  /// [#get(Object, Object)]), at the first retrieval.
+  /// This makes the built table potentially a view of the original (this) table.
   ///
   /// @param mapper the function to map cell values to new cell values
   /// @param <T1>   the type of the new table values
   /// @return the new unmodifiable table
-  default <T1> Table<R, C, T1> map(Function<T, T1> mapper) {
-    return map((ri, ci, t) -> mapper.apply(t));
+  default <T1> Table<R, C, T1> mapValues(Function<T, T1> mapper) {
+    return mapValues((ri, ci, t) -> mapper.apply(t));
   }
 
   /// Returns the number of columns in this table.
@@ -769,7 +791,7 @@ public interface Table<R, C, T> {
 
   /// Returns a human-readable representation of this table, in a way one would expect to see a table.
   /// The returned string contains $n+1$ (with $n$ being the number of rows) lines, the first one for the header,
-  ///  then one for each row..
+  ///  then one for each row.
   /// The content of the lines is formatted to make cell values and the initial row index aligned.
   /// Individual values, row indexes, and col indexes are transformed to strings through the provided formatted
   /// functions.
@@ -782,12 +804,12 @@ public interface Table<R, C, T> {
   ///   "%d"::formatted,
   ///   "%s"::formatted,
   ///   "%.3"::formatted
-  /// ));
-  /// ```
+  ///));
+  ///```
   ///
-  /// @param rowIndexFormatter
-  /// @param colIndexFormatter
-  /// @param valueFormatter
+  /// @param rowIndexFormatter the formatter for row indexes
+  /// @param colIndexFormatter the formatter for column indexes
+  /// @param valueFormatter    the formatter for values
   /// @return a human-readable string representation of this table
   default String prettyToString(
       Function<R, String> rowIndexFormatter,
@@ -848,89 +870,58 @@ public interface Table<R, C, T> {
     return sb.toString();
   }
 
+  /// Returns a human-readable representation of this table, in a way one would expect to see a table.
+  /// The returned string contains $n+1$ (with $n$ being the number of rows) lines, the first one for the header,
+  ///  then one for each row.
+  /// The content of the lines is formatted to make cell values and the initial row index aligned.
+  /// Individual values, row indexes, and col indexes are transformed to strings through [Object#toString()].
+  ///
+  /// @return a human-readable string representation of this table
   default String prettyToString() {
-    return prettyToString("%s"::formatted, "%s"::formatted, "%s"::formatted);
+    return prettyToString(Objects::toString, Objects::toString, Objects::toString);
   }
 
-  default <R1> Table<R1, C, T> remapRowIndex(BiFunction<R, Map<C, T>, R1> f) {
-    return fromRows(
-        rowIndexes().stream()
-            .map(ri -> Map.entry(f.apply(ri, row(ri)), row(ri)))
-            .collect(
-                Collectors.toMap(
-                    Map.Entry::getKey,
-                    Map.Entry::getValue,
-                    Table::first,
-                    LinkedHashMap::new
-                )
-            )
-    );
-  }
-
-  default <R1> Table<R1, C, T> remapRowIndex(Function<R, R1> f) {
-    return remapRowIndex((ri, r) -> f.apply(ri));
-  }
-
+  /// Returns an unmodifiable view of the row at `rowIndex` of this table, or an empty map if no such row exists.
+  ///
+  /// @param rowIndex the index of the column
+  /// @return a map with the values in the cells of the row indexed by column indexes
   default SequencedMap<C, T> row(R rowIndex) {
-    return colIndexes().stream()
+    if (!rowIndexes().contains(rowIndex)) {
+      return Collections.unmodifiableSequencedMap(new LinkedHashMap<>());
+    }
+    return Collections.unmodifiableSequencedMap((SequencedMap<? extends C, ? extends T>) colIndexes().stream()
         .filter(ci -> get(rowIndex, ci) != null)
         .collect(
             Collectors.toMap(ci -> ci, ci -> get(rowIndex, ci), Table::first, LinkedHashMap::new)
-        );
+        ));
   }
 
-  default <T1> Table<R, C, T1> rowSlide(int n, Function<List<T>, T1> aggregator) {
-    Table<R, C, T1> table = new HashMapTable<>();
-    colIndexes().forEach(ci -> IntStream.range(n, rowIndexes().size()).forEach(i -> {
-      List<T> ts = IntStream.range(i - n, i)
-          .mapToObj(j -> get(rowIndexes().get(j), ci))
-          .toList();
-      table.set(rowIndexes().get(i - 1), ci, aggregator.apply(ts));
-    }));
-    return table;
-  }
-
+  /// Returns an unmodifiable view of the values in the row at `rowIndex` of this table, or an empty list if no
+  /// such row exists.
+  ///
+  /// @param rowIndex the index of the row
+  /// @return the values in the row
   default List<T> rowValues(R rowIndex) {
-    Map<C, T> row = row(rowIndex);
-    return colIndexes().stream().map(row::get).toList();
+    return row(rowIndex).values().stream().toList();
   }
 
-  default List<Map<C, T>> rows() {
+  /// Returns an unmodifiable view of the rows of this table.
+  ///
+  /// @return the rows of this table
+  default List<SequencedMap<C, T>> rows() {
     return rowIndexes().stream().map(this::row).toList();
   }
 
-  default Table<R, C, T> select(Predicate<C> predicate) {
-    return fromRows(
-        rowIndexes().stream()
-            .collect(
-                Collectors.toMap(
-                    ri -> ri,
-                    ri -> row(ri).entrySet()
-                        .stream()
-                        .filter(e -> predicate.test(e.getKey()))
-                        .collect(
-                            Collectors.toMap(
-                                Map.Entry::getKey,
-                                Map.Entry::getValue,
-                                Table::first,
-                                LinkedHashMap::new
-                            )
-                        ),
-                    Table::first,
-                    LinkedHashMap::new
-                )
-            )
-    );
-  }
-
-  default Table<R, C, T> select(List<C> columnIndexes) {
-    return select(columnIndexes::contains);
-  }
-
+  /// Set the value at the cell given by the provided column sequential index `x` and row sequential index `y`,
+  /// if any.
+  /// Throws an exception if `x`,`y` is not valid, i.e., if the table has fewer than `x`+1 columns or fewer than
+  /// `y`+1 rows or if `x` or `y` are negative.
+  ///
+  /// @param x the column sequential index
+  /// @param y the row sequential index
+  /// @throws IndexOutOfBoundsException if `x`,`y` is not valid
   default void set(int x, int y, T t) {
-    R ri = rowIndexes().get(y);
-    C ci = colIndexes().get(x);
-    if (ri == null || ci == null) {
+    if (x >= colIndexes().size() || x < 0 || y >= rowIndexes().size() || y < 0) {
       throw new IndexOutOfBoundsException(
           String.format(
               "Invalid %d,%d coords in a %d,%d table",
@@ -941,102 +932,40 @@ public interface Table<R, C, T> {
           )
       );
     }
+    R ri = rowIndexes().stream().skip(y).findFirst().orElseThrow();
+    C ci = colIndexes().stream().skip(x).findFirst().orElseThrow();
     set(ri, ci, t);
   }
 
-  default Table<R, C, T> sorted(Comparator<R> comparator) {
-    Table<R, C, T> thisTable = this;
-    return new Table<>() {
-      @Override
-      public void addColumn(C columnIndex, Map<R, T> values) {
-        thisTable.addColumn(columnIndex, values);
-      }
-
-      @Override
-      public void addRow(R rowIndex, Map<C, T> values) {
-        thisTable.addRow(rowIndex, values);
-      }
-
-      @Override
-      public List<C> colIndexes() {
-        return thisTable.colIndexes();
-      }
-
-      @Override
-      public T get(R rowIndex, C colIndex) {
-        return thisTable.get(rowIndex, colIndex);
-      }
-
-      @Override
-      public void removeColumn(C colIndex) {
-        thisTable.removeColumn(colIndex);
-      }
-
-      @Override
-      public void removeRow(R rowIndex) {
-        thisTable.removeRow(rowIndex);
-      }
-
-      @Override
-      public List<R> rowIndexes() {
-        return thisTable.rowIndexes().stream().sorted(comparator).toList();
-      }
-
-      @Override
-      public void set(R rowIndex, C colIndex, T t) {
-        thisTable.set(rowIndex, colIndex, t);
-      }
-    };
+  /// Returns a values-only view of this table where rows are sorted according to the provided `comparator`.
+  /// A values-only view is one where values in the cells reflect the changes of the original (this) table, but the
+  /// structure of the view table is the one at creation.
+  /// That is, row indexes and col indexes stay the same in values and order once the view is created.
+  ///
+  /// @param comparator the comparator for ordering row indexes
+  /// @return the values-only view of this table
+  default Unmodifiable<R, C, T> sortedByRowIndex(Comparator<R> comparator) {
+    return Unmodifiable.of(
+        rowIndexes().stream().sorted(comparator).collect(Collectors.toCollection(LinkedHashSet::new)),
+        colIndexes(),
+        this::get
+    );
   }
 
-  default Table<R, C, T> sorted(C c, Comparator<T> comparator) {
-    Table<R, C, T> thisTable = this;
-    return new Table<>() {
-      @Override
-      public void addColumn(C columnIndex, Map<R, T> values) {
-        thisTable.addColumn(columnIndex, values);
-      }
-
-      @Override
-      public void addRow(R rowIndex, Map<C, T> values) {
-        thisTable.addRow(rowIndex, values);
-      }
-
-      @Override
-      public List<C> colIndexes() {
-        return thisTable.colIndexes();
-      }
-
-      @Override
-      public T get(R rowIndex, C colIndex) {
-        return thisTable.get(rowIndex, colIndex);
-      }
-
-      @Override
-      public void removeColumn(C colIndex) {
-        thisTable.removeColumn(colIndex);
-      }
-
-      @Override
-      public void removeRow(R rowIndex) {
-        thisTable.removeRow(rowIndex);
-      }
-
-      @Override
-      public List<R> rowIndexes() {
-        return thisTable.rowIndexes()
-            .stream()
-            .sorted((ri1, ri2) -> comparator.compare(get(ri1, c), get(ri2, c)))
-            .toList();
-      }
-
-      @Override
-      public void set(R rowIndex, C colIndex, T t) {
-        thisTable.set(rowIndex, colIndex, t);
-      }
-    };
+  /// Returns a new unmodifiable where rows are sorted according to the provided `comparator` applied to values of the column at `colIndex`.
+  ///
+  /// @param comparator the comparator for ordering values
+  /// @return the values-only view of this table
+  default Unmodifiable<R, C, T> sortedByValue(C colIndex, Comparator<T> comparator) {
+    // TODO copy these values to a new map
+    return Unmodifiable.of(
+        rowIndexes().stream().sorted(
+            Comparator.comparing(ri -> row(ri).get(colIndex), comparator)
+        ).collect(Collectors.toCollection(LinkedHashSet::new)),
+        colIndexes(),
+        this::get
+    );
   }
-
   default List<T> values() {
     return rowIndexes().stream()
         .flatMap(ri -> colIndexes().stream().map(ci -> get(ri, ci)))
