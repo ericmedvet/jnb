@@ -20,7 +20,6 @@
 package io.github.ericmedvet.jnb.datastructure;
 
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -31,8 +30,8 @@ import java.util.stream.Stream;
 /// An object that stores elements of type `T` in a modifiable table like structure where cells are
 /// indexed through pairs of coordinates `R`,`C`. `R` is the type of row indexes, `C` is the type of
 /// column indexes. It provides methods for modifying the content of the cells ([#set(Object,
-/// Object, Object)]) or the content and the structure ([#clear()], [#addRow(Object, Map)],
-/// [#addColumn(Object, Map)], [#removeRow(Object)], [#removeColumn(Object)]). It also provides
+/// Object, Object)]) or the content and the structure ([#clear()], [#addRow(Series)],
+/// [#addColumn(Series)], [#removeRow(Object)], [#removeColumn(Object)]). It also provides
 /// methods for obtaining views of (parts) of the table.
 ///
 /// Rows and columns have a well-defined encounter order.
@@ -56,18 +55,23 @@ public interface Table<R, C, T> {
   /// @return the new unmodifiable table
   static <R, C, T> Table<R, C, T> from(SequencedMap<R, ? extends SequencedMap<C, T>> map) {
     SequencedSet<R> rowIndexes = Collections.unmodifiableSequencedSet(
-        new LinkedHashSet<>(map.keySet()));
+        new LinkedHashSet<>(map.keySet())
+    );
     SequencedSet<C> colIndexes = Collections.unmodifiableSequencedSet(
         (SequencedSet<? extends C>) map.values()
             .stream()
             .map(Map::keySet)
             .flatMap(Set::stream)
-            .collect(Collectors.toCollection(LinkedHashSet::new)));
+            .collect(Collectors.toCollection(LinkedHashSet::new))
+    );
     HashMap<R, Map<C, T>> localMap = new HashMap<>(map);
     localMap.keySet().retainAll(rowIndexes);
     localMap.values().forEach(row -> row.keySet().retainAll(colIndexes));
-    return Unmodifiable.of(rowIndexes, colIndexes,
-        (ri, ci) -> localMap.getOrDefault(ri, Map.of()).get(ci));
+    return Unmodifiable.of(
+        rowIndexes,
+        colIndexes,
+        (ri, ci) -> localMap.getOrDefault(ri, Map.of()).get(ci)
+    );
   }
 
   /// Creates a new unmodifiable table based on the values provided in `columns`.
@@ -79,9 +83,13 @@ public interface Table<R, C, T> {
   /// @return the new unmodifiable table
   static <R, C, T> Table<R, C, T> fromColumns(List<Series<C, R, T>> columns) {
     SequencedMap<R, SequencedMap<C, T>> map = new LinkedHashMap<>();
-    columns.forEach(col -> col.values
-        .forEach((ri, t) -> map.computeIfAbsent(ri, lri -> new LinkedHashMap<>())
-            .put(col.primaryIndex, t)));
+    columns.forEach(
+        col -> col.values
+            .forEach(
+                (ri, t) -> map.computeIfAbsent(ri, lri -> new LinkedHashMap<>())
+                    .put(col.primaryIndex, t)
+            )
+    );
     return from(map);
   }
 
@@ -93,12 +101,15 @@ public interface Table<R, C, T> {
   /// @param <T>  the type of values in the cells
   /// @return the new unmodifiable table
   static <R, C, T> Table<R, C, T> fromRows(List<Series<R, C, T>> rows) {
-    SequencedMap<R, SequencedMap<C, T>> map = rows.stream().collect(Collectors.toMap(
-        r -> r.primaryIndex,
-        Series::values,
-        Table::first,
-        LinkedHashMap::new
-    ));
+    SequencedMap<R, SequencedMap<C, T>> map = rows.stream()
+        .collect(
+            Collectors.toMap(
+                r -> r.primaryIndex,
+                Series::values,
+                Table::first,
+                LinkedHashMap::new
+            )
+        );
     return from(map);
   }
 
@@ -152,20 +163,22 @@ public interface Table<R, C, T> {
       Comparator<R> comparator,
       Function<List<Series<R, C, T>>, SequencedMap<C, T1>> aggregator
   ) {
-    return Table.fromRows(rowIndexes().stream()
-        .map(ri -> new Series<>(ri, row(ri)))
-        .collect(Collectors.groupingBy(classifier))
-        .values()
-        .stream()
-        .map(l -> {
-          List<Series<R, C, T>> rows = l.stream()
-              .sorted((r1, r2) -> comparator.compare(r1.primaryIndex(), r2.primaryIndex()))
-              .toList();
-          R ri = rows.stream().map(Series::primaryIndex).min(comparator).orElseThrow();
-          SequencedMap<C, T1> row = aggregator.apply(rows);
-          return new Series<>(ri, row);
-        })
-        .toList());
+    return Table.fromRows(
+        rowIndexes().stream()
+            .map(ri -> new Series<>(ri, row(ri)))
+            .collect(Collectors.groupingBy(classifier))
+            .values()
+            .stream()
+            .map(l -> {
+              List<Series<R, C, T>> rows = l.stream()
+                  .sorted((r1, r2) -> comparator.compare(r1.primaryIndex(), r2.primaryIndex()))
+                  .toList();
+              R ri = rows.stream().map(Series::primaryIndex).min(comparator).orElseThrow();
+              SequencedMap<C, T1> row = aggregator.apply(rows);
+              return new Series<>(ri, row);
+            })
+            .toList()
+    );
   }
 
   /// Returns a new unmodifiable table by aggregating this table by row contents. First, rows are
@@ -210,7 +223,8 @@ public interface Table<R, C, T> {
       Function<List<T>, T1> aggregator
   ) {
     return aggregateRowsByContentSingle(
-        classifier, comparator,
+        classifier,
+        comparator,
         (c, values) -> aggregator.apply(values)
     );
   }
@@ -234,8 +248,7 @@ public interface Table<R, C, T> {
       Comparator<R> comparator,
       BiFunction<C, List<T>, T1> aggregator
   ) {
-    Function<List<Series<R, C, T>>, SequencedMap<C, T1>> rowAggregator = rows -> rows.getFirst()
-        .values
+    Function<List<Series<R, C, T>>, SequencedMap<C, T1>> rowAggregator = rows -> rows.getFirst().values
         .keySet()
         .stream()
         .map(
@@ -296,8 +309,7 @@ public interface Table<R, C, T> {
       Comparator<R> comparator,
       BiFunction<C, List<Map.Entry<R, T>>, T1> aggregator
   ) {
-    Function<List<Series<R, C, T>>, SequencedMap<C, T1>> rowAggregator = rows -> rows.getFirst()
-        .values
+    Function<List<Series<R, C, T>>, SequencedMap<C, T1>> rowAggregator = rows -> rows.getFirst().values
         .keySet()
         .stream()
         .map(
@@ -347,7 +359,8 @@ public interface Table<R, C, T> {
       Function<List<Map.Entry<R, T>>, T1> aggregator
   ) {
     BiFunction<C, List<Map.Entry<R, T>>, T1> rowAggregator = (c, rows) -> aggregator.apply(
-        rows);
+        rows
+    );
     return aggregateRowsByIndexSingle(classifier, comparator, rowAggregator);
   }
 
@@ -374,7 +387,9 @@ public interface Table<R, C, T> {
         .flatMap(SequencedSet::stream)
         .collect(Collectors.toCollection(LinkedHashSet::new));
     return Unmodifiable.of(
-        rowIndexes(), colIndexes, (rowIndex, colIndex) -> {
+        rowIndexes(),
+        colIndexes,
+        (rowIndex, colIndex) -> {
           T thisT = thisTable.get(rowIndex, colIndex);
           if (thisT != null) {
             return thisT;
@@ -397,16 +412,23 @@ public interface Table<R, C, T> {
   default Table<R, C, T> collapseSlidingCols(int n, Function<List<T>, T> aggregator) {
     List<C> cis = colIndexes().stream().toList();
     List<Series<R, C, T>> rows = rowIndexes().stream()
-        .map(ri -> new Series<>(
-            ri,
-            IntStream.range(n, cis.size()).boxed().collect(Collectors.toMap(
-                cis::get,
-                i -> aggregator.apply(
-                    IntStream.range(i - n, i).mapToObj(j -> get(ri, cis.get(j))).toList()),
-                Table::first,
-                LinkedHashMap::new
-            ))
-        ))
+        .map(
+            ri -> new Series<>(
+                ri,
+                IntStream.range(n, cis.size())
+                    .boxed()
+                    .collect(
+                        Collectors.toMap(
+                            cis::get,
+                            i -> aggregator.apply(
+                                IntStream.range(i - n, i).mapToObj(j -> get(ri, cis.get(j))).toList()
+                            ),
+                            Table::first,
+                            LinkedHashMap::new
+                        )
+                    )
+            )
+        )
         .toList();
     return Table.fromRows(rows);
   }
@@ -421,16 +443,23 @@ public interface Table<R, C, T> {
   default Table<R, C, T> collapseSlidingRows(int n, Function<List<T>, T> aggregator) {
     List<R> ris = rowIndexes().stream().toList();
     List<Series<C, R, T>> columns = colIndexes().stream()
-        .map(ci -> new Series<>(
-            ci,
-            IntStream.range(n, ris.size()).boxed().collect(Collectors.toMap(
-                ris::get,
-                i -> aggregator.apply(
-                    IntStream.range(i - n, i).mapToObj(j -> get(ris.get(j), ci)).toList()),
-                Table::first,
-                LinkedHashMap::new
-            ))
-        ))
+        .map(
+            ci -> new Series<>(
+                ci,
+                IntStream.range(n, ris.size())
+                    .boxed()
+                    .collect(
+                        Collectors.toMap(
+                            ris::get,
+                            i -> aggregator.apply(
+                                IntStream.range(i - n, i).mapToObj(j -> get(ris.get(j), ci)).toList()
+                            ),
+                            Table::first,
+                            LinkedHashMap::new
+                        )
+                    )
+            )
+        )
         .toList();
     return Table.fromColumns(columns);
   }
@@ -454,7 +483,8 @@ public interface Table<R, C, T> {
                     Table::first,
                     LinkedHashMap::new
                 )
-            ));
+            )
+    );
   }
 
   /// Returns an unmodifiable view of the values in the column at `colIndex` of this table, or an
@@ -481,11 +511,15 @@ public interface Table<R, C, T> {
   /// @param <C1>     the type of the new table column indexes
   /// @param <T1>     the type of the new table values
   /// @return the new unmodifiable table
-  default <C1, T1> Table<R, C1, T1> expandColumn(C colIndex,
-      BiFunction<R, T, SequencedMap<C1, T1>> expander) {
-    return fromRows(rowIndexes().stream()
-        .map(ri -> new Series<>(ri, expander.apply(ri, get(ri, colIndex))))
-        .toList());
+  default <C1, T1> Table<R, C1, T1> expandColumn(
+      C colIndex,
+      BiFunction<R, T, SequencedMap<C1, T1>> expander
+  ) {
+    return fromRows(
+        rowIndexes().stream()
+            .map(ri -> new Series<>(ri, expander.apply(ri, get(ri, colIndex))))
+            .toList()
+    );
   }
 
   /// Returns a new unmodifiable table built by expanding the row indexes using the `expander`
@@ -496,9 +530,11 @@ public interface Table<R, C, T> {
   /// @param <T1>     the type of the new table values
   /// @return the new unmodifiable table
   default <C1, T1> Table<R, C1, T1> expandRowIndex(Function<R, SequencedMap<C1, T1>> expander) {
-    return fromRows(rowIndexes().stream()
-        .map(ri -> new Series<>(ri, expander.apply(ri)))
-        .toList());
+    return fromRows(
+        rowIndexes().stream()
+            .map(ri -> new Series<>(ri, expander.apply(ri)))
+            .toList()
+    );
   }
 
   /// Returns a new unmodifiable table that contains all and only the columns of this table which
@@ -507,10 +543,12 @@ public interface Table<R, C, T> {
   /// @param colPredicate the predicate to filter columns
   /// @return the new unmodifiable table
   default Table<R, C, T> filterColumns(Predicate<Series<C, R, T>> colPredicate) {
-    return fromColumns(colIndexes().stream()
-        .map(ci -> new Series<>(ci, column(ci)))
-        .filter(colPredicate)
-        .toList());
+    return fromColumns(
+        colIndexes().stream()
+            .map(ci -> new Series<>(ci, column(ci)))
+            .filter(colPredicate)
+            .toList()
+    );
   }
 
   /// Returns a new unmodifiable table that contains all and only the rows of this table for which
@@ -537,10 +575,12 @@ public interface Table<R, C, T> {
   /// @param rowPredicate the predicate to filter rows
   /// @return the new unmodifiable table
   default Table<R, C, T> filterRows(Predicate<Series<R, C, T>> rowPredicate) {
-    return fromRows(rowIndexes().stream()
-        .map(ri -> new Series<>(ri, row(ri)))
-        .filter(rowPredicate)
-        .toList());
+    return fromRows(
+        rowIndexes().stream()
+            .map(ri -> new Series<>(ri, row(ri)))
+            .filter(rowPredicate)
+            .toList()
+    );
   }
 
   /// Returns a new unmodifiable table that contains all and only the rows of this table for which
@@ -605,9 +645,11 @@ public interface Table<R, C, T> {
   /// @param <R1>   the type of the new table row indexes
   /// @return the new unmodifiable table
   default <R1> Table<R1, C, T> mapRowIndexes(BiFunction<R, SequencedMap<C, T>, R1> mapper) {
-    return fromRows(rowIndexes().stream()
-        .map(ri -> new Series<>(mapper.apply(ri, row(ri)), row(ri)))
-        .toList());
+    return fromRows(
+        rowIndexes().stream()
+            .map(ri -> new Series<>(mapper.apply(ri, row(ri)), row(ri)))
+            .toList()
+    );
   }
 
   /// Returns a new unmodifiable table built by applying the `mapper` to row indexes of this table.
@@ -637,8 +679,11 @@ public interface Table<R, C, T> {
         colIndexes(),
         (ri, ci) -> map.computeIfAbsent(
             new Pair<>(ri, ci),
-            lCoords -> mapper.apply(lCoords.first(), lCoords.second(),
-                get(lCoords.first(), lCoords.second()))
+            lCoords -> mapper.apply(
+                lCoords.first(),
+                lCoords.second(),
+                get(lCoords.first(), lCoords.second())
+            )
         )
     );
   }
@@ -785,9 +830,14 @@ public interface Table<R, C, T> {
         (SequencedMap<? extends C, ? extends T>) colIndexes().stream()
             .filter(ci -> get(rowIndex, ci) != null)
             .collect(
-                Collectors.toMap(ci -> ci, ci -> get(rowIndex, ci), Table::first,
-                    LinkedHashMap::new)
-            ));
+                Collectors.toMap(
+                    ci -> ci,
+                    ci -> get(rowIndex, ci),
+                    Table::first,
+                    LinkedHashMap::new
+                )
+            )
+    );
   }
 
   /// Returns the row indexes.
@@ -852,7 +902,8 @@ public interface Table<R, C, T> {
   /// @return the values-only view of this table
   default Unmodifiable<R, C, T> sortedByRowIndex(Comparator<R> comparator) {
     return Unmodifiable.of(
-        rowIndexes().stream().sorted(comparator)
+        rowIndexes().stream()
+            .sorted(comparator)
             .collect(Collectors.toCollection(LinkedHashSet::new)),
         colIndexes(),
         this::get
@@ -865,14 +916,19 @@ public interface Table<R, C, T> {
   /// @param comparator the comparator for ordering values
   /// @return the values-only view of this table
   default Unmodifiable<R, C, T> sortedByValue(C colIndex, Comparator<T> comparator) {
-    Map<R, Map<C, T>> map = rowIndexes().stream().collect(Collectors.toMap(
-        ri -> ri,
-        this::row
-    ));
+    Map<R, Map<C, T>> map = rowIndexes().stream()
+        .collect(
+            Collectors.toMap(
+                ri -> ri,
+                this::row
+            )
+        );
     return Unmodifiable.of(
-        rowIndexes().stream().sorted(
-            Comparator.comparing(ri -> row(ri).get(colIndex), comparator)
-        ).collect(Collectors.toCollection(LinkedHashSet::new)),
+        rowIndexes().stream()
+            .sorted(
+                Comparator.comparing(ri -> row(ri).get(colIndex), comparator)
+            )
+            .collect(Collectors.toCollection(LinkedHashSet::new)),
         colIndexes(),
         (ri, ci) -> map.getOrDefault(ri, Map.of()).get(ci)
     );
@@ -888,65 +944,23 @@ public interface Table<R, C, T> {
         .toList();
   }
 
-  default <R1, C1> Table<R1, C1, T> wider(Function<R, R1> classifier,
-      BiFunction<R, C, C1> spreader) {
-    return fromRows(rowIndexes().stream()
-        .collect(Collectors.groupingBy(classifier))
-        .entrySet()
-        .stream()
-        .map(e -> new Series<>(
-            e.getKey(),
-            e.getValue()
-                .stream()
-                .map(
-                    ri -> colIndexes().stream()
-                        .map(ci -> Map.entry(spreader.apply(ri, ci), get(ri, ci)))
-                        .toList()
-                )
-                .flatMap(List::stream)
-                .collect(
-                    Collectors.toMap(
-                        Entry::getKey,
-                        Entry::getValue,
-                        Table::first,
-                        LinkedHashMap::new
-                    )
-                )
-        )).toList());
-  }
-
-  default <R1, C1> Table<R1, C1, T> wider(
-      Function<R, R1> rowKey,
-      C colIndex,
-      Function<R, C1> spreader
-  ) {
-    return fromRows(rowIndexes().stream()
-        .collect(Collectors.groupingBy(rowKey))
-        .entrySet()
-        .stream()
-        .map(e -> new Series<>(
-            e.getKey(),
-            e.getValue()
-                .stream()
-                .collect(
-                    Collectors.toMap(
-                        spreader,
-                        r -> get(r, colIndex),
-                        Table::first,
-                        LinkedHashMap::new
-                    )
-                )))
-        .toList());
-  }
-
-  default Unmodifiable<R, C, T> with(C newColumnIndex, T newT) {
+  /// Returns a values-only view of this table which has one column at `newColIndex` containing the
+  /// provided `newValue` at each row. A values-only view is one where values in the cells reflect
+  /// the changes of the original (this) table, but the structure of the view table is the one at
+  /// creation (with the new column). The new column possibly overwrites (in the view) an existing
+  /// column with the same column index in this table.
+  ///
+  /// @param newColIndex the index of the new column
+  /// @param newT        the value in each cell of the new column
+  /// @return the values-only view of this table
+  default Unmodifiable<R, C, T> with(C newColIndex, T newT) {
     SequencedSet<C> colIndexes = new LinkedHashSet<>(colIndexes());
-    colIndexes.add(newColumnIndex);
+    colIndexes.add(newColIndex);
     return Unmodifiable.of(
         rowIndexes(),
         colIndexes,
         (ri, ci) -> {
-          if (ci.equals(newColumnIndex)) {
+          if (ci.equals(newColIndex)) {
             return newT;
           }
           return get(ri, ci);
@@ -965,7 +979,9 @@ public interface Table<R, C, T> {
 
     /// Creates a new unmodifiable table based on the provided `rowIndexes`, `colIndexes`, and
     /// `retriever`. The `retriever` is used for retrieve table values; the returned table does not
-    /// actually store values, but instead retrieve them through `retriever`.
+    /// actually store values, but instead retrieve them through `retriever`. The `retriever` is
+    /// only invoked if both row and column indexes are contained in the provided``rowIndexes` and
+    ///`colIndexes`.
     ///
     /// @param rowIndexes the row indexes of the new unmodifiable table
     /// @param colIndexes the col indexes of the new unmodifiable table
