@@ -42,172 +42,6 @@ import java.util.stream.Stream;
 /// @param <T> the type of values in the cells
 public interface Table<R, C, T> {
 
-  /// A read-only table for which all the methods for modifying the content throw an
-  /// [UnsupportedOperationException]. Many methods of [Table] return views which are read-only
-  /// tables.
-  ///
-  /// @param <R> the type of row indexes
-  /// @param <C> the type of column indexes
-  /// @param <T> the type of values in the cells
-  interface Unmodifiable<R, C, T> extends Table<R, C, T> {
-
-    /// Creates a new unmodifiable table based on the provided `rowIndexes`, `colIndexes`, and
-    /// `retriever`. The `retriever` is used for retrieve table values; the returned table does not
-    /// actually store values, but instead retrieve them through `retriever`.
-    ///
-    /// @param rowIndexes the row indexes of the new unmodifiable table
-    /// @param colIndexes the col indexes of the new unmodifiable table
-    /// @param retriever  the function used to retrieve the value of the
-    /// @param <R>        the type of row indexes
-    /// @param <C>        the type of column indexes
-    /// @param <T>        the type of values in the cells
-    /// @return the new unmodifiable table
-    static <R, C, T> Unmodifiable<R, C, T> of(
-        SequencedSet<R> rowIndexes,
-        SequencedSet<C> colIndexes,
-        BiFunction<R, C, T> retriever
-    ) {
-      return new Unmodifiable<>() {
-        @Override
-        public SequencedSet<C> colIndexes() {
-          return colIndexes;
-        }
-
-        @Override
-        public T get(R rowIndex, C colIndex) {
-          if (rowIndexes.contains(rowIndex) && colIndexes.contains(colIndex)) {
-            return retriever.apply(rowIndex, colIndex);
-          }
-          return null;
-        }
-
-        @Override
-        public SequencedSet<R> rowIndexes() {
-          return rowIndexes;
-        }
-      };
-    }
-
-    /// Throws an exception, as the table is read-only.
-    ///
-    /// @param column the new column
-    /// @throws UnsupportedOperationException always
-    @Override
-    default void addColumn(Series<C, R, T> column) {
-      throw new UnsupportedOperationException("This is a read only table");
-    }
-
-    /// Throws an exception, as the table is read-only.
-    ///
-    /// @param row the new row
-    /// @throws UnsupportedOperationException always
-    @Override
-    default void addRow(Series<R, C, T> row) {
-      throw new UnsupportedOperationException("This is a read only table");
-    }
-
-    /// Throws an exception, as the table is read-only.
-    ///
-    /// @param colIndex the index of the column to be removed
-    /// @throws UnsupportedOperationException always
-    @Override
-    default void removeColumn(C colIndex) {
-      throw new UnsupportedOperationException("This is a read only table");
-    }
-
-    /// Throws an exception, as the table is read-only.
-    ///
-    /// @param rowIndex the index of the row to be removed
-    /// @throws UnsupportedOperationException always
-    @Override
-    default void removeRow(R rowIndex) {
-      throw new UnsupportedOperationException("This is a read only table");
-    }
-
-    /// Throws an exception, as the table is read-only.
-    ///
-    /// @param rowIndex the row index of cell where to set the value
-    /// @param colIndex the column index of cell where to set the value
-    /// @param t        the new value
-    /// @throws UnsupportedOperationException always
-    @Override
-    default void set(R rowIndex, C colIndex, T t) {
-      throw new UnsupportedOperationException("This is a read only table");
-    }
-  }
-
-  /// A series of values of tells, representing either a row or a column. If used to represent a
-  /// row, the `primaryIndex` is the row index; otherwise, it is the column index.
-  ///
-  /// @param primaryIndex the row/column index of the series
-  /// @param values       the values in the series
-  /// @param <P>          the type of the primary (row/column) index
-  /// @param <S>          the type of the secondary (column/row) index
-  /// @param <T>          the type of values in the cells
-  record Series<P, S, T>(P primaryIndex, SequencedMap<S, T> values) {
-
-  }
-
-  /// Adds or modifies a column into this table. If the table already contains a column with the
-  /// index corresponding to the `column` primary index, adds the provided series as the last column
-  /// in the table. Otherwise, it modifies the column at `column.primaryIndex()` with the provided
-  /// series. If `column` contains secondary (row) indexes that are not in this table, this method
-  /// adds the corresponding rows to the table, in the order the map iterator encounters the
-  /// corresponding keys.
-  ///
-  /// @param column the new column
-  void addColumn(Series<C, R, T> column);
-
-  /// Adds or modifies a row into this table. If the table already contains a row with the index
-  /// corresponding to the `row` primary index, adds the provided series as the last row in the
-  /// table. Otherwise, it modifies the column at `row.primaryIndex()` with the provided series. If
-  /// `row` contains secondary (column) indexes that are not in this table, this method adds the
-  /// corresponding columns to the table, in the order the map iterator encounters the corresponding
-  /// keys.
-  ///
-  /// @param row the new row
-  void addRow(Series<R, C, T> row);
-
-  /// Returns the column indexes.
-  ///
-  /// @return the column indexes
-  SequencedSet<C> colIndexes();
-
-  /// Returns the value at the cell given by the provided row and column indexes, if any. Returns
-  /// `null` if the cell value is actually `null` or if the table does not have a column at
-  /// `colIndex` or a row at `rowIndex`.
-  ///
-  /// @param rowIndex the index of the row of the cell
-  /// @param colIndex the index of the column of the cell
-  /// @return the value at the cell given by the provided row and column indexes, or `null` if no
-  ///  value
-  T get(R rowIndex, C colIndex);
-
-  /// Removes the column at `colIndex`, if any, from this table. If the table has no column at
-  /// `colIndex`, invoking this method has no effect.
-  ///
-  /// @param colIndex the index of the column to remove
-  void removeColumn(C colIndex);
-
-  /// Removes the row at `rowIndex`, if any, from this table. If the table has no row at `rowIndex`,
-  /// invoking this method has no effect.
-  ///
-  /// @param rowIndex the index of the column to remove
-  void removeRow(R rowIndex);
-
-  /// Returns the row indexes.
-  ///
-  /// @return the row indexes
-  SequencedSet<R> rowIndexes();
-
-  /// Set the value at the cell given by the provided row and column indexes. If there is not a row
-  /// at `rowIndex`, adds the row as last row. If there is not a column at `colIndex`, adds the
-  /// column as last column.
-  ///
-  /// @param rowIndex the index of the row of the cell
-  /// @param colIndex the index of the column of the cell
-  void set(R rowIndex, C colIndex, T t);
-
   private static <T> T first(T t1, T t2) {
     return t1;
   }
@@ -279,6 +113,26 @@ public interface Table<R, C, T> {
     s = sBuilder.toString();
     return s;
   }
+
+  /// Adds or modifies a column into this table. If the table already contains a column with the
+  /// index corresponding to the `column` primary index, adds the provided series as the last column
+  /// in the table. Otherwise, it modifies the column at `column.primaryIndex()` with the provided
+  /// series. If `column` contains secondary (row) indexes that are not in this table, this method
+  /// adds the corresponding rows to the table, in the order the map iterator encounters the
+  /// corresponding keys.
+  ///
+  /// @param column the new column
+  void addColumn(Series<C, R, T> column);
+
+  /// Adds or modifies a row into this table. If the table already contains a row with the index
+  /// corresponding to the `row` primary index, adds the provided series as the last row in the
+  /// table. Otherwise, it modifies the column at `row.primaryIndex()` with the provided series. If
+  /// `row` contains secondary (column) indexes that are not in this table, this method adds the
+  /// corresponding columns to the table, in the order the map iterator encounters the corresponding
+  /// keys.
+  ///
+  /// @param row the new row
+  void addRow(Series<R, C, T> row);
 
   /// Returns a new unmodifiable table by aggregating this table by rows. First, rows are
   /// partitioned using `classifier`, using the equivalence of `K` as relation. Then, rows in each
@@ -502,6 +356,11 @@ public interface Table<R, C, T> {
     rowIndexes().forEach(this::removeRow);
   }
 
+  /// Returns the column indexes.
+  ///
+  /// @return the column indexes
+  SequencedSet<C> colIndexes();
+
   /// Returns a new unmodifiable table which has the row indexes of this table and the union of the
   /// column indexes of this and the `other` table. In each cell of the new table at row $r$ and
   /// column $c$, the value is the one of this table, if present, or the other table, if present, or
@@ -702,6 +561,16 @@ public interface Table<R, C, T> {
     return filterRows(row -> predicate.test(row.values));
   }
 
+  /// Returns the value at the cell given by the provided row and column indexes, if any. Returns
+  /// `null` if the cell value is actually `null` or if the table does not have a column at
+  /// `colIndex` or a row at `rowIndex`.
+  ///
+  /// @param rowIndex the index of the row of the cell
+  /// @param colIndex the index of the column of the cell
+  /// @return the value at the cell given by the provided row and column indexes, or `null` if no
+  ///  value
+  T get(R rowIndex, C colIndex);
+
   /// Returns the value at the cell given by the provided column sequential index `x` and row
   /// sequential index `y`, if any. Returns `null` if the cell value is actually `null`; throws an
   /// exception if `x`,`y` is not valid, i.e., if the table has fewer than `x`+1 columns or fewer
@@ -891,6 +760,18 @@ public interface Table<R, C, T> {
     return prettyToString(Objects::toString, Objects::toString, Objects::toString);
   }
 
+  /// Removes the column at `colIndex`, if any, from this table. If the table has no column at
+  /// `colIndex`, invoking this method has no effect.
+  ///
+  /// @param colIndex the index of the column to remove
+  void removeColumn(C colIndex);
+
+  /// Removes the row at `rowIndex`, if any, from this table. If the table has no row at `rowIndex`,
+  /// invoking this method has no effect.
+  ///
+  /// @param rowIndex the index of the column to remove
+  void removeRow(R rowIndex);
+
   /// Returns an unmodifiable view of the row at `rowIndex` of this table, or an empty map if no
   /// such row exists.
   ///
@@ -909,6 +790,11 @@ public interface Table<R, C, T> {
             ));
   }
 
+  /// Returns the row indexes.
+  ///
+  /// @return the row indexes
+  SequencedSet<R> rowIndexes();
+
   /// Returns an unmodifiable view of the values in the row at `rowIndex` of this table, or an empty
   /// list if no such row exists.
   ///
@@ -924,6 +810,14 @@ public interface Table<R, C, T> {
   default List<SequencedMap<C, T>> rows() {
     return rowIndexes().stream().map(this::row).toList();
   }
+
+  /// Set the value at the cell given by the provided row and column indexes. If there is not a row
+  /// at `rowIndex`, adds the row as last row. If there is not a column at `colIndex`, adds the
+  /// column as last column.
+  ///
+  /// @param rowIndex the index of the row of the cell
+  /// @param colIndex the index of the column of the cell
+  void set(R rowIndex, C colIndex, T t);
 
   /// Set the value at the cell given by the provided column sequential index `x` and row sequential
   /// index `y`, if any. Throws an exception if `x`,`y` is not valid, i.e., if the table has fewer
@@ -1058,5 +952,111 @@ public interface Table<R, C, T> {
           return get(ri, ci);
         }
     );
+  }
+
+  /// A read-only table for which all the methods for modifying the content throw an
+  /// [UnsupportedOperationException]. Many methods of [Table] return views which are read-only
+  /// tables.
+  ///
+  /// @param <R> the type of row indexes
+  /// @param <C> the type of column indexes
+  /// @param <T> the type of values in the cells
+  interface Unmodifiable<R, C, T> extends Table<R, C, T> {
+
+    /// Creates a new unmodifiable table based on the provided `rowIndexes`, `colIndexes`, and
+    /// `retriever`. The `retriever` is used for retrieve table values; the returned table does not
+    /// actually store values, but instead retrieve them through `retriever`.
+    ///
+    /// @param rowIndexes the row indexes of the new unmodifiable table
+    /// @param colIndexes the col indexes of the new unmodifiable table
+    /// @param retriever  the function used to retrieve the value of the
+    /// @param <R>        the type of row indexes
+    /// @param <C>        the type of column indexes
+    /// @param <T>        the type of values in the cells
+    /// @return the new unmodifiable table
+    static <R, C, T> Unmodifiable<R, C, T> of(
+        SequencedSet<R> rowIndexes,
+        SequencedSet<C> colIndexes,
+        BiFunction<R, C, T> retriever
+    ) {
+      return new Unmodifiable<>() {
+        @Override
+        public SequencedSet<C> colIndexes() {
+          return colIndexes;
+        }
+
+        @Override
+        public T get(R rowIndex, C colIndex) {
+          if (rowIndexes.contains(rowIndex) && colIndexes.contains(colIndex)) {
+            return retriever.apply(rowIndex, colIndex);
+          }
+          return null;
+        }
+
+        @Override
+        public SequencedSet<R> rowIndexes() {
+          return rowIndexes;
+        }
+      };
+    }
+
+    /// Throws an exception, as the table is read-only.
+    ///
+    /// @param column the new column
+    /// @throws UnsupportedOperationException always
+    @Override
+    default void addColumn(Series<C, R, T> column) {
+      throw new UnsupportedOperationException("This is a read only table");
+    }
+
+    /// Throws an exception, as the table is read-only.
+    ///
+    /// @param row the new row
+    /// @throws UnsupportedOperationException always
+    @Override
+    default void addRow(Series<R, C, T> row) {
+      throw new UnsupportedOperationException("This is a read only table");
+    }
+
+    /// Throws an exception, as the table is read-only.
+    ///
+    /// @param colIndex the index of the column to be removed
+    /// @throws UnsupportedOperationException always
+    @Override
+    default void removeColumn(C colIndex) {
+      throw new UnsupportedOperationException("This is a read only table");
+    }
+
+    /// Throws an exception, as the table is read-only.
+    ///
+    /// @param rowIndex the index of the row to be removed
+    /// @throws UnsupportedOperationException always
+    @Override
+    default void removeRow(R rowIndex) {
+      throw new UnsupportedOperationException("This is a read only table");
+    }
+
+    /// Throws an exception, as the table is read-only.
+    ///
+    /// @param rowIndex the row index of cell where to set the value
+    /// @param colIndex the column index of cell where to set the value
+    /// @param t        the new value
+    /// @throws UnsupportedOperationException always
+    @Override
+    default void set(R rowIndex, C colIndex, T t) {
+      throw new UnsupportedOperationException("This is a read only table");
+    }
+  }
+
+  /// A series of values of tells, representing either a row or a column. If used to represent a
+  /// row, the `primaryIndex` is the row index; otherwise, it is the column index.
+  ///
+  /// @param primaryIndex the row/column index of the series
+  /// @param values       the values in the series
+  /// @param <P>          the type of the primary (row/column) index
+  /// @param <S>          the type of the secondary (column/row) index
+  /// @param <T>          the type of values in the cells
+  record Series<P, S, T>(P primaryIndex, SequencedMap<S, T> values) {
+
   }
 }

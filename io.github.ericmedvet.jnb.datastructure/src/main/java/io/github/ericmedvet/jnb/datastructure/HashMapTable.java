@@ -37,20 +37,6 @@ public class HashMapTable<R, C, T> implements Table<R, C, T> {
     colIndexes = new LinkedHashSet<>();
   }
 
-  private record Key<R, C>(R r, C c) {
-
-  }
-
-  @Override
-  public SequencedSet<R> rowIndexes() {
-    return rowIndexes;
-  }
-
-  @Override
-  public SequencedSet<C> colIndexes() {
-    return colIndexes;
-  }
-
   @Override
   public void addColumn(Series<C, R, T> column) {
     colIndexes.add(column.primaryIndex());
@@ -68,10 +54,13 @@ public class HashMapTable<R, C, T> implements Table<R, C, T> {
   }
 
   @Override
-  public void removeRow(R rowIndex) {
-    rowIndexes.remove(rowIndex);
-    List<Key<R, C>> toRemoveKeys = map.keySet().stream().filter(k -> k.r.equals(rowIndex)).toList();
-    toRemoveKeys.forEach(map.keySet()::remove);
+  public SequencedSet<C> colIndexes() {
+    return colIndexes;
+  }
+
+  @Override
+  public T get(R rowIndex, C colIndex) {
+    return map.get(new Key<>(rowIndex, colIndex));
   }
 
   @Override
@@ -82,8 +71,15 @@ public class HashMapTable<R, C, T> implements Table<R, C, T> {
   }
 
   @Override
-  public T get(R rowIndex, C colIndex) {
-    return map.get(new Key<>(rowIndex, colIndex));
+  public void removeRow(R rowIndex) {
+    rowIndexes.remove(rowIndex);
+    List<Key<R, C>> toRemoveKeys = map.keySet().stream().filter(k -> k.r.equals(rowIndex)).toList();
+    toRemoveKeys.forEach(map.keySet()::remove);
+  }
+
+  @Override
+  public SequencedSet<R> rowIndexes() {
+    return rowIndexes;
   }
 
   @Override
@@ -96,5 +92,9 @@ public class HashMapTable<R, C, T> implements Table<R, C, T> {
   @Override
   public String toString() {
     return "Table[%dx%d]".formatted(nOfRows(), nOfColumns());
+  }
+
+  private record Key<R, C>(R r, C c) {
+
   }
 }
