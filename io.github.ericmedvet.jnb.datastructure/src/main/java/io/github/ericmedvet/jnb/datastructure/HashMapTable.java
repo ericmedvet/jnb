@@ -25,16 +25,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.SequencedSet;
 
+/// A table that internally stores its values in an [HashMap].
+///
+/// @param <R>
+/// @param <C>
+/// @param <T>
 public class HashMapTable<R, C, T> implements Table<R, C, T> {
 
   private final Map<Key<R, C>, T> map;
   private final SequencedSet<R> rowIndexes;
   private final SequencedSet<C> colIndexes;
 
+  /// Constructs an empty `HashMapTable`.
   public HashMapTable() {
     this.map = new HashMap<>();
     rowIndexes = new LinkedHashSet<>();
     colIndexes = new LinkedHashSet<>();
+  }
+
+  private record Key<R, C>(R r, C c) {
+
   }
 
   @Override
@@ -89,12 +99,13 @@ public class HashMapTable<R, C, T> implements Table<R, C, T> {
     map.put(new Key<>(rowIndex, colIndex), t);
   }
 
+  /// Returns a string representation of this table, which shows only the number of rows and columns.
+  /// For a more informative, yet human-friendly string representation, see
+  ///  [Table#prettyToString(Function, Function, Function)].
+  ///
+  /// @return a string representation of this table
   @Override
   public String toString() {
     return "Table[%dx%d]".formatted(nOfRows(), nOfColumns());
-  }
-
-  private record Key<R, C>(R r, C c) {
-
   }
 }
