@@ -29,12 +29,16 @@ import java.util.stream.Stream;
 
 /// An object that stores elements of type `T` in a modifiable table like structure where cells are
 /// indexed through pairs of coordinates `R`,`C`. `R` is the type of row indexes, `C` is the type of
-/// column indexes. It provides methods for modifying the content of the cells ([#set(Object,
+/// column indexes.
+/// Rows and columns have a well-defined encounter order.
+///
+/// This interface provides methods for modifying the content of the cells ([#set(Object,
 /// Object, Object)]) or the content and the structure ([#clear()], [#addRow(Series)],
 /// [#addColumn(Series)], [#removeRow(Object)], [#removeColumn(Object)]). It also provides
 /// methods for obtaining views of (parts) of the table.
 ///
-/// Rows and columns have a well-defined encounter order.
+/// For creating an unmodifiable table from data, one can use the `from` methods: [#from(SequencedMap)],
+/// [#fromRows(List)], and [#fromColumns(List)].
 ///
 /// @param <R> the type of row indexes
 /// @param <C> the type of column indexes
