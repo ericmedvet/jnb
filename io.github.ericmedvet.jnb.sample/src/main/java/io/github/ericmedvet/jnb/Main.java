@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -113,6 +114,12 @@ public class Main {
     }
   }
 
+  public static Function<String, String> shortener(
+      @Param(value = "suffix", dS = ".") String suffix
+  ) {
+    return s -> s.charAt(0) + suffix;
+  }
+
   public static void main(String[] args) throws ParseException, IOException {
     // justParse();
 
@@ -121,6 +128,7 @@ public class Main {
         .and(NamedBuilder.fromClass(Person.class))
         .and(NamedBuilder.fromClass(Timed.class))
         .and(NamedBuilder.fromClass(Pet.class));
+    @SuppressWarnings("unchecked") Function<String, String> f = (Function<String, String>) nb.build("f.doer()");
     // System.out.println(nb.build("person(name=eric;preferredDays=[mon;tue];age=44)"));
     // System.exit(0);
 
@@ -168,7 +176,7 @@ public class Main {
 
     String s = "    toio %;\nhugo %;";
     Matcher matcher = Pattern.compile(
-        "\\s*(%[^\\n\\r]*((\\r\\n)|(\\r)|(\\n))\\s*)*" + "[A-Za-z][A-Za-z0-9_]*" + "\\s*(%[^\\n\\r]*((\\r\\n)|(\\r)|(\\n))\\s*)*"
+        "\\s*(%[^\\n\\r]*((\\r\\n)|(\\r)|(\\n))\\s*)*" + "[A-Za-z][A-Za-z0-9_]*" + "\\s*(%[^\\n\\r]*((\\r\\n)|" + "(\\r)|(\\n))\\s*)*"
     )
         .matcher(s);
     while (matcher.find()) {
@@ -191,13 +199,13 @@ public class Main {
             )
             """; // spotless:on
     String s2 = // spotless:off
-    """
-        animal(
-          name = simba;
-          nums = [1; 2; 3];
-          age = 17
-        )
-        """; // spotless:on
+        """
+            animal(
+              name = simba;
+              nums = [1; 2; 3];
+              age = 17
+            )
+            """; // spotless:on
     String s3 = // spotless:off
         """
             animal(

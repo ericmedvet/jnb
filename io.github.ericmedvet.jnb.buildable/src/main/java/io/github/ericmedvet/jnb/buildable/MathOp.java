@@ -17,7 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package io.github.ericmedvet.jnb.core;
+package io.github.ericmedvet.jnb.buildable;
 
 import java.util.Arrays;
 import java.util.function.ToDoubleFunction;
