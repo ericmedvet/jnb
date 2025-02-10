@@ -249,6 +249,13 @@
                   <goal>jar</goal>
                 </goals>
               </execution>
+              <execution>
+                <id>aggregate</id>
+                <goals>
+                  <goal>aggregate</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
             </executions>
           </plugin>
           <plugin>
