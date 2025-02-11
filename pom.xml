@@ -243,6 +243,7 @@
               <additionalOptions>
                 <additionalOption>-Xdoclint:none</additionalOption>
                 <additionalOption>--allow-script-in-comments</additionalOption>
+                <additionalOption>--snippet-path ${user.dir}/src/snippet-files</additionalOption>
               </additionalOptions>
             </configuration>
             <executions>
