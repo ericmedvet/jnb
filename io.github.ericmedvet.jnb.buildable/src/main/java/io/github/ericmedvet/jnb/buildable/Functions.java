@@ -215,7 +215,7 @@ public class Functions {
   public static <X, T> FormattedNamedFunction<X, Double> gridCompactness(
       @Param(value = "predicate", dNPM = "f.nonNull()") Function<T, Boolean> predicate,
       @Param(value = "of", dNPM = "f.identity()") Function<X, Grid<T>> beforeF,
-      @Param(value = "format", dS = "%2d") String format
+      @Param(value = "format", dS = "%5.3f") String format
   ) {
     Function<Grid<T>, Double> f = g -> GridUtils.compactness(g, predicate::apply);
     return FormattedNamedFunction.from(f, format, "grid.compactness").compose(beforeF);
@@ -248,7 +248,7 @@ public class Functions {
   public static <X, T> FormattedNamedFunction<X, Double> gridElongation(
       @Param(value = "predicate", dNPM = "f.nonNull()") Function<T, Boolean> predicate,
       @Param(value = "of", dNPM = "f.identity()") Function<X, Grid<T>> beforeF,
-      @Param(value = "format", dS = "%2d") String format
+      @Param(value = "format", dS = "%5.3f") String format
   ) {
     Function<Grid<T>, Double> f = g -> GridUtils.elongation(g, predicate::apply);
     return FormattedNamedFunction.from(f, format, "grid.elongation").compose(beforeF);
