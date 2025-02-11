@@ -27,9 +27,9 @@ import java.util.SequencedSet;
 
 /// A table that internally stores its values in an [HashMap].
 ///
-/// @param <R>
-/// @param <C>
-/// @param <T>
+/// @param <R> the type of row indexes
+/// @param <C> the type of column indexes
+/// @param <T> the type of values in the cells
 public class HashMapTable<R, C, T> implements Table<R, C, T> {
 
   private final Map<Key<R, C>, T> map;
