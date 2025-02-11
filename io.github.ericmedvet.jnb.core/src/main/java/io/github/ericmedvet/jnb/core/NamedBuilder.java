@@ -176,24 +176,24 @@ public class NamedBuilder<X> {
     if (map == null) {
       throw new BuilderException("Null input map");
     }
-    if (!builders.containsKey(map.getName())) {
+    if (!builders.containsKey(map.mapName())) {
       if (defaultSupplier != null) {
         return defaultSupplier.get();
       }
       throw new BuilderException(
           String.format(
               "No builder for %s: closest matches are %s",
-              map.getName(),
+              map.mapName(),
               builders.keySet()
                   .stream()
-                  .sorted((Comparator.comparing(s -> distance(s, map.getName()))))
+                  .sorted((Comparator.comparing(s -> distance(s, map.mapName()))))
                   .limit(3)
                   .collect(Collectors.joining(", "))
           )
       );
     }
     try {
-      return (T) builders.get(map.getName()).build(map, this, index);
+      return (T) builders.get(map.mapName()).build(map, this, index);
     } catch (BuilderException e) {
       if (defaultSupplier != null) {
         return defaultSupplier.get();
@@ -254,10 +254,10 @@ public class NamedBuilder<X> {
   }
 
   public NamedParamMap fillWithDefaults(NamedParamMap map) {
-    if (!builders.containsKey(map.getName())) {
+    if (!builders.containsKey(map.mapName())) {
       return map;
     }
-    if (!(builders.get(map.getName()) instanceof DocumentedBuilder<?> builder)) {
+    if (!(builders.get(map.mapName()) instanceof DocumentedBuilder<?> builder)) {
       return map;
     }
     // fill map
@@ -279,7 +279,7 @@ public class NamedBuilder<X> {
         if (value == null && p.type().equals(Type.STRING) && p.interpolationString() != null) {
           value = Interpolator.interpolate(
               p.interpolationString(),
-              new MapNamedParamMap(map.getName(), values)
+              new MapNamedParamMap(map.mapName(), values)
           );
         }
       }
@@ -288,6 +288,6 @@ public class NamedBuilder<X> {
       }
       values.put(new MapNamedParamMap.TypedKey(p.name(), p.type()), value);
     }
-    return new MapNamedParamMap(map.getName(), values);
+    return new MapNamedParamMap(map.mapName(), values);
   }
 }

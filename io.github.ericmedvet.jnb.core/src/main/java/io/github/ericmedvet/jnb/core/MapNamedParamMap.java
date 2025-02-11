@@ -166,7 +166,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     for (int j = 0; j < l.size(); j++) {
       if (l.get(j) instanceof ParamMap m) {
         if (m instanceof NamedParamMap namedParamMap) {
-          sb.append(namedParamMap.getName()).append(TokenType.OPEN_CONTENT.rendered());
+          sb.append(namedParamMap.mapName()).append(TokenType.OPEN_CONTENT.rendered());
         }
         sb.append(mapContentToInlineString(m, space));
         if (m instanceof NamedParamMap) {
@@ -227,7 +227,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
             .append(TokenType.CLOSED_LIST.rendered());
         case ParamMap innerMap -> {
           if (innerMap instanceof NamedParamMap namedParamMap) {
-            sb.append(namedParamMap.getName()).append(TokenType.OPEN_CONTENT.rendered());
+            sb.append(namedParamMap.mapName()).append(TokenType.OPEN_CONTENT.rendered());
           }
           sb.append(mapContentToInlineString(innerMap, space));
           if (innerMap instanceof NamedParamMap) {
@@ -299,7 +299,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
   public static void prettyToString(ParamMap map, StringBuilder sb, int maxW, int w, int indent, String space) {
     // iterate
     if (map instanceof NamedParamMap namedParamMap) {
-      sb.append(namedParamMap.getName());
+      sb.append(namedParamMap.mapName());
     }
     sb.append(TokenType.OPEN_CONTENT.rendered());
     String content = mapContentToInlineString(map, space);
@@ -321,7 +321,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
   }
 
   @Override
-  public String getName() {
+  public String mapName() {
     return name;
   }
 
@@ -348,11 +348,11 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     if (!(o instanceof MapNamedParamMap that)) {
       return false;
     }
-    return Objects.equals(getName(), that.getName()) && Objects.equals(getValues(), that.getValues());
+    return Objects.equals(mapName(), that.mapName()) && Objects.equals(getValues(), that.getValues());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(getName(), getValues());
+    return Objects.hash(mapName(), getValues());
   }
 }

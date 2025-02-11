@@ -23,12 +23,33 @@ import java.util.Objects;
 import java.util.Set;
 
 public interface NamedParamMap extends ParamMap {
-  String getName();
+  String mapName();
 
   static NamedParamMap from(String name, ParamMap paramMap) {
     return new NamedParamMap() {
       @Override
-      public String getName() {
+      public int hashCode() {
+        return Objects.hash(name, paramMap);
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+        if (obj instanceof NamedParamMap other) {
+          if (!Objects.equals(name, other.mapName())) {
+            return false;
+          }
+          return Objects.equals(paramMap, other);
+        }
+        return false;
+      }
+
+      @Override
+      public String toString() {
+        return MapNamedParamMap.prettyToString(this, Integer.MAX_VALUE);
+      }
+
+      @Override
+      public String mapName() {
         return name;
       }
 
@@ -41,42 +62,21 @@ public interface NamedParamMap extends ParamMap {
       public <E extends Enum<E>> Object value(String name, Type type, Class<E> enumClass) {
         return paramMap.value(name, type, enumClass);
       }
-
-      @Override
-      public String toString() {
-        return MapNamedParamMap.prettyToString(this, Integer.MAX_VALUE);
-      }
-
-      @Override
-      public int hashCode() {
-        return Objects.hash(name, paramMap);
-      }
-
-      @Override
-      public boolean equals(Object obj) {
-        if (obj instanceof NamedParamMap other) {
-          if (!Objects.equals(name, other.getName())) {
-            return false;
-          }
-          return Objects.equals(paramMap, other);
-        }
-        return false;
-      }
     };
   }
 
   @Override
-  default NamedParamMap with(String name, Type valueType, Object value) {
-    return from(getName(), ParamMap.super.with(name, valueType, value));
+  default ParamMap and(ParamMap other) {
+    return from(mapName(), ParamMap.super.and(other));
   }
 
   @Override
-  default ParamMap and(ParamMap other) {
-    return from(getName(), ParamMap.super.and(other));
+  default NamedParamMap with(String name, Type valueType, Object value) {
+    return from(mapName(), ParamMap.super.with(name, valueType, value));
   }
 
   @Override
   default ParamMap without(String... names) {
-    return from(getName(), ParamMap.super.without(names));
+    return from(mapName(), ParamMap.super.without(names));
   }
 }
