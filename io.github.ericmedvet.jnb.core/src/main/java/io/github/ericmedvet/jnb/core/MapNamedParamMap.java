@@ -87,18 +87,18 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
   }
 
   @Override
-  public <E extends Enum<E>> Object value(String n, Type type, Class<E> enumClass) {
+  public <E extends Enum<E>> Object value(String name, Type type, Class<E> enumClass) {
     return switch (type) {
-      case INT -> intValue(values.get(new TypedKey(n, Type.DOUBLE)));
-      case BOOLEAN -> booleanValue(values.get(new TypedKey(n, Type.STRING)));
-      case ENUM -> enumValue(values.get(new TypedKey(n, Type.STRING)), enumClass);
-      case INTS -> checkList((List<?>) values.get(new TypedKey(n, Type.DOUBLES)), MapNamedParamMap::intValue);
+      case INT -> intValue(values.get(new TypedKey(name, Type.DOUBLE)));
+      case BOOLEAN -> booleanValue(values.get(new TypedKey(name, Type.STRING)));
+      case ENUM -> enumValue(values.get(new TypedKey(name, Type.STRING)), enumClass);
+      case INTS -> checkList((List<?>) values.get(new TypedKey(name, Type.DOUBLES)), MapNamedParamMap::intValue);
       case BOOLEANS -> checkList(
-          (List<?>) values.get(new TypedKey(n, Type.STRINGS)),
+          (List<?>) values.get(new TypedKey(name, Type.STRINGS)),
           MapNamedParamMap::booleanValue
       );
-      case ENUMS -> checkList((List<?>) values.get(new TypedKey(n, Type.STRINGS)), s -> enumValue(s, enumClass));
-      default -> values.get(new TypedKey(n, type));
+      case ENUMS -> checkList((List<?>) values.get(new TypedKey(name, Type.STRINGS)), s -> enumValue(s, enumClass));
+      default -> values.get(new TypedKey(name, type));
     };
   }
 

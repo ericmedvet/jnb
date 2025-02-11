@@ -38,8 +38,8 @@ public interface NamedParamMap extends ParamMap {
       }
 
       @Override
-      public <E extends Enum<E>> Object value(String n, Type type, Class<E> enumClass) {
-        return paramMap.value(n, type, enumClass);
+      public <E extends Enum<E>> Object value(String name, Type type, Class<E> enumClass) {
+        return paramMap.value(name, type, enumClass);
       }
 
       @Override
