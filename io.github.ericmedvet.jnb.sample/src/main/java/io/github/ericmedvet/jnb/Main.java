@@ -222,7 +222,7 @@ public class Main {
     );
     // System.out.println(StringParser.parse(s2));
     // System.out.println(StringParser.parse(s1 + s2));
-    System.out.println(MapNamedParamMap.prettyToString(StringParser.parse(s1 + s3)));
+    System.out.println(ParamMap.prettyToString(StringParser.parse(s1 + s3)));
     // System.out.println(MapNamedParamMap.prettyToString(StringParser.parse(se)));
     // NamedParamMap npm = StringParser.parse(se);
     // System.out.println(((List<?>) npm.value("runs", ParamMap.Type.NAMED_PARAM_MAPS)).size());

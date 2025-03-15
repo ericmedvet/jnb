@@ -56,7 +56,7 @@ public interface NamedParamMap extends ParamMap {
 
       @Override
       public String toString() {
-        return MapNamedParamMap.prettyToString(this, Integer.MAX_VALUE);
+        return ParamMap.prettyToString(this, Integer.MAX_VALUE);
       }
 
       @Override
