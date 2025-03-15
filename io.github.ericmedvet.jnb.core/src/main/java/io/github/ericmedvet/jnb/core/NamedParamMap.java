@@ -22,9 +22,20 @@ package io.github.ericmedvet.jnb.core;
 import java.util.Objects;
 import java.util.Set;
 
+/// A [ParamMap] with a name.
 public interface NamedParamMap extends ParamMap {
+
+  /// Returns the name of this named map.
+  ///
+  /// @return the name of this named map
   String mapName();
 
+  /// Creates a named map from an existing map.
+  /// The returned map is a view of the provided `paramMap`.
+  ///
+  /// @param name the name of the named map
+  /// @param paramMap the map the returned named map will be a view of
+  /// @return the new named map
   static NamedParamMap from(String name, ParamMap paramMap) {
     return new NamedParamMap() {
       @Override

@@ -23,6 +23,7 @@ import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassMemberInfo;
 import io.github.classgraph.ScanResult;
+import io.github.ericmedvet.jnb.core.MapNamedParamMap.TypedName;
 import io.github.ericmedvet.jnb.core.ParamMap.Type;
 import io.github.ericmedvet.jnb.core.parsing.StringParser;
 import java.lang.reflect.Constructor;
@@ -261,7 +262,7 @@ public class NamedBuilder<X> {
       return map;
     }
     // fill map
-    Map<MapNamedParamMap.TypedKey, Object> values = new HashMap<>();
+    Map<TypedName, Object> values = new HashMap<>();
     for (DocumentedBuilder.ParamInfo p : builder.params()
         .stream()
         .sorted((p1, p2) -> p1.interpolationString() == null ? -1 : (p2.interpolationString() == null ? 1 : 0))
@@ -286,7 +287,7 @@ public class NamedBuilder<X> {
       if (value instanceof NamedParamMap npm) {
         value = fillWithDefaults(npm);
       }
-      values.put(new MapNamedParamMap.TypedKey(p.name(), p.type()), value);
+      values.put(new TypedName(p.name(), p.type()), value);
     }
     return new MapNamedParamMap(map.mapName(), values);
   }

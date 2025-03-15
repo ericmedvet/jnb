@@ -26,10 +26,11 @@ import java.util.List;
 import java.util.function.Function;
 
 public class NamedBuilderExample {
+
   public record Office( // @start region=builders
-                        @Param("roomNumbers") List<Integer> roomNumbers,
-                        @Param("head") Person head,
-                        @Param("staff") List<Person> staff
+      @Param("roomNumbers") List<Integer> roomNumbers,
+      @Param("head") Person head,
+      @Param("staff") List<Person> staff
   ) {}
 
   public record Person(
@@ -38,8 +39,8 @@ public class NamedBuilderExample {
   ) {}
 
   public class Functions {
-    private Functions() {
-    }
+
+    private Functions() {}
 
     @Cacheable
     public static Function<String, String> shortener(

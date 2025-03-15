@@ -20,6 +20,7 @@
 package io.github.ericmedvet.jnb.core.parsing;
 
 import io.github.ericmedvet.jnb.core.MapNamedParamMap;
+import io.github.ericmedvet.jnb.core.MapNamedParamMap.TypedName;
 import io.github.ericmedvet.jnb.core.NamedParamMap;
 import io.github.ericmedvet.jnb.core.ParamMap;
 import java.util.*;
@@ -67,14 +68,14 @@ public class StringParser {
   record SNode(Token token, String value) implements Node {}
 
   private static NamedParamMap from(ENode eNode) {
-    Map<MapNamedParamMap.TypedKey, Object> values = new HashMap<>();
+    Map<TypedName, Object> values = new HashMap<>();
     eNode.child()
         .children()
         .stream()
         .filter(n -> n.value() instanceof DNode)
         .forEach(
             n -> values.put(
-                new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.DOUBLE),
+                new TypedName(n.name, ParamMap.Type.DOUBLE),
                 ((DNode) n.value()).value().doubleValue()
             )
         );
@@ -84,7 +85,7 @@ public class StringParser {
         .filter(n -> n.value() instanceof SNode)
         .forEach(
             n -> values.put(
-                new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.STRING),
+                new TypedName(n.name, ParamMap.Type.STRING),
                 ((SNode) n.value()).value()
             )
         );
@@ -94,7 +95,7 @@ public class StringParser {
         .filter(n -> n.value() instanceof ENode)
         .forEach(
             n -> values.put(
-                new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.NAMED_PARAM_MAP),
+                new TypedName(n.name, ParamMap.Type.NAMED_PARAM_MAP),
                 from((ENode) n.value())
             )
         );
@@ -104,7 +105,7 @@ public class StringParser {
         .filter(n -> n.value() instanceof LDNode)
         .forEach(
             n -> values.put(
-                new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.DOUBLES),
+                new TypedName(n.name, ParamMap.Type.DOUBLES),
                 ((LDNode) n.value()).child.children()
                     .stream()
                     .map(c -> c.value().doubleValue())
@@ -117,7 +118,7 @@ public class StringParser {
         .filter(n -> n.value() instanceof LSNode)
         .forEach(
             n -> values.put(
-                new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.STRINGS),
+                new TypedName(n.name, ParamMap.Type.STRINGS),
                 ((LSNode) n.value())
                     .child()
                     .children()
@@ -132,7 +133,7 @@ public class StringParser {
         .filter(n -> n.value() instanceof LENode)
         .forEach(
             n -> values.put(
-                new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.NAMED_PARAM_MAPS),
+                new TypedName(n.name, ParamMap.Type.NAMED_PARAM_MAPS),
                 ((LENode) n.value())
                     .child()
                     .children()
