@@ -35,20 +35,6 @@ public class Predicates {
   private Predicates() {
   }
 
-  private static <T> Predicate<T> named(Predicate<T> predicate, String name) {
-    return new Predicate<>() {
-      @Override
-      public boolean test(T t) {
-        return predicate.test(t);
-      }
-
-      @Override
-      public String toString() {
-        return name;
-      }
-    };
-  }
-
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> Predicate<X> all(@Param("conditions") List<Predicate<X>> conditions) {
@@ -70,6 +56,22 @@ public class Predicates {
     return named(
         x -> conditions.stream().anyMatch(p -> p.test(x)),
         "any[%s]".formatted(conditions.stream().map(Object::toString).collect(Collectors.joining(";")))
+    );
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X> Predicate<X> divisibleBy(
+      @Param(value = "f", dNPM = "f.identity()") Function<X, ? extends Number> function,
+      @Param("divisor") double divisor
+  ) {
+    return named(
+        x -> (function.apply(x).doubleValue() % divisor) == 0,
+        "%s mod %s == 0"
+            .formatted(
+                NamedFunction.name(function),
+                FormattedFunction.format(function).formatted(divisor)
+            )
     );
   }
 
@@ -274,9 +276,24 @@ public class Predicates {
     );
   }
 
+  private static <T> Predicate<T> named(Predicate<T> predicate, String name) {
+    return new Predicate<>() {
+      @Override
+      public boolean test(T t) {
+        return predicate.test(t);
+      }
+
+      @Override
+      public String toString() {
+        return name;
+      }
+    };
+  }
+
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> Predicate<X> not(@Param("condition") Predicate<X> condition) {
     return named(condition.negate(), "¬%s".formatted(condition));
   }
+
 }
