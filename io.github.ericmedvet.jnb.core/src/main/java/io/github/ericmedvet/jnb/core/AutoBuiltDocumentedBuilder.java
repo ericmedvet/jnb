@@ -225,7 +225,18 @@ public record AutoBuiltDocumentedBuilder<T>(
           return ((Constructor<?>) executable).newInstance(params);
         } catch (IllegalAccessException | InvocationTargetException | InstantiationException |
                  IllegalArgumentException e) {
-          throw new BuilderException("Cannot build \"%s\"".formatted(finalName), e);
+          throw new BuilderException(
+              "Cannot build \"%s\" expecting params (%s) with params (%s)".formatted(
+                  finalName,
+                  Arrays.stream(executable.getParameters())
+                      .map(p -> "%s[%s]".formatted(p.getName(), p.getType().getSimpleName()))
+                      .collect(Collectors.joining(";")),
+                  IntStream.range(0, paramInfos.size())
+                      .mapToObj(j -> "%s[%s]".formatted(paramInfos.get(j).name(), params[j].getClass().getSimpleName()))
+                      .collect(Collectors.joining(";"))
+              ),
+              e
+          );
         }
       };
       AutoBuiltDocumentedBuilder<Object> mainBuilder = new AutoBuiltDocumentedBuilder<>(

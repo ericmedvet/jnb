@@ -348,35 +348,38 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
-  public static <X, C extends Comparable<C>> FormattedNamedFunction<X, C> max(
-      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<C>> beforeF,
+  public static <X, T, C extends Comparable<C>> FormattedNamedFunction<X, T> max(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<T>> beforeF,
+      @Param(value = "by", dNPM = "f.identity()") Function<T, C> byFunction,
       @Param(value = "format", dS = "%s") String format
   ) {
-    Function<Collection<C>, C> f = cs -> cs.stream().max(Comparable::compareTo).orElseThrow();
-    return FormattedNamedFunction.from(f, format, "max").compose(beforeF);
+    Function<Collection<T>, T> f = cs -> cs.stream().max(Comparator.comparing(byFunction)).orElseThrow();
+    return FormattedNamedFunction.from(
+        f,
+        format,
+        "max%s".formatted(
+            NamedFunction.name(byFunction)
+                .equals(NamedFunction.IDENTITY_NAME) ? "" : ("[" + NamedFunction.name(byFunction) + "]")
+        )
+    ).compose(beforeF);
   }
 
   @SuppressWarnings("unused")
   @Cacheable
-  public static <X, C extends Comparable<C>> FormattedNamedFunction<X, C> median(
-      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<C>> beforeF,
+  public static <X, T, C extends Comparable<C>> FormattedNamedFunction<X, T> min(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<T>> beforeF,
+      @Param(value = "by", dNPM = "f.identity()") Function<T, C> byFunction,
       @Param(value = "format", dS = "%s") String format
   ) {
-    Function<Collection<C>, C> f = cs -> cs.stream()
-        .sorted()
-        .toList()
-        .get(Math.min(cs.size() - 1, Math.max(0, cs.size() / 2)));
-    return FormattedNamedFunction.from(f, format, "median").compose(beforeF);
-  }
-
-  @SuppressWarnings("unused")
-  @Cacheable
-  public static <X, C extends Comparable<C>> FormattedNamedFunction<X, C> min(
-      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<C>> beforeF,
-      @Param(value = "format", dS = "%s") String format
-  ) {
-    Function<Collection<C>, C> f = cs -> cs.stream().min(Comparable::compareTo).orElseThrow();
-    return FormattedNamedFunction.from(f, format, "min").compose(beforeF);
+    Function<Collection<T>, T> f = cs -> cs.stream().min(Comparator.comparing(byFunction)).orElseThrow();
+    return FormattedNamedFunction.from(
+        f,
+        format,
+        "min%s".formatted(
+            NamedFunction.name(byFunction)
+                .equals(NamedFunction.IDENTITY_NAME) ? "" : ("[" + NamedFunction.name(byFunction) + "]")
+        )
+    ).compose(beforeF);
   }
 
   @Alias(name = "first", value = "nTh(n = 0)")
@@ -451,16 +454,26 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
-  public static <X, C extends Comparable<C>> FormattedNamedFunction<X, C> percentile(
+  @Alias(name = "median", value = "percentile(p = 50)")
+  public static <X, T, C extends Comparable<C>> FormattedNamedFunction<X, T> percentile(
       @Param("p") double p,
-      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<C>> beforeF,
+      @Param(value = "by", dNPM = "f.identity()") Function<T, C> byFunction,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<T>> beforeF,
       @Param(value = "format", dS = "%s") String format
   ) {
-    Function<Collection<C>, C> f = cs -> cs.stream()
-        .sorted()
+    Function<Collection<T>, T> f = cs -> cs.stream()
+        .sorted(Comparator.comparing(byFunction))
         .toList()
         .get((int) Math.min(cs.size() - 1, Math.max(0, cs.size() * p / 100d)));
-    return FormattedNamedFunction.from(f, format, "percentile[%02.0f]".formatted(p))
+    return FormattedNamedFunction.from(
+        f,
+        format,
+        "percentile[%s%02.0f]".formatted(
+            NamedFunction.name(byFunction)
+                .equals(NamedFunction.IDENTITY_NAME) ? "" : (NamedFunction.name(byFunction) + ";"),
+            p
+        )
+    )
         .compose(beforeF);
   }
 
@@ -498,25 +511,25 @@ public class Functions {
       name = "sizeIf", passThroughParams = {@PassThroughParam(name = "allF", value = "f.identity()", type = ParamMap.Type.NAMED_PARAM_MAP), @PassThroughParam(name = "mapF", value = "f.identity()", type = ParamMap.Type.NAMED_PARAM_MAP), @PassThroughParam(
           name = "predicate", value = "predicate.always()", type = ParamMap.Type.NAMED_PARAM_MAP)
       }, value = // spotless:off
-          """
-              size(of = f.filter(
-                of = f.each(
-                  of = $allF;
-                  mapF = $mapF
-                );
-                condition = $predicate
-              ))
-              """) // spotless:on
+      """
+          size(of = f.filter(
+            of = f.each(
+              of = $allF;
+              mapF = $mapF
+            );
+            condition = $predicate
+          ))
+          """) // spotless:on
   @Alias(
       name = "sizeIfLt", passThroughParams = {@PassThroughParam(name = "t", value = "0.0", type = ParamMap.Type.DOUBLE)}, value = // spotless:off
-          """
-              sizeIf(predicate = predicate.lt(t = $t))
-              """) // spotless:on
+      """
+          sizeIf(predicate = predicate.lt(t = $t))
+          """) // spotless:on
   @Alias(
       name = "sizeIfGt", passThroughParams = {@PassThroughParam(name = "t", value = "0.0", type = ParamMap.Type.DOUBLE)}, value = // spotless:off
-          """
-              sizeIf(predicate = predicate.gt(t = $t))
-              """) // spotless:on
+      """
+          sizeIf(predicate = predicate.gt(t = $t))
+          """) // spotless:on
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> FormattedNamedFunction<X, Integer> size(
