@@ -24,6 +24,7 @@ import io.github.ericmedvet.jnb.core.Discoverable;
 import io.github.ericmedvet.jnb.core.Param;
 import io.github.ericmedvet.jnb.datastructure.FormattedFunction;
 import io.github.ericmedvet.jnb.datastructure.NamedFunction;
+import java.util.IllegalFormatException;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -33,6 +34,14 @@ import java.util.stream.Collectors;
 @Discoverable(prefixTemplate = "predicate")
 public class Predicates {
   private Predicates() {
+  }
+
+  private static String optimisticallyFormat(String format, double v) {
+    try {
+      return format.formatted(v);
+    } catch (IllegalFormatException e) {
+      return Double.toString(v);
+    }
   }
 
   @SuppressWarnings("unused")
@@ -70,7 +79,7 @@ public class Predicates {
         "%s mod %s == 0"
             .formatted(
                 NamedFunction.name(function),
-                FormattedFunction.format(function).formatted(divisor)
+                optimisticallyFormat(FormattedFunction.format(function), divisor)
             )
     );
   }
@@ -122,7 +131,7 @@ public class Predicates {
         "%s>%s"
             .formatted(
                 NamedFunction.name(function),
-                FormattedFunction.format(function).formatted(t)
+                optimisticallyFormat(FormattedFunction.format(function), t)
             )
     );
   }
@@ -138,7 +147,7 @@ public class Predicates {
         "%s≥%s"
             .formatted(
                 NamedFunction.name(function),
-                FormattedFunction.format(function).formatted(t)
+                optimisticallyFormat(FormattedFunction.format(function), t)
             )
     );
   }
@@ -238,7 +247,7 @@ public class Predicates {
         "%s<%s"
             .formatted(
                 NamedFunction.name(function),
-                FormattedFunction.format(function).formatted(t)
+                optimisticallyFormat(FormattedFunction.format(function), t)
             )
     );
   }
@@ -254,7 +263,7 @@ public class Predicates {
         "%s≤%s"
             .formatted(
                 NamedFunction.name(function),
-                FormattedFunction.format(function).formatted(t)
+                optimisticallyFormat(FormattedFunction.format(function), t)
             )
     );
   }
