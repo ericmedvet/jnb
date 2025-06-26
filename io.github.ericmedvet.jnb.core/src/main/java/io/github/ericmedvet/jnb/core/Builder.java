@@ -42,7 +42,7 @@ public interface Builder<T> {
   /// The `ParamMap` is expected to contain the information needed to build the object, as name-value pairs.
   /// The `NamedBuilder` is used to recursively build objects when the values in the `ParamMap` are of a type
   /// different from [io.github.ericmedvet.jnb.core.ParamMap.Type#NAMED_PARAM_MAP] and from
-  ///  [io.github.ericmedvet.jnb.core.ParamMap.Type#NAMED_PARAM_MAPS].
+  /// [io.github.ericmedvet.jnb.core.ParamMap.Type#NAMED_PARAM_MAPS].
   /// The `index` is available when building sequences and is expected to be set accordingly by the caller.
   ///
   /// @param map          the `ParamMap` containing the parameters for building the object
@@ -58,7 +58,7 @@ public interface Builder<T> {
   /// instead of building a new one.
   /// Internally, the cache is `WeakHashMap`; the index is ignored when checking for the presence of a map in the cache.
   ///
-  /// @return a cached `Builder`
+  /// @return the cached version of this builder
   default Builder<T> cached() {
     Map<ParamMap, T> cache = new WeakHashMap<>();
     Builder<T> thisBuilder = this;
