@@ -454,6 +454,28 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
+  public static <X, F, S> FormattedNamedFunction<X, Pair<F, S>> pairerFirst(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, F> beforeF,
+      @Param("second") S second,
+      @Param(value = "format", dS = "%s") String format
+  ) {
+    Function<F, Pair<F, S>> f = first -> new Pair<>(first, second);
+    return FormattedNamedFunction.from(f, format, "pairWith[s=%s]".formatted(second)).compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X, F, S> FormattedNamedFunction<X, Pair<F, S>> pairerSecond(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, S> beforeF,
+      @Param("first") F first,
+      @Param(value = "format", dS = "%s") String format
+  ) {
+    Function<S, Pair<F, S>> f = second -> new Pair<>(first, second);
+    return FormattedNamedFunction.from(f, format, "pairWith[f=%s]".formatted(first)).compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
   @Alias(name = "median", value = "percentile(p = 50)")
   public static <X, T, C extends Comparable<C>> FormattedNamedFunction<X, T> percentile(
       @Param("p") double p,
