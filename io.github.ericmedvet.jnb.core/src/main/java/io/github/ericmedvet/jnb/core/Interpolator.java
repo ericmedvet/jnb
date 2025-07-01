@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
 /// The variable parts of the template, i.e., the data placeholders, have the format `{name:format}`,
 /// where `name` is a string valid as a `ParamMap` name and `format` is a format usable by
 /// [java.io.PrintStream#printf(String, Object...)].
-/// More precisely, `name` must match the pattern {@value MAP_KEYS_REGEX} and `format` must match {@value FORMAT_REGEX}.
+/// More precisely, `name` must match the pattern <code>{@value MAP_KEYS_REGEX}</code> and `format` must match <code>{@value FORMAT_REGEX}</code>.
 public class Interpolator {
 
   private static final Logger L = Logger.getLogger(Interpolator.class.getName());
