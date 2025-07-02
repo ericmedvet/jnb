@@ -84,6 +84,7 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.13.0</version>
         <configuration>
+          <release>${jdk.version}</release>
           <source>${jdk.version}</source>
           <target>${jdk.version}</target>
         </configuration>
@@ -243,7 +244,6 @@
               <additionalOptions>
                 <additionalOption>-Xdoclint:none</additionalOption>
                 <additionalOption>--allow-script-in-comments</additionalOption>
-                <additionalOption>--snippet-path ${user.dir}/src/snippet-files</additionalOption>
               </additionalOptions>
             </configuration>
             <executions>
