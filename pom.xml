@@ -258,6 +258,7 @@
           <additionalOptions>
             <additionalOption>--allow-script-in-comments</additionalOption>
           </additionalOptions>
+          <outputDirectory>${project.build.directory}/docs/${project.version}/</outputDirectory>
         </configuration>
         <executions>
           <execution>
@@ -274,6 +275,11 @@
             <phase>package</phase>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-scm-publish-plugin</artifactId>
+        <version>3.2.1</version>
       </plugin>
     </plugins>
   </build>
