@@ -158,6 +158,10 @@ public record AutoBuiltDocumentedBuilder<T>(
   /// - a `public` constructor
   /// - a `public` `static` method
   ///
+  /// The built [DocumentedBuilder] will have the name of the `executable` (in lower camel case if
+  /// it is a constructor), unless a different name is specified through a [BuilderMethod]
+  /// annotation.
+  ///
   /// @param executable the constructor or method to build the builder from
   /// @param aliases    an array of aliases for the builder
   /// @return a list of documented builders

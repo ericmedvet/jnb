@@ -21,9 +21,19 @@ package io.github.ericmedvet.jnb.core;
 
 import java.lang.annotation.*;
 
+/// Indicates that the target method or constructor is to be consumed by
+/// [NamedBuilder#fromDiscovery(String...)] (and related methods) to build a [DocumentedBuilder].
+/// This annotation is only *necessary*:
+/// - when using [NamedBuilder#fromClass(Class)] on a class with more than one constructor or
+/// - when one wants to change the name of the built builder (see
+/// [AutoBuiltDocumentedBuilder#from(java.lang.reflect.Executable, Alias\[\])]).
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
 public @interface BuilderMethod {
+
+  /// The name of the builder built from the annotated method or constructor.
+  ///
+  /// @return the name of the builder built from the annotated method or constructor
   String value() default "";
 }
