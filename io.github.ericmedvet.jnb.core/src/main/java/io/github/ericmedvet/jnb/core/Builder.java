@@ -56,7 +56,7 @@ public interface Builder<T> {
   /// The cached builder stores previously built objects in a cache,
   /// so that if the same `ParamMap` is provided again, the cached object is returned
   /// instead of building a new one.
-  /// Internally, the cache is `WeakHashMap`; the index is ignored when checking for the presence of a map in the cache.
+  /// Internally, the cache is a `WeakHashMap`; the index is ignored when checking for the presence of a map in the cache.
   ///
   /// @return the cached version of this builder
   default Builder<T> cached() {
