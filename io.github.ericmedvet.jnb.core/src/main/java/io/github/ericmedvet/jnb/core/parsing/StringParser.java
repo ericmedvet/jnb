@@ -276,7 +276,7 @@ public class StringParser {
               )
           );
         } else {
-          if (npNode.value() instanceof LDNode(Token token,ListNode<DNode>child)) {
+          if (npNode.value() instanceof LDNode(Token token, ListNode<DNode> child)) {
             for (DNode dNode : child.children()) {
               eNodes.add(
                   new ENode(
@@ -292,7 +292,7 @@ public class StringParser {
                   )
               );
             }
-          } else if (npNode.value() instanceof LSNode(Token token,ListNode<SNode>child)) {
+          } else if (npNode.value() instanceof LSNode(Token token, ListNode<SNode> child)) {
             for (SNode sNode : child.children()) {
               eNodes.add(
                   new ENode(
@@ -308,7 +308,7 @@ public class StringParser {
                   )
               );
             }
-          } else if (npNode.value() instanceof LENode(Token token,ListNode<ENode>child)) {
+          } else if (npNode.value() instanceof LENode(Token token, ListNode<ENode> child)) {
             for (ENode eNode : child.children()) {
               eNodes.add(
                   new ENode(

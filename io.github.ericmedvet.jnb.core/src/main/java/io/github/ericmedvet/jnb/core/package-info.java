@@ -23,7 +23,7 @@
 /// Very in brief, the intended usage is the one represented in the following two snippets, which are mostly
 /// self-explanatory.
 ///
-/// // @formatter:off
+/// <!-- // @formatter:off -->
 /// {@snippet lang="java":
 /// public record Office(
 ///     @Param("roomNubers") List<Integer> roomNumbers,
@@ -31,27 +31,31 @@
 ///     @Param("staff") Lit<Person> staff
 /// ) {}
 /// }
-/// // @formatter:on
+/// <!-- // @formatter:on -->
 ///
+/// <!-- // @formatter:off -->
 /// {@snippet lang="java":
 /// public record Person(
-/// @Param("name") String name,
-/// @Param(value = "age", dI = 45) int age
+///     @Param("name") String name,
+///     @Param(value = "age", dI = 45) int age
 /// ) {}
 /// }
+/// <!-- // @formatter:on -->
 ///
+/// <!-- // @formatter:off -->
 /// {@snippet lang="java":
 /// public class Functions {
-/// private Functions() {}
+///   private Functions() {}
 ///
-/// @Cacheable
-/// public static Function<String, String shortener(
-/// @Param(value = i", dS = ".") String suffix
-/// ) {
-/// return s -> s.charAt(0) + suffix;
+///   @Cacheable
+///   public static Function<String, String shortener(
+///       @Param(value = i", dS = ".") String suffix
+///   ) {
+///     return s -> s.charAt(0) + suffix;
+///   }
 /// }
 /// }
-/// }
+/// <!-- // @formatter:on -->
 ///
 /// Here, three classes (`Office`, `Person`, and `Functions`) are annotated for being registered to a
 /// [io.github.ericmedvet.jnb.core.NamedBuilder] (see below).
@@ -62,32 +66,34 @@
 /// Annotated parameters may have default values, which can be specified with the `dS`,`dI`, etc. parameter of the
 /// annotation (see [io.github.ericmedvet.jnb.core.Param]).
 ///
+/// <!-- // @formatter:off -->
 /// {@snippet lang="java":
 /// public static void main(String[] args) {
-/// NamedBuilder<?> namedBuilder = NamedBuilder.empty()
-/// .and(NamedBuilder.fromClass(Office.class))
-/// .and(NamedBuilder.fromClass(Person.class))
-/// .and("f", NamedBuilder.fromUtilityClass(Functions.class));
-/// String description = """
-/// office(
-/// head = person(name = "Mario Rossi"; age = 43);
-/// staff = [
-/// person(name = Alice; age = 33);
-/// person(name = Bob; age = 25);
-/// person(name = Charlie)
-/// ];
-/// roomNumbers = [202:1:205]
-/// )
-/// """;
-/// Office office = (Office) namedBuilder.build(description);
-/// System.out.println(office);
-/// System.out.printf("The head's name is: %s%n", office.head().name());
-/// @SuppressWarnings("unchecked") Function<String, String> f = (Function<String, String>) namedBuilder.build(
-/// "f.shortener()"
-/// );
-/// System.out.printf("The head's short name is: %s%n", office.head().name());
+///   NamedBuilder<?> namedBuilder = NamedBuilder.empty()
+///       .and(NamedBuilder.fromClass(Office.class))
+///       .and(NamedBuilder.fromClass(Person.class))
+///       .and("f", NamedBuilder.fromUtilityClass(Functions.class));
+///   String description = """
+///     office(
+///       head = person(name = "Mario Rossi"; age = 43);
+///       staff = [
+///         person(name = Alice; age = 33);
+///         person(name = Bob; age = 25);
+///         person(name = Charlie)
+///       ];
+///       roomNumbers = [202:1:205]
+///     )
+///   """;
+///   Office office = (Office) namedBuilder.build(description);
+///   System.out.println(office);
+///   System.out.printf("The head's name is: %s%n", office.head().name());
+///   @SuppressWarnings("unchecked") Function<String, String> f = (Function<String, String>) namedBuilder.build(
+///     "f.shortener()"
+///   );
+///   System.out.printf("The head's short name is: %s%n", office.head().name());
 /// }
 /// }
+/// <!-- // @formatter:on -->
 ///
 /// Here the three annotated classes are registered to an instance `NamedBuilder`.
 /// Then, a string is passed to the instance which, in the
