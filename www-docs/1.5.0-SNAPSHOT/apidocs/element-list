@@ -1,8 +1,0 @@
-module:io.github.ericmedvet.jnb.buildable
-io.github.ericmedvet.jnb.buildable
-module:io.github.ericmedvet.jnb.core
-io.github.ericmedvet.jnb.core
-io.github.ericmedvet.jnb.core.parsing
-module:io.github.ericmedvet.jnb.datastructure
-io.github.ericmedvet.jnb.datastructure
-module:io.github.ericmedvet.jnb.sample
