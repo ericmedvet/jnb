@@ -256,6 +256,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-scm-publish-plugin</artifactId>
+        <version>3.3.0</version>
         <configuration>
           <checkinComment>Publishing API Docs for version ${project.version}</checkinComment>
           <content>${project.build.directory}/www-docs</content>
@@ -264,10 +265,11 @@
           <serverId>github</serverId>
           <subDirectory>docs</subDirectory>
         </configuration>
-        <version>3.3.0</version>
       </plugin>
     </plugins>
   </build>
+
+  <dependencies/>
 
   <distributionManagement>
     <repository>
@@ -281,22 +283,20 @@
   </distributionManagement>
 
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jdk.version>23</jdk.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <revision>1.5.0-SNAPSHOT</revision>
   </properties>
 
-  <dependencies/>
-
   <repositories>
     <repository>
+      <id>ossrh-snapshot</id>
       <releases>
         <enabled>false</enabled>
       </releases>
       <snapshots>
         <enabled>true</enabled>
       </snapshots>
-      <id>ossrh-snapshot</id>
       <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
     </repository>
   </repositories>
