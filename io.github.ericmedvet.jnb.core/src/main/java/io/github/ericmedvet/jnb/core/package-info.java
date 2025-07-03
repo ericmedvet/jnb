@@ -23,13 +23,16 @@
 /// Very in brief, the intended usage is the one represented in the following two snippets, which are mostly
 /// self-explanatory.
 ///
+/// // @formatter:off
 /// {@snippet lang="java":
 /// public record Office(
-/// @Param("roomNubers") List<Integer> roomNumbers,
-/// @Param("head") Person head,
-/// @Param("staff") Lit<Person> staff
+///     @Param("roomNubers") List<Integer> roomNumbers,
+///     @Param("head") Person head,
+///     @Param("staff") Lit<Person> staff
 /// ) {}
 /// }
+/// // @formatter:on
+///
 /// {@snippet lang="java":
 /// public record Person(
 /// @Param("name") String name,
