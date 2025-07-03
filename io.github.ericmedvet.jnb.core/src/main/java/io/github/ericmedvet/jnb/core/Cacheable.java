@@ -21,7 +21,14 @@ package io.github.ericmedvet.jnb.core;
 
 import java.lang.annotation.*;
 
+/// Indicates that the target method or constructor, when used to build a builder by
+/// [AutoBuiltDocumentedBuilder#from(java.lang.reflect.Executable, Alias\[\])], will result in a
+/// cached [DocumentedBuilder].
+///
+/// @see Builder#cached()
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
-public @interface Cacheable {}
+public @interface Cacheable {
+
+}

@@ -27,6 +27,11 @@ import java.lang.annotation.*;
 /// - when using [NamedBuilder#fromClass(Class)] on a class with more than one constructor or
 /// - when one wants to change the name of the built builder (see
 /// [AutoBuiltDocumentedBuilder#from(java.lang.reflect.Executable, Alias\[\])]).
+///
+/// Otherwise, it is optional.
+///
+/// @see NamedBuilder#fromClass(Class)
+/// @see NamedBuilder#fromUtilityClass(Class)
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
