@@ -1,0 +1,1 @@
+moduleSearchIndex = [{"l":"io.github.ericmedvet.jnb.buildable"},{"l":"io.github.ericmedvet.jnb.core"},{"l":"io.github.ericmedvet.jnb.datastructure"},{"l":"io.github.ericmedvet.jnb.sample"}];updateSearchResults();
