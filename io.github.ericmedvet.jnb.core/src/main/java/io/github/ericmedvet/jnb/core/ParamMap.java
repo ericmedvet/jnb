@@ -468,36 +468,36 @@ public interface ParamMap {
   /// debugging builders in a `NamedBuilder`. Each constant is associated with a Java type, which is
   /// the actual one returned (if possible) by [#value(String, Type)].
   enum Type {
-    /// Natural numbers, associated with `Integer`; the type is rendered `i`.
+    /// Natural numbers, associated with `Integer`; the type is rendered as `i`.
     INT("i"),
-    /// Real numbers, associated with `Double`; the type is rendered `d`.
+    /// Real numbers, associated with `Double`; the type is rendered as `d`.
     DOUBLE("d"),
-    /// Strings, associated with `String`; the type is rendered `s`.
+    /// Strings, associated with `String`; the type is rendered as `s`.
     STRING("s"),
-    /// Boolean values, associated with `Boolean`; the type is rendered `b`.
+    /// Boolean values, associated with `Boolean`; the type is rendered as `b`.
     BOOLEAN("b"),
-    /// Enumerations, associated with an `enum`; the type is rendered `e`. Values of this type are
+    /// Enumerations, associated with an `enum`; the type is rendered as `e`. Values of this type are
     /// constants of a specific `enum` and have to be retrieved through [#value(String, Type,
     /// Class)].
     ENUM("e"),
-    /// Named maps of named parameters, associated with [NamedParamMap]; the type is rendered
+    /// Named maps of named parameters, associated with [NamedParamMap]; the type is rendered as
     /// `npm`.
     NAMED_PARAM_MAP("npm"),
-    /// Lists of natural numbers, associated with `List<Integer>`; the type is rendered `i[]`.
+    /// Lists of natural numbers, associated with `List<Integer>`; the type is rendered as `i[]`.
     INTS("i[]"),
-    /// Lists of real numbers, associated with `List<Double>`; the type is rendered `d[]`.
+    /// Lists of real numbers, associated with `List<Double>`; the type is rendered as `d[]`.
     DOUBLES("d[]"),
-    /// Lists of strings, associated with `List<String>`; the type is rendered `s[]`.
+    /// Lists of strings, associated with `List<String>`; the type is rendered as `s[]`.
     STRINGS("s[]"),
-    /// Lists of Boolean values, associated with `List<Boolean>`; the type is rendered `b[]`.
+    /// Lists of Boolean values, associated with `List<Boolean>`; the type is rendered as `b[]`.
     BOOLEANS("b[]"),
     /// Lists of enumerations, associated with `List<E>`, where `E` is a specific `enum`; the type
-    /// is rendered `e[]`.
+    /// is rendered as `e[]`.
     ///
     /// @see Type#ENUM
     ENUMS("e[]"),
     /// Lists of named maps of named parameters, associated with `List<NamedParamMap>`; the type is
-    /// rendered `npm[]`.
+    /// rendered as `npm[]`.
     NAMED_PARAM_MAPS("npm[]");
 
     private final String rendered;
