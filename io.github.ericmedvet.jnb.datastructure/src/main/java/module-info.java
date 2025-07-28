@@ -1,13 +1,8 @@
-/// Contains a single package [io.github.ericmedvet.jnb.datastructure] which provides interfaces and classes for
-/// modeling a few data structures (e.g.,
-/// [io.github.ericmedvet.jnb.datastructure.Grid], [io.github.ericmedvet.jnb.datastructure.Table]) and useful
-/// concepts (e.g., [io.github.ericmedvet.jnb.datastructure.NamedFunction],
-/// [io.github.ericmedvet.jnb.datastructure.Parametrized]).
 /*-
  * ========================LICENSE_START=================================
  * jnb-datastructure
  * %%
- * Copyright (C) 2023 - 2024 Eric Medvet
+ * Copyright (C) 2023 - 2025 Eric Medvet
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +17,11 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
+/// Contains a single package [io.github.ericmedvet.jnb.datastructure] which provides interfaces and classes for
+/// modeling a few data structures (e.g.,
+/// [io.github.ericmedvet.jnb.datastructure.Grid], [io.github.ericmedvet.jnb.datastructure.Table]) and useful
+/// concepts (e.g., [io.github.ericmedvet.jnb.datastructure.NamedFunction],
+/// [io.github.ericmedvet.jnb.datastructure.Parametrized]).
 module io.github.ericmedvet.jnb.datastructure {
   exports io.github.ericmedvet.jnb.datastructure;
 }

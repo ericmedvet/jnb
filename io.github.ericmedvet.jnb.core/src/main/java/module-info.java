@@ -1,14 +1,8 @@
-/// Contains two packages with classes, interfaces, enums, and annotations useful for obtaining and
-/// using *builders* (namely, [io.github.ericmedvet.jnb.core.Builder],
-/// [io.github.ericmedvet.jnb.core.DocumentedBuilder]) and the
-/// [io.github.ericmedvet.jnb.core.NamedBuilder], which can be used for building objects based on
-/// maps ([io.github.ericmedvet.jnb.core.ParamMap] and [io.github.ericmedvet.jnb.core.NamedParamMap]
-/// acting as dictionaries) containing the data need for building them.
 /*-
  * ========================LICENSE_START=================================
  * jnb-core
  * %%
- * Copyright (C) 2023 - 2024 Eric Medvet
+ * Copyright (C) 2023 - 2025 Eric Medvet
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +17,12 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
+/// Contains two packages with classes, interfaces, enums, and annotations useful for obtaining and
+/// using *builders* (namely, [io.github.ericmedvet.jnb.core.Builder],
+/// [io.github.ericmedvet.jnb.core.DocumentedBuilder]) and the
+/// [io.github.ericmedvet.jnb.core.NamedBuilder], which can be used for building objects based on
+/// maps ([io.github.ericmedvet.jnb.core.ParamMap] and [io.github.ericmedvet.jnb.core.NamedParamMap]
+/// acting as dictionaries) containing the data need for building them.
 module io.github.ericmedvet.jnb.core {
   requires java.logging;
   requires io.github.classgraph;

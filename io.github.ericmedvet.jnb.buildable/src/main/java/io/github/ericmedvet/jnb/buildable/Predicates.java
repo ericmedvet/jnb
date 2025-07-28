@@ -1,8 +1,8 @@
 /*-
  * ========================LICENSE_START=================================
- * jgea-experimenter
+ * jnb-buildable
  * %%
- * Copyright (C) 2018 - 2024 Eric Medvet
+ * Copyright (C) 2023 - 2025 Eric Medvet
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
