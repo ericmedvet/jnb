@@ -193,6 +193,16 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
+  public static <X, T> FormattedNamedFunction<X, List<T>> flat(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<? extends Collection<T>>> beforeF,
+      @Param(value = "format", dS = "%.1f") String format
+  ) {
+    Function<Collection<? extends Collection<T>>, List<T>> f = c -> c.stream().flatMap(Collection::stream).toList();
+    return FormattedNamedFunction.from(f, format, "flat").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
   public static <X> NamedFunction<X, Object> fromBase64(
       @Param(value = "of", dNPM = "f.identity()") Function<X, String> beforeF,
       @Param(value = "format", dS = "%s") String format
