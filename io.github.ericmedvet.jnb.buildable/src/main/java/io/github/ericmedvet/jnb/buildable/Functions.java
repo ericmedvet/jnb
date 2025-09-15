@@ -605,6 +605,16 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
+  public static <X> FormattedNamedFunction<X, Double> sum(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, List<? extends Number>> beforeF,
+      @Param(value = "format", dS = "%.1f") String format
+  ) {
+    Function<List<? extends Number>, Double> f = vs -> vs.stream().mapToDouble(Number::doubleValue).sum();
+    return FormattedNamedFunction.from(f, format, "sum").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
   public static <X> NamedFunction<X, String> toBase64(
       @Param(value = "of", dNPM = "f.identity()") Function<X, Object> beforeF,
       @Param(value = "format", dS = "%s") String format
