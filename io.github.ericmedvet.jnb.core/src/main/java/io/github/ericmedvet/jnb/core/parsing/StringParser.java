@@ -22,7 +22,11 @@ package io.github.ericmedvet.jnb.core.parsing;
 import io.github.ericmedvet.jnb.core.MapNamedParamMap;
 import io.github.ericmedvet.jnb.core.NamedParamMap;
 import io.github.ericmedvet.jnb.core.ParamMap;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 public class StringParser {
@@ -33,38 +37,19 @@ public class StringParser {
   public static final String CONST_NAME_PREFIX = "$";
   public static final String PLAIN_STRING_REGEX = "[A-Za-z][A-Za-z0-9_]*";
   public static final String QUOTED_STRING_REGEX = "\"[^\"]*\"";
+  public static final String IMPORT_REGEX = "@import";
+
+  private static final Logger L = Logger.getLogger(StringParser.class.getName());
 
   private final String s;
+  private final Path path;
   private final Map<String, Node> consts;
 
-  private StringParser(String s) {
+  private StringParser(String s, Path path) {
     this.s = s;
+    this.path = path;
     this.consts = new TreeMap<>();
   }
-
-  @FunctionalInterface
-  private interface NodeParser<N extends Node> {
-
-    N parse(int i) throws ParseException;
-  }
-
-  record CNode(Token token, String name, Node value) implements Node {}
-
-  record CSENode(Token token, ListNode<CNode> csNode, ENode eNode) implements Node {}
-
-  record DNode(Token token, Number value) implements Node {}
-
-  record ENode(Token token, ListNode<NPNode> child, String name) implements Node {}
-
-  record LDNode(Token token, ListNode<DNode> child) implements Node {}
-
-  record LENode(Token token, ListNode<ENode> child) implements Node {}
-
-  record LSNode(Token token, ListNode<SNode> child) implements Node {}
-
-  record NPNode(Token token, String name, Node value) implements Node {}
-
-  record SNode(Token token, String value) implements Node {}
 
   private static NamedParamMap from(ENode eNode) {
     Map<MapNamedParamMap.TypedKey, Object> values = new HashMap<>();
@@ -145,9 +130,13 @@ public class StringParser {
   }
 
   public static NamedParamMap parse(String s) {
-    StringParser stringParser = new StringParser(s);
+    return parse(s, Path.of("./raw-string"));
+  }
+
+  public static NamedParamMap parse(String s, Path basePath) {
+    StringParser stringParser = new StringParser(s, basePath);
     try {
-      CSENode cseNode = stringParser.parseCSE(0);
+      ISCSENode cseNode = stringParser.parseISCSE(0);
       TokenType.END_OF_STRING.next(s, cseNode.token().end());
       ENode eNode = cseNode.eNode();
       return from(eNode);
@@ -162,19 +151,42 @@ public class StringParser {
     return newTs;
   }
 
-  private CNode parseC(int i) throws ParseException {
+  private CNode parseC(int i, Map<String, Node> localConsts) throws ParseException {
     Token tName = TokenType.CONST_NAME.next(s, i);
     Token tAssign = TokenType.ASSIGN_SEPARATOR.next(s, tName.end());
     Node value = parseValue(tAssign.end());
     String constantName = tName.trimmedContent(s);
-    consts.put(constantName, value);
+    Node previousValue = localConsts.put(constantName, value);
+    if (previousValue != null) {
+      L.warning("Ri-definition of constant %s @ %s of %s".formatted(constantName, StringPosition.from(s, i), path));
+    }
     return new CNode(new Token(tName.start(), value.token().end()), constantName, value);
   }
 
-  private CSENode parseCSE(int i) throws ParseException {
-    ListNode<CNode> csNode = parseListNode(i, this::parseC, CNode.class, false, false);
-    ENode eNode = parseE(csNode.token().end());
-    return new CSENode(new Token(csNode.token().start(), eNode.token().end()), csNode, eNode);
+  private Node parseConst(int i) throws ParseException {
+    Token tConstName = TokenType.CONST_NAME.next(s, i);
+    String constName = tConstName.trimmedContent(s);
+    Node value = consts.get(constName);
+    return switch (value) {
+      case null -> throw new UndefinedConstantNameException(
+          i,
+          s,
+          constName,
+          consts.keySet().stream().toList()
+      );
+      case DNode dNode -> new DNode(tConstName, dNode.value());
+      case ENode eNode -> new ENode(tConstName, eNode.child(), eNode.name());
+      case SNode sNode -> new SNode(tConstName, sNode.value());
+      case LDNode ldNode -> new LDNode(tConstName, ldNode.child());
+      case LENode leNode -> new LENode(tConstName, leNode.child());
+      case LSNode lsNode -> new LSNode(tConstName, lsNode.child());
+      default -> throw new ParseException(
+          "Unknown type %s of const %s".formatted(value.getClass().getSimpleName(), constName),
+          null,
+          i,
+          s
+      );
+    };
   }
 
   private DNode parseD(int i) throws ParseException {
@@ -192,6 +204,49 @@ public class StringParser {
     ListNode<NPNode> npsNode = parseListNode(tOpenPar.end(), this::parseNP, NPNode.class, true, false);
     Token tClosedPar = TokenType.CLOSED_CONTENT.next(s, npsNode.token().end());
     return new ENode(new Token(tName.start(), tClosedPar.end()), npsNode, tName.trimmedContent(s));
+  }
+
+  private INode parseI(int i, Map<String, Node> localConsts) throws ParseException {
+    Token tImport = TokenType.IMPORT.next(s, i);
+    Token tOpenPar = TokenType.OPEN_CONTENT.next(s, tImport.end());
+    Token tPath = TokenType.STRING.next(s, tOpenPar.end());
+    Token tClosedPar = TokenType.CLOSED_CONTENT.next(s, tPath.end());
+    try {
+      Path relativePath = Path.of(tPath.trimmedUnquotedContent(s));
+      Path iPath = path.getParent().resolve(relativePath);
+      String content = Files.readString(iPath);
+      StringParser innerParser = new StringParser(content, iPath);
+      ListNode<INode> isNode = innerParser.parseListNode(
+          0,
+          j -> innerParser.parseI(j, localConsts),
+          INode.class,
+          false,
+          false
+      );
+      ListNode<CNode> csNode = innerParser.parseListNode(
+          isNode.token().end(),
+          j -> innerParser.parseC(j, localConsts),
+          CNode.class,
+          false,
+          false
+      );
+      TokenType.END_OF_STRING.next(content, csNode.token().end());
+      return new INode(new Token(tImport.start(), tClosedPar.end()), tPath.trimmedUnquotedContent(s), content);
+    } catch (IOException e) {
+      throw new ParseException(
+          "Cannot read import content at '%s'".formatted(tPath.trimmedUnquotedContent(s)),
+          e,
+          i,
+          s
+      );
+    }
+  }
+
+  private ISCSENode parseISCSE(int i) throws ParseException {
+    ListNode<INode> isNode = parseListNode(i, j -> parseI(j, consts), INode.class, false, false);
+    ListNode<CNode> csNode = parseListNode(isNode.token().end(), j -> parseC(j, consts), CNode.class, false, false);
+    ENode eNode = parseE(csNode.token().end());
+    return new ISCSENode(new Token(csNode.token().start(), eNode.token().end()), isNode, csNode, eNode);
   }
 
   private LDNode parseLD(int i) throws ParseException {
@@ -479,32 +534,6 @@ public class StringParser {
     return new SNode(sToken, sToken.trimmedUnquotedContent(s));
   }
 
-  private Node parseConst(int i) throws ParseException {
-    Token tConstName = TokenType.CONST_NAME.next(s, i);
-    String constName = tConstName.trimmedContent(s);
-    Node value = consts.get(constName);
-    return switch (value) {
-      case null -> throw new UndefinedConstantNameException(
-          i,
-          s,
-          constName,
-          consts.keySet().stream().toList()
-      );
-      case DNode dNode -> new DNode(tConstName, dNode.value());
-      case ENode eNode -> new ENode(tConstName, eNode.child(), eNode.name());
-      case SNode sNode -> new SNode(tConstName, sNode.value());
-      case LDNode ldNode -> new LDNode(tConstName, ldNode.child());
-      case LENode leNode -> new LENode(tConstName, leNode.child());
-      case LSNode lsNode -> new LSNode(tConstName, lsNode.child());
-      default -> throw new ParseException(
-          "Unknown type %s of const %s".formatted(value.getClass().getSimpleName(), constName),
-          null,
-          i,
-          s
-      );
-    };
-  }
-
   private Node parseValue(int i) throws ParseException {
     List<WrongTokenException> wtes = new ArrayList<>();
     // try parse const name
@@ -546,4 +575,32 @@ public class StringParser {
     }
     throw new CompositeWrongTokenException(wtes);
   }
+
+  @FunctionalInterface
+  private interface NodeParser<N extends Node> {
+
+    N parse(int i) throws ParseException;
+  }
+
+  record CNode(Token token, String name, Node value) implements Node {}
+
+  record DNode(Token token, Number value) implements Node {}
+
+  record ENode(Token token, ListNode<NPNode> child, String name) implements Node {}
+
+  record INode(Token token, String path, String content) implements Node {}
+
+  record ISCSENode(Token token, ListNode<INode> isNode, ListNode<CNode> csNode, ENode eNode) implements Node {}
+
+  record ISNode(Token token, ListNode<INode> child) implements Node {}
+
+  record LDNode(Token token, ListNode<DNode> child) implements Node {}
+
+  record LENode(Token token, ListNode<ENode> child) implements Node {}
+
+  record LSNode(Token token, ListNode<SNode> child) implements Node {}
+
+  record NPNode(Token token, String name, Node value) implements Node {}
+
+  record SNode(Token token, String value) implements Node {}
 }

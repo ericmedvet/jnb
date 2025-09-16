@@ -37,7 +37,10 @@ public enum TokenType {
   ), ASSIGN_SEPARATOR("=", "="), LIST_SEPARATOR(";", ";"), INTERVAL_SEPARATOR(":", ":"), OPEN_LIST(
       "\\[",
       "["
-  ), CLOSED_LIST("\\]", "]"), LIST_JOIN("\\*", "*"), LIST_CONCAT("\\+", "+"), END_OF_STRING("\\z", "EOS");
+  ), CLOSED_LIST("\\]", "]"), LIST_JOIN("\\*", "*"), LIST_CONCAT("\\+", "+"), END_OF_STRING("\\z", "EOS"), IMPORT(
+      StringParser.IMPORT_REGEX,
+      StringParser.IMPORT_REGEX
+  );
 
   private final String regex;
   private final String rendered;
