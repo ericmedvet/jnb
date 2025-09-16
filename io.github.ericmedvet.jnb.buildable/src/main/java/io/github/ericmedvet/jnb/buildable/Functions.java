@@ -193,6 +193,16 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
+  public static <X, T> FormattedNamedFunction<X, List<T>> flat(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<? extends Collection<T>>> beforeF,
+      @Param(value = "format", dS = "%.1f") String format
+  ) {
+    Function<Collection<? extends Collection<T>>, List<T>> f = c -> c.stream().flatMap(Collection::stream).toList();
+    return FormattedNamedFunction.from(f, format, "flat").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
   public static <X> NamedFunction<X, Object> fromBase64(
       @Param(value = "of", dNPM = "f.identity()") Function<X, String> beforeF,
       @Param(value = "format", dS = "%s") String format
@@ -294,6 +304,34 @@ public class Functions {
   ) {
     Function<Grid<?>, Integer> f = Grid::w;
     return FormattedNamedFunction.from(f, format, "grid.w").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X, A, B, C, D> NamedFunction<X, Function<A, D>> iComposition(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Function<B, C>> ofF,
+      @Param(value = "before", dNPM = "f.identity()") Function<A, B> beforeF,
+      @Param(value = "then", dNPM = "f.identity()") Function<C, D> thenF
+  ) {
+    Function<Function<B, C>, Function<A, D>> composedF = midF -> a -> beforeF.andThen(midF).andThen(thenF).apply(a);
+    return NamedFunction.from(
+        composedF.compose(ofF),
+        NamedFunction.composeNames(
+            NamedFunction.name(beforeF),
+            "(%s)".formatted(NamedFunction.name(ofF)),
+            NamedFunction.name(thenF)
+        )
+    );
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X, T, R> NamedFunction<X, Collection<R>> iEach(
+      @Param("iMapF") Function<X, Function<T, R>> iMapF,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<T>> beforeF
+  ) {
+    Function<X, Collection<R>> f = x -> beforeF.apply(x).stream().map(iMapF.apply(x)).toList();
+    return NamedFunction.from(f, "each[%s]".formatted(NamedFunction.name(iMapF)));
   }
 
   @SuppressWarnings("unused")
@@ -591,6 +629,16 @@ public class Functions {
     );
     return FormattedNamedFunction.from(f, format, "sub[%s%f-%f]".formatted(relative ? "%" : "", from, to))
         .compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X> FormattedNamedFunction<X, Double> sum(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, List<? extends Number>> beforeF,
+      @Param(value = "format", dS = "%.1f") String format
+  ) {
+    Function<List<? extends Number>, Double> f = vs -> vs.stream().mapToDouble(Number::doubleValue).sum();
+    return FormattedNamedFunction.from(f, format, "sum").compose(beforeF);
   }
 
   @SuppressWarnings("unused")
