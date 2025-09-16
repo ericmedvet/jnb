@@ -21,7 +21,6 @@ package io.github.ericmedvet.jnb;
 
 import io.github.ericmedvet.jnb.core.MapNamedParamMap;
 import io.github.ericmedvet.jnb.core.NamedParamMap;
-import io.github.ericmedvet.jnb.core.ParamMap;
 import io.github.ericmedvet.jnb.core.parsing.StringParser;
 import java.io.IOException;
 import java.nio.file.Files;
