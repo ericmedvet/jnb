@@ -158,7 +158,13 @@ public class StringParser {
     String constantName = tName.trimmedContent(s);
     Node previousValue = consts.put(constantName, value);
     if (previousValue != null) {
-      L.warning("Ri-definition of constant %s @ %s of %s".formatted(constantName, StringPosition.from(s, i), path));
+      L.warning(
+          "Ri-definition of constant %s @ %s of %s".formatted(
+              constantName,
+              StringPosition.from(s, i),
+              path
+          )
+      );
     }
     return new CNode(new Token(tName.start(), value.token().end()), constantName, value);
   }
@@ -203,7 +209,13 @@ public class StringParser {
   private ENode parseE(int i) throws ParseException {
     Token tName = TokenType.NAME.next(s, i, path);
     Token tOpenPar = TokenType.OPEN_CONTENT.next(s, tName.end(), path);
-    ListNode<NPNode> npsNode = parseListNode(tOpenPar.end(), this::parseNP, NPNode.class, true, false);
+    ListNode<NPNode> npsNode = parseListNode(
+        tOpenPar.end(),
+        this::parseNP,
+        NPNode.class,
+        true,
+        false
+    );
     Token tClosedPar = TokenType.CLOSED_CONTENT.next(s, npsNode.token().end(), path);
     return new ENode(new Token(tName.start(), tClosedPar.end()), npsNode, tName.trimmedContent(s));
   }
@@ -236,7 +248,11 @@ public class StringParser {
           false
       );
       TokenType.END_OF_STRING.next(content, csNode.token().end(), path);
-      return new INode(new Token(tImport.start(), tClosedPar.end()), tPath.trimmedUnquotedContent(s), content);
+      return new INode(
+          new Token(tImport.start(), tClosedPar.end()),
+          tPath.trimmedUnquotedContent(s),
+          content
+      );
     } catch (IOException e) {
       throw new ParseException(
           "Cannot read import content at '%s'".formatted(tPath.trimmedUnquotedContent(s)),
@@ -249,10 +265,35 @@ public class StringParser {
   }
 
   private ISCSENode parseISCSE(int i) throws ParseException {
-    ListNode<INode> isNode = parseListNode(i, this::parseI, INode.class, false, false);
-    ListNode<CNode> csNode = parseListNode(isNode.token().end(), this::parseC, CNode.class, false, false);
-    ENode eNode = parseE(csNode.token().end());
-    return new ISCSENode(new Token(csNode.token().start(), eNode.token().end()), isNode, csNode, eNode);
+    List<INode> iNodes = new ArrayList<>();
+    List<CNode> cNodes = new ArrayList<>();
+    int j = i;
+    while (true) {
+      ListNode<INode> isNode = parseListNode(j, this::parseI, INode.class, false, false);
+      iNodes.addAll(isNode.children());
+      j = isNode.token().end();
+      ListNode<CNode> csNode = parseListNode(
+          j,
+          this::parseC,
+          CNode.class,
+          false,
+          false
+      );
+      cNodes.addAll(csNode.children());
+      j = csNode.token().end();
+      if (isNode.children().isEmpty() && csNode.children().isEmpty()) {
+        break;
+      }
+    }
+    ENode eNode = parseE(j);
+    int start = Stream.concat(iNodes.stream(), cNodes.stream())
+        .mapToInt(n -> n.token().start())
+        .min()
+        .orElse(
+            eNode.token()
+                .start()
+        );
+    return new ISCSENode(new Token(start, eNode.token().end()), iNodes, cNodes, eNode);
   }
 
   private LDNode parseLD(int i) throws ParseException {
@@ -534,7 +575,11 @@ public class StringParser {
     Token tName = TokenType.STRING.next(s, i, path);
     Token tAssign = TokenType.ASSIGN_SEPARATOR.next(s, tName.end(), path);
     Node value = parseValue(tAssign.end());
-    return new NPNode(new Token(tName.start(), value.token().end()), tName.trimmedContent(s), value);
+    return new NPNode(
+        new Token(tName.start(), value.token().end()),
+        tName.trimmedContent(s),
+        value
+    );
   }
 
   private SNode parseS(int i) throws ParseException {
@@ -590,25 +635,43 @@ public class StringParser {
     N parse(int i) throws ParseException;
   }
 
-  record CNode(Token token, String name, Node value) implements Node {}
+  record CNode(Token token, String name, Node value) implements Node {
 
-  record DNode(Token token, Number value) implements Node {}
+  }
 
-  record ENode(Token token, ListNode<NPNode> child, String name) implements Node {}
+  record DNode(Token token, Number value) implements Node {
 
-  record INode(Token token, String path, String content) implements Node {}
+  }
 
-  record ISCSENode(Token token, ListNode<INode> isNode, ListNode<CNode> csNode, ENode eNode) implements Node {}
+  record ENode(Token token, ListNode<NPNode> child, String name) implements Node {
 
-  record ISNode(Token token, ListNode<INode> child) implements Node {}
+  }
 
-  record LDNode(Token token, ListNode<DNode> child) implements Node {}
+  record INode(Token token, String path, String content) implements Node {
 
-  record LENode(Token token, ListNode<ENode> child) implements Node {}
+  }
 
-  record LSNode(Token token, ListNode<SNode> child) implements Node {}
+  record ISCSENode(Token token, List<INode> iNodes, List<CNode> cNodes, ENode eNode) implements Node {
 
-  record NPNode(Token token, String name, Node value) implements Node {}
+  }
 
-  record SNode(Token token, String value) implements Node {}
+  record LDNode(Token token, ListNode<DNode> child) implements Node {
+
+  }
+
+  record LENode(Token token, ListNode<ENode> child) implements Node {
+
+  }
+
+  record LSNode(Token token, ListNode<SNode> child) implements Node {
+
+  }
+
+  record NPNode(Token token, String name, Node value) implements Node {
+
+  }
+
+  record SNode(Token token, String value) implements Node {
+
+  }
 }
