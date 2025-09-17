@@ -19,14 +19,21 @@
  */
 package io.github.ericmedvet.jnb.core.parsing;
 
+import java.nio.file.Path;
 import java.util.List;
 
 public class UndefinedConstantNameException extends ParseException {
   private final String notFoundName;
   private final List<String> knownNames;
 
-  public UndefinedConstantNameException(int index, String string, String notFoundName, List<String> knownNames) {
-    super("Const name %s not in known list %s".formatted(notFoundName, knownNames), null, index, string);
+  public UndefinedConstantNameException(
+      int index,
+      String string,
+      Path path,
+      String notFoundName,
+      List<String> knownNames
+  ) {
+    super("Const name %s not in known list %s".formatted(notFoundName, knownNames), null, index, string, path);
     this.notFoundName = notFoundName;
     this.knownNames = knownNames;
   }

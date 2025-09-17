@@ -31,6 +31,7 @@ public class CompositeWrongTokenException extends WrongTokenException {
             .orElseThrow()
             .getIndex(),
         wtes.stream().findFirst().orElseThrow().getString(),
+        wtes.stream().findFirst().orElseThrow().getPath(),
         wtes.stream()
             .filter(
                 wte -> wte.getIndex() == wtes.stream()

@@ -308,6 +308,18 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
+  public static <X, T, R> NamedFunction<X, R> iApply(
+      @Param("iF") Function<X, Function<T, R>> iMapF,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, T> beforeF
+  ) {
+    return NamedFunction.from(
+        x -> iMapF.apply(x).apply(beforeF.apply(x)),
+        NamedFunction.composeNames(NamedFunction.name(beforeF), "(%s)".formatted(NamedFunction.name(iMapF)))
+    );
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
   public static <X, A, B, C, D> NamedFunction<X, Function<A, D>> iComposition(
       @Param(value = "of", dNPM = "f.identity()") Function<X, Function<B, C>> ofF,
       @Param(value = "before", dNPM = "f.identity()") Function<A, B> beforeF,

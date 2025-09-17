@@ -20,6 +20,7 @@
 package io.github.ericmedvet.jnb.core.parsing;
 
 import io.github.ericmedvet.jnb.core.NamedBuilder;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -54,11 +55,11 @@ public enum TokenType {
     return regex;
   }
 
-  public Token next(String s, int i) throws WrongTokenException {
+  public Token next(String s, int i, Path path) throws WrongTokenException {
     Pattern pattern = Pattern.compile(StringParser.VOID_REGEX + regex + StringParser.VOID_REGEX);
     Matcher matcher = pattern.matcher(s);
     if (!matcher.find(i) || matcher.start() != i) {
-      throw new WrongTokenException(i, s, List.of(this));
+      throw new WrongTokenException(i, s, path, List.of(this));
     }
     return new Token(matcher.start(), matcher.end());
   }
