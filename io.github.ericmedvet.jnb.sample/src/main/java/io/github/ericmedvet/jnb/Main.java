@@ -121,6 +121,7 @@ public class Main {
         .and(NamedBuilder.fromClass(Person.class))
         .and(NamedBuilder.fromClass(Timed.class))
         .and(NamedBuilder.fromClass(Pet.class));
+
     // System.out.println(nb.build("person(name=eric;preferredDays=[mon;tue];age=44)"));
     // System.exit(0);
 
