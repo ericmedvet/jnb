@@ -355,6 +355,16 @@ public class StringParser {
   @SuppressWarnings("InfiniteRecursion")
   private LENode parseLE(int i) throws ParseException {
     List<WrongTokenException> wtes = new ArrayList<>();
+    // case: constant
+    try {
+      Node constNode = parseConst(i);
+      if (constNode instanceof LENode leNode) {
+        return leNode;
+      }
+      throw new ParseException("Wrong constant type: %s is not a list".formatted(constNode), null, i, s, path);
+    } catch (WrongTokenException wte) {
+      wtes.add(wte);
+    }
     // case: list with join
     try {
       Token openT = TokenType.OPEN_CONTENT.next(s, i, path);
@@ -378,8 +388,8 @@ public class StringParser {
               )
           );
         } else {
-          if (npNode.value() instanceof LDNode ldNode) {
-            for (DNode dNode : ldNode.child().children()) {
+          if (npNode.value() instanceof LDNode(Token token,ListNode<DNode>child)) {
+            for (DNode dNode : child.children()) {
               eNodes.add(
                   new ENode(
                       originalENode.token(),
@@ -387,15 +397,15 @@ public class StringParser {
                           originalENode.child().token(),
                           withAppended(
                               originalENode.child().children(),
-                              new NPNode(ldNode.token(), npNode.name(), dNode)
+                              new NPNode(token, npNode.name(), dNode)
                           )
                       ),
                       originalENode.name()
                   )
               );
             }
-          } else if (npNode.value() instanceof LSNode lsNode) {
-            for (SNode sNode : lsNode.child().children()) {
+          } else if (npNode.value() instanceof LSNode(Token token,ListNode<SNode>child)) {
+            for (SNode sNode : child.children()) {
               eNodes.add(
                   new ENode(
                       originalENode.token(),
@@ -403,15 +413,15 @@ public class StringParser {
                           originalENode.child().token(),
                           withAppended(
                               originalENode.child().children(),
-                              new NPNode(lsNode.token(), npNode.name(), sNode)
+                              new NPNode(token, npNode.name(), sNode)
                           )
                       ),
                       originalENode.name()
                   )
               );
             }
-          } else if (npNode.value() instanceof LENode leNode) {
-            for (ENode eNode : leNode.child().children()) {
+          } else if (npNode.value() instanceof LENode(Token token,ListNode<ENode>child)) {
+            for (ENode eNode : child.children()) {
               eNodes.add(
                   new ENode(
                       originalENode.token(),
@@ -419,7 +429,7 @@ public class StringParser {
                           originalENode.child().token(),
                           withAppended(
                               originalENode.child().children(),
-                              new NPNode(leNode.token(), npNode.name(), eNode)
+                              new NPNode(token, npNode.name(), eNode)
                           )
                       ),
                       originalENode.name()
@@ -445,12 +455,12 @@ public class StringParser {
     // case: list with mult
     try {
       Token multToken = TokenType.I_NUM.next(s, i, path);
-      int mult = Integer.parseInt(multToken.trimmedContent(s));
+      int multiplier = Integer.parseInt(multToken.trimmedContent(s));
       Token jointT = TokenType.LIST_JOIN.next(s, multToken.end(), path);
       LENode originalLENode = parseLE(jointT.end());
       // multiply
       List<ENode> eNodes = new ArrayList<>();
-      for (int j = 0; j < mult; j++) {
+      for (int j = 0; j < multiplier; j++) {
         eNodes.addAll(originalLENode.child().children());
       }
       return new LENode(

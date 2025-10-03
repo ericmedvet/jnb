@@ -114,6 +114,22 @@ public class Main {
   }
 
   public static void main(String[] args) throws ParseException, IOException {
+
+    System.out.println(MapNamedParamMap.prettyToString(StringParser.parse("""
+        $name = eric
+        $vals = [1;2;3]
+        $things = [dog(name = sissi); chicken(name = olivia)]
+        person(
+          name = $name;
+          age = 46;
+          vals = $vals;
+          dVals = (val = $vals) * [dVal()];
+          animals = (kind = animal) * [dog(name = sissi); chicken(name = olivia)];
+          animals2 = (kind = animal) * + $things + $things
+        )
+        """)));
+    System.exit(0);
+
     // justParse();
 
     NamedBuilder<?> nb = NamedBuilder.empty()
