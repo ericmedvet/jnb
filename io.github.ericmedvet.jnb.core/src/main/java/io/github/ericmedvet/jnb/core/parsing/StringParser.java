@@ -230,7 +230,7 @@ public class StringParser {
     }
     try {
       Path relativePath = Path.of(tPath.trimmedUnquotedContent(s));
-      Path iPath = path.getParent().resolve(relativePath);
+      Path iPath = path.toAbsolutePath().getParent().resolve(relativePath);
       String content = Files.readString(iPath);
       StringParser innerParser = new StringParser(content, iPath, consts);
       ListNode<INode> isNode = innerParser.parseListNode(
