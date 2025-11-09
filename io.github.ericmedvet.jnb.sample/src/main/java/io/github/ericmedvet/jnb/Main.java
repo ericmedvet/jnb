@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -113,7 +114,7 @@ public class Main {
     }
   }
 
-  public static void main(String[] args) throws ParseException, IOException {
+  private static void doParsingStuff() {
 
     System.out.println(MapNamedParamMap.prettyToString(StringParser.parse("""
         $name = eric
@@ -171,6 +172,27 @@ public class Main {
     System.out.println(
         nb.build("$nn1 = nn1 $number = \"45\" person(name = $nn1; nicknames = [$nn1; nn2; $number])")
     );
+  }
+
+  public static void main(String[] args) {
+    doInterpolationStuff();
+  }
+
+  private static void doInterpolationStuff() {
+    ParamMap pm = new MapNamedParamMap(
+        "office",
+        Map.ofEntries(
+            Map.entry("name", "The office"),
+            Map.entry("number", 46),
+            Map.entry("longName", new InterpolableString("{name} ({number})"))
+        )
+    );
+    System.out.println(pm);
+    System.out.println(pm.value("longName"));
+    System.out.println(pm.value("longName", Type.STRING));
+    System.out.println(pm.value("longName", Type.NAMED_PARAM_MAP));
+    System.out.println(pm.with("number", "quasi 47").types("number"));
+    System.out.println(pm.with("number", "quasi 47"));
   }
 
   private static String find(String s, String regex) {

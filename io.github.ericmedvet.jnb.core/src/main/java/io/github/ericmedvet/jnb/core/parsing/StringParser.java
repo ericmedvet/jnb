@@ -21,7 +21,6 @@ package io.github.ericmedvet.jnb.core.parsing;
 
 import io.github.ericmedvet.jnb.core.MapNamedParamMap;
 import io.github.ericmedvet.jnb.core.NamedParamMap;
-import io.github.ericmedvet.jnb.core.ParamMap;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,14 +51,15 @@ public class StringParser {
   }
 
   private static NamedParamMap from(ENode eNode) {
-    Map<MapNamedParamMap.TypedKey, Object> values = new HashMap<>();
+    // TODO can be simplified with an iteration and a switch expression, grouping cases
+    Map<String, Object> values = new HashMap<>();
     eNode.child()
         .children()
         .stream()
         .filter(n -> n.value() instanceof DNode)
         .forEach(
             n -> values.put(
-                new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.DOUBLE),
+                n.name,
                 ((DNode) n.value()).value().doubleValue()
             )
         );
@@ -69,7 +69,7 @@ public class StringParser {
         .filter(n -> n.value() instanceof SNode)
         .forEach(
             n -> values.put(
-                new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.STRING),
+                n.name,
                 ((SNode) n.value()).value()
             )
         );
@@ -79,7 +79,7 @@ public class StringParser {
         .filter(n -> n.value() instanceof ENode)
         .forEach(
             n -> values.put(
-                new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.NAMED_PARAM_MAP),
+                n.name,
                 from((ENode) n.value())
             )
         );
@@ -89,7 +89,7 @@ public class StringParser {
         .filter(n -> n.value() instanceof LDNode)
         .forEach(
             n -> values.put(
-                new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.DOUBLES),
+                n.name,
                 ((LDNode) n.value()).child.children()
                     .stream()
                     .map(c -> c.value().doubleValue())
@@ -102,7 +102,7 @@ public class StringParser {
         .filter(n -> n.value() instanceof LSNode)
         .forEach(
             n -> values.put(
-                new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.STRINGS),
+                n.name,
                 ((LSNode) n.value())
                     .child()
                     .children()
@@ -117,7 +117,7 @@ public class StringParser {
         .filter(n -> n.value() instanceof LENode)
         .forEach(
             n -> values.put(
-                new MapNamedParamMap.TypedKey(n.name, ParamMap.Type.NAMED_PARAM_MAPS),
+                n.name,
                 ((LENode) n.value())
                     .child()
                     .children()

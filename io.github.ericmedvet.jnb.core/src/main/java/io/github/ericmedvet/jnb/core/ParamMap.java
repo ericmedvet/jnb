@@ -19,15 +19,14 @@
  */
 package io.github.ericmedvet.jnb.core;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.SequencedSet;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public interface ParamMap {
+
 
   enum Type {
     INT("i"), DOUBLE("d"), STRING("s"), BOOLEAN("b"), ENUM("e"), NAMED_PARAM_MAP("npm"), INTS("i[]"), DOUBLES(
@@ -47,7 +46,9 @@ public interface ParamMap {
 
   Set<String> names();
 
-  <E extends Enum<E>> Object value(String n, Type type, Class<E> enumClass);
+  SequencedSet<Type> types(String name);
+
+  <E extends Enum<E>> Object value(String name, Type type, Class<E> enumClass);
 
   private static boolean areEquals(ParamMap pm1, ParamMap pm2) {
     if (!pm1.names().equals(pm2.names())) {
@@ -68,36 +69,17 @@ public interface ParamMap {
   }
 
   default ParamMap and(ParamMap other) {
-    ParamMap thisParamMap = this;
-    return new ParamMap() {
-      @Override
-      public int hashCode() {
-        return ParamMap.hash(thisParamMap);
-      }
+    Map<String, Object> values = new HashMap<>();
+    other.names().forEach(n -> values.put(n, other.value(n)));
+    names().forEach(n -> values.put(n, value(n)));
+    return new MapNamedParamMap("", values);
+  }
 
-      @Override
-      public boolean equals(Object obj) {
-        if (obj instanceof ParamMap otherMap) {
-          return ParamMap.areEquals(this, otherMap);
-        }
-        return false;
-      }
-
-      @Override
-      public Set<String> names() {
-        return Stream.concat(thisParamMap.names().stream(), other.names().stream())
-            .collect(Collectors.toSet());
-      }
-
-      @Override
-      public <E extends Enum<E>> Object value(String n, Type type, Class<E> enumClass) {
-        Object o = thisParamMap.value(n, type, enumClass);
-        if (o == null) {
-          o = other.value(n, type, enumClass);
-        }
-        return o;
-      }
-    };
+  default ParamMap andOverwrite(ParamMap other) {
+    Map<String, Object> values = new HashMap<>();
+    names().forEach(n -> values.put(n, value(n)));
+    other.names().forEach(n -> values.put(n, other.value(n)));
+    return new MapNamedParamMap("", values);
   }
 
   default Object value(String n, Type type) {
@@ -107,78 +89,20 @@ public interface ParamMap {
     return value(n, type, null);
   }
 
-  default Object value(String n) {
-    return Arrays.stream(Type.values())
-        .filter(t -> !(t.equals(Type.ENUM) || t.equals(Type.ENUMS)))
-        .map(t -> value(n, t))
-        .filter(Objects::nonNull)
-        .findFirst()
-        .orElse(null);
+  default Object value(String name) {
+    return value(name, types(name).getFirst());
   }
 
-  default ParamMap with(String name, Type valueType, Object value) {
-    ParamMap thisParamMap = this;
-    return new ParamMap() {
-      @Override
-      public int hashCode() {
-        return ParamMap.hash(thisParamMap);
-      }
-
-      @Override
-      public boolean equals(Object obj) {
-        if (obj instanceof ParamMap other) {
-          return ParamMap.areEquals(this, other);
-        }
-        return false;
-      }
-
-      @Override
-      public Set<String> names() {
-        return Stream.concat(thisParamMap.names().stream(), Stream.of(name))
-            .collect(Collectors.toSet());
-      }
-
-      @Override
-      public <E extends Enum<E>> Object value(String n, Type type, Class<E> enumClass) {
-        Object o = thisParamMap.value(n, type, enumClass);
-        if (o == null && name.equals(n) && valueType.equals(type)) {
-          o = value;
-        }
-        return o;
-      }
-    };
+  default ParamMap with(String name, Object value) {
+    return andOverwrite(new MapNamedParamMap("", Map.of(name, value)));
   }
 
   default ParamMap without(String... names) {
-    ParamMap thisParamMap = this;
-    Set<String> newNames = thisParamMap.names();
-    List.of(names).forEach(newNames::remove);
-    return new ParamMap() {
-      @Override
-      public int hashCode() {
-        return ParamMap.hash(thisParamMap);
-      }
-
-      @Override
-      public boolean equals(Object obj) {
-        if (obj instanceof ParamMap other) {
-          return ParamMap.areEquals(this, other);
-        }
-        return false;
-      }
-
-      @Override
-      public Set<String> names() {
-        return newNames;
-      }
-
-      @Override
-      public <E extends Enum<E>> Object value(String n, Type type, Class<E> enumClass) {
-        if (!newNames.contains(n)) {
-          return null;
-        }
-        return thisParamMap.value(n, type, enumClass);
-      }
-    };
+    Map<String, Object> values = new HashMap<>();
+    names().forEach(n -> values.put(n, value(n)));
+    for (String name : names) {
+      values.remove(name);
+    }
+    return new MapNamedParamMap("", values);
   }
 }

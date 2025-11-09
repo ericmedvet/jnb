@@ -21,108 +21,44 @@ package io.github.ericmedvet.jnb.core;
 
 import io.github.ericmedvet.jnb.core.parsing.TokenType;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class MapNamedParamMap implements NamedParamMap, Formattable {
 
-  public record TypedKey(String name, Type type) implements Comparable<TypedKey> {
-
-    @Override
-    public int compareTo(TypedKey o) {
-      return name.compareTo(o.name);
-    }
-  }
-
   private final String name;
-  private final SortedMap<TypedKey, Object> values;
+  private final SortedMap<String, Object> values;
+  private final Map<String, SequencedSet<Type>> types;
 
-  public SortedMap<TypedKey, Object> getValues() {
-    return values;
+  public MapNamedParamMap(String name, ParamMap paramMap) {
+    this(
+        name,
+        (paramMap instanceof MapNamedParamMap) ? ((MapNamedParamMap) paramMap).values : paramMap.names()
+            .stream()
+            .collect(
+                Collectors.toMap(
+                    n -> n,
+                    paramMap::value
+                )
+            )
+    );
   }
 
-  public MapNamedParamMap(String name, Map<TypedKey, Object> values) {
+  public MapNamedParamMap(String name, Map<String, Object> values) {
     this.name = name;
-    this.values = new TreeMap<>();
-    for (Map.Entry<TypedKey, Object> e : values.entrySet()) {
-      if (e.getKey().type.equals(Type.INT)) {
-        this.values.put(new TypedKey(e.getKey().name, Type.DOUBLE), Double.valueOf(intValue(e.getValue())));
-      } else if (e.getKey().type.equals(Type.BOOLEAN)) {
-        this.values.put(
-            new TypedKey(e.getKey().name, Type.STRING),
-            booleanValue(e.getValue().toString()).toString()
-        );
-      } else if (e.getKey().type.equals(Type.ENUM)) {
-        this.values.put(
-            new TypedKey(e.getKey().name, Type.STRING),
-            ((Enum<?>) e.getValue()).name().toLowerCase()
-        );
-      } else if (e.getKey().type.equals(Type.INTS)) {
-        this.values.put(
-            new TypedKey(e.getKey().name, Type.DOUBLES),
-            checkList((List<?>) e.getValue(), MapNamedParamMap::intValue)
-        );
-      } else if (e.getKey().type.equals(Type.BOOLEANS)) {
-        this.values.put(
-            new TypedKey(e.getKey().name, Type.STRINGS),
-            checkList(
-                (List<?>) e.getValue(),
-                b -> booleanValue(b.toString())
-                    .toString()
+    this.values = Collections.unmodifiableSortedMap(new TreeMap<>(values));
+    types = new HashMap<>();
+    values.forEach((n, v) -> types.put(n, typesFor(v)));
+    for (String n : types.keySet()) {
+      if (types.get(n).isEmpty()) {
+        throw new IllegalArgumentException(
+            "Unsupported type for value %s of type %s".formatted(
+                values.get(n),
+                values.get(n).getClass().getSimpleName()
             )
         );
-      } else if (e.getKey().type.equals(Type.ENUMS)) {
-        this.values.put(
-            new TypedKey(e.getKey().name, Type.STRINGS),
-            checkList(
-                (List<?>) e.getValue(),
-                v -> ((Enum<?>) v).name().toLowerCase()
-            )
-        );
-      } else {
-        this.values.put(e.getKey(), e.getValue());
       }
     }
-  }
-
-  @Override
-  public <E extends Enum<E>> Object value(String n, Type type, Class<E> enumClass) {
-    return switch (type) {
-      case INT -> intValue(values.get(new TypedKey(n, Type.DOUBLE)));
-      case BOOLEAN -> booleanValue(values.get(new TypedKey(n, Type.STRING)));
-      case ENUM -> enumValue(values.get(new TypedKey(n, Type.STRING)), enumClass);
-      case INTS -> checkList((List<?>) values.get(new TypedKey(n, Type.DOUBLES)), MapNamedParamMap::intValue);
-      case BOOLEANS -> checkList(
-          (List<?>) values.get(new TypedKey(n, Type.STRINGS)),
-          MapNamedParamMap::booleanValue
-      );
-      case ENUMS -> checkList((List<?>) values.get(new TypedKey(n, Type.STRINGS)), s -> enumValue(s, enumClass));
-      default -> values.get(new TypedKey(n, type));
-    };
-  }
-
-  private static List<?> checkList(List<?> l, Function<?, ?> mapper) {
-    if (l == null) {
-      return null;
-    }
-    @SuppressWarnings({"rawtypes", "unchecked"}) List<?> mappedL = l.stream()
-        .map(i -> ((Function) mapper).apply(i))
-        .toList();
-    if (mappedL.stream().anyMatch(Objects::isNull)) {
-      return null;
-    }
-    return mappedL;
-  }
-
-  private static Integer intValue(Object o) {
-    if (o == null) {
-      return null;
-    }
-    if (o instanceof Number d) {
-      return d.intValue() != d.doubleValue() ? null : d.intValue();
-    }
-    return null;
   }
 
   private static Boolean booleanValue(Object o) {
@@ -138,6 +74,12 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     return null;
   }
 
+
+  private static int currentLineLength(String s) {
+    String[] lines = s.split("\n");
+    return lines[lines.length - 1].length();
+  }
+
   private static <E extends Enum<E>> E enumValue(Object o, Class<E> enumClass) {
     if (o == null) {
       return null;
@@ -148,13 +90,29 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     return null;
   }
 
-  private static int currentLineLength(String s) {
-    String[] lines = s.split("\n");
-    return lines[lines.length - 1].length();
+  private static String getOrInterpolate(Object value, ParamMap paramMap) {
+    return switch (value) {
+      case InterpolableString interpolableString -> interpolableString.interpolate(paramMap);
+      default -> value.toString();
+    };
   }
 
   private static String indent(int w) {
     return IntStream.range(0, w).mapToObj(i -> " ").collect(Collectors.joining());
+  }
+
+  private static boolean isBoolean(Object o) {
+    if (o instanceof String s) {
+      return s.equalsIgnoreCase("true") || s.equalsIgnoreCase("false");
+    }
+    return false;
+  }
+
+  private static boolean isInt(Object o) {
+    if (o instanceof Double d) {
+      return !Double.isNaN(d) && !Double.isInfinite(d) && (int) d.doubleValue() == d;
+    }
+    return false;
   }
 
   private static boolean isInt(Double v) {
@@ -296,7 +254,14 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     return sb.toString();
   }
 
-  public static void prettyToString(ParamMap map, StringBuilder sb, int maxW, int w, int indent, String space) {
+  public static void prettyToString(
+      ParamMap map,
+      StringBuilder sb,
+      int maxW,
+      int w,
+      int indent,
+      String space
+  ) {
     // iterate
     if (map instanceof NamedParamMap namedParamMap) {
       sb.append(namedParamMap.getName());
@@ -311,23 +276,122 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     sb.append(TokenType.CLOSED_CONTENT.rendered());
   }
 
+  @SafeVarargs
+  private static <T> SequencedSet<T> set(T... ts) {
+    LinkedHashSet<T> set = Arrays.stream(ts)
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+    return Collections.unmodifiableSequencedSet(set);
+  }
+
   private static String stringValue(String value) {
     return value.matches("[A-Za-z][A-Za-z0-9_]*") ? value : ('"' + value + '"');
   }
 
-  @Override
-  public Set<String> names() {
-    return values.keySet().stream().map(k -> k.name).collect(Collectors.toSet());
+  private static SequencedSet<Type> typesFor(Object object) {
+    return switch (object) {
+      case Double d ->
+        isInt(d) ? set(Type.INT, Type.DOUBLE, Type.STRING) : set(Type.DOUBLE, Type.STRING);
+      case Integer i -> set(Type.INT, Type.DOUBLE, Type.STRING);
+      case String s ->
+        isBoolean(s) ? set(Type.STRING, Type.BOOLEAN, Type.ENUM) : set(Type.STRING, Type.ENUM);
+      case InterpolableString is -> set(Type.STRING);
+      case NamedParamMap npm -> set(Type.NAMED_PARAM_MAP);
+      case List<?> list -> {
+        if (list.isEmpty()) {
+          yield set(
+              Type.INTS,
+              Type.DOUBLES,
+              Type.STRINGS,
+              Type.ENUMS,
+              Type.BOOLEANS,
+              Type.NAMED_PARAM_MAPS
+          );
+        }
+        Object first = list.getFirst();
+        yield switch (first) {
+          case Double d -> {
+            if (list.stream().allMatch(MapNamedParamMap::isInt)) {
+              yield set(Type.INTS, Type.DOUBLES, Type.STRINGS);
+            }
+            if (list.stream().allMatch(o -> o instanceof Double)) {
+              yield set(Type.DOUBLES, Type.STRINGS);
+            }
+            yield set(Type.DOUBLES, Type.STRINGS);
+          }
+          case Integer i -> {
+            if (list.stream().allMatch(o -> o instanceof Integer)) {
+              yield set(Type.INTS, Type.DOUBLES, Type.STRINGS);
+            }
+            yield set(Type.INTS, Type.DOUBLES, Type.STRINGS);
+          }
+          case String s -> {
+            if (list.stream().allMatch(MapNamedParamMap::isBoolean)) {
+              yield set(Type.STRINGS, Type.BOOLEANS, Type.ENUMS);
+            }
+            if (list.stream()
+                .allMatch(o -> o instanceof String || o instanceof InterpolableString)) {
+              yield set(Type.STRINGS, Type.ENUMS);
+            }
+            yield set();
+          }
+          case NamedParamMap npm -> {
+            if (list.stream().allMatch(o -> o instanceof NamedParamMap)) {
+              yield set(Type.NAMED_PARAM_MAPS);
+            }
+            yield set();
+          }
+          default -> set();
+        };
+      }
+      default -> set();
+    };
+  }
+
+  private Map<String, Object> allValues() {
+    return names().stream()
+        .collect(
+            Collectors.toMap(
+                n -> n,
+                this::value
+            )
+        );
   }
 
   @Override
-  public String getName() {
-    return name;
+  public NamedParamMap and(ParamMap other) {
+    Map<String, Object> newValues = new HashMap<>();
+    if (other instanceof MapNamedParamMap mnpm) {
+      newValues.putAll(mnpm.values);
+    } else {
+      other.names().forEach(n -> newValues.put(n, other.value(n)));
+    }
+    newValues.putAll(values);
+    return new MapNamedParamMap(getName(), newValues);
   }
 
   @Override
-  public String toString() {
-    return prettyToString(this, Integer.MAX_VALUE);
+  public NamedParamMap andOverwrite(ParamMap other) {
+    Map<String, Object> newValues = new HashMap<>(values);
+    if (other instanceof MapNamedParamMap mnpm) {
+      newValues.putAll(mnpm.values);
+    } else {
+      other.names().forEach(n -> newValues.put(n, other.value(n)));
+    }
+    return new MapNamedParamMap(getName(), newValues);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof MapNamedParamMap that)) {
+      return false;
+    }
+    return Objects.equals(getName(), that.getName()) && Objects.equals(
+        allValues(),
+        that.allValues()
+    );
   }
 
   @Override
@@ -341,18 +405,81 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof MapNamedParamMap that)) {
-      return false;
-    }
-    return Objects.equals(getName(), that.getName()) && Objects.equals(getValues(), that.getValues());
+  public String getName() {
+    return name;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(getName(), getValues());
+    return Objects.hash(getName(), allValues());
+  }
+
+  @Override
+  public Set<String> names() {
+    return values.keySet();
+  }
+
+  @Override
+  public String toString() {
+    return prettyToString(this, Integer.MAX_VALUE);
+  }
+
+  @Override
+  public SequencedSet<Type> types(String name) {
+    return types.get(name);
+  }
+
+  @Override
+  public <E extends Enum<E>> Object value(String name, Type type, Class<E> enumClass) {
+    if (!types(name).contains(type)) {
+      return null;
+    }
+    return switch (type) {
+      case INT -> switch (values.get(name)) {
+        case Double d -> d.intValue();
+        case Integer i -> i;
+        default -> null;
+      };
+      case DOUBLE -> switch (values.get(name)) {
+        case Double d -> d;
+        case Integer i -> i.doubleValue();
+        default -> null;
+      };
+      case NAMED_PARAM_MAP, NAMED_PARAM_MAPS -> values.get(name);
+      case BOOLEAN -> Boolean.parseBoolean((String) values.get(name));
+      case ENUM -> enumValue(values.get(name), enumClass);
+      case STRING -> getOrInterpolate(values.get(name), this);
+      case INTS -> ((List<?>) values.get(name)).stream()
+          .map(o -> switch (o) {
+            case Double d -> d.intValue();
+            case Integer i -> i;
+            default -> null;
+          })
+          .toList();
+      case DOUBLES -> ((List<?>) values.get(name)).stream()
+          .map(o -> switch (o) {
+            case Double d -> d;
+            case Integer i -> i.doubleValue();
+            default -> null;
+          })
+          .toList();
+      case BOOLEANS ->
+        ((List<?>) values.get(name)).stream()
+            .map(o -> Boolean.parseBoolean(o.toString()))
+            .toList();
+      case ENUMS ->
+        ((List<?>) values.get(name)).stream().map(o -> enumValue(o, enumClass)).toList();
+      case STRINGS ->
+        ((List<?>) values.get(name)).stream().map(o -> getOrInterpolate(o, this)).toList();
+    };
+  }
+
+  @Override
+  public NamedParamMap without(String... names) {
+    Map<String, Object> newValues = new HashMap<>(values);
+    for (String name : names) {
+      newValues.remove(name);
+    }
+    return new MapNamedParamMap(getName(), newValues);
   }
 }

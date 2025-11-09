@@ -19,64 +19,44 @@
  */
 package io.github.ericmedvet.jnb.core;
 
-import java.util.Objects;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 public interface NamedParamMap extends ParamMap {
+  static NamedParamMap from(String name, ParamMap paramMap) {
+    return new MapNamedParamMap(name, paramMap);
+  }
+
+  @Override
+  default NamedParamMap and(ParamMap other) {
+    Map<String, Object> values = new HashMap<>();
+    other.names().forEach(n -> values.put(n, other.value(n)));
+    names().forEach(n -> values.put(n, value(n)));
+    return new MapNamedParamMap(getName(), values);
+  }
+
+  @Override
+  default NamedParamMap andOverwrite(ParamMap other) {
+    Map<String, Object> values = new HashMap<>();
+    names().forEach(n -> values.put(n, value(n)));
+    other.names().forEach(n -> values.put(n, other.value(n)));
+    return new MapNamedParamMap(getName(), values);
+  }
+
   String getName();
 
-  static NamedParamMap from(String name, ParamMap paramMap) {
-    return new NamedParamMap() {
-      @Override
-      public String getName() {
-        return name;
-      }
-
-      @Override
-      public Set<String> names() {
-        return paramMap.names();
-      }
-
-      @Override
-      public <E extends Enum<E>> Object value(String n, Type type, Class<E> enumClass) {
-        return paramMap.value(n, type, enumClass);
-      }
-
-      @Override
-      public String toString() {
-        return MapNamedParamMap.prettyToString(this, Integer.MAX_VALUE);
-      }
-
-      @Override
-      public int hashCode() {
-        return Objects.hash(name, paramMap);
-      }
-
-      @Override
-      public boolean equals(Object obj) {
-        if (obj instanceof NamedParamMap other) {
-          if (!Objects.equals(name, other.getName())) {
-            return false;
-          }
-          return Objects.equals(paramMap, other);
-        }
-        return false;
-      }
-    };
+  @Override
+  default NamedParamMap with(String name, Object value) {
+    return andOverwrite(new MapNamedParamMap("", Map.of(name, value)));
   }
 
   @Override
-  default NamedParamMap with(String name, Type valueType, Object value) {
-    return from(getName(), ParamMap.super.with(name, valueType, value));
-  }
-
-  @Override
-  default ParamMap and(ParamMap other) {
-    return from(getName(), ParamMap.super.and(other));
-  }
-
-  @Override
-  default ParamMap without(String... names) {
-    return from(getName(), ParamMap.super.without(names));
+  default NamedParamMap without(String... names) {
+    Map<String, Object> values = new HashMap<>();
+    names().forEach(n -> values.put(n, value(n)));
+    for (String name : names) {
+      values.remove(name);
+    }
+    return new MapNamedParamMap(getName(), values);
   }
 }

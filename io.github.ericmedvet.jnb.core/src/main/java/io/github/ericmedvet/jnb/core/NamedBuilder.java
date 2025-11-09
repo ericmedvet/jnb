@@ -261,7 +261,7 @@ public class NamedBuilder<X> {
       return map;
     }
     // fill map
-    Map<MapNamedParamMap.TypedKey, Object> values = new HashMap<>();
+    Map<String, Object> values = new HashMap<>();
     for (DocumentedBuilder.ParamInfo p : builder.params()
         .stream()
         .sorted((p1, p2) -> p1.interpolationString() == null ? -1 : (p2.interpolationString() == null ? 1 : 0))
@@ -286,7 +286,7 @@ public class NamedBuilder<X> {
       if (value instanceof NamedParamMap npm) {
         value = fillWithDefaults(npm);
       }
-      values.put(new MapNamedParamMap.TypedKey(p.name(), p.type()), value);
+      values.put(p.name(), value);
     }
     return new MapNamedParamMap(map.getName(), values);
   }
