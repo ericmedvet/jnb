@@ -68,42 +68,6 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     propagateParent(parent);
   }
 
-  @Override
-  public void propagateParent(ParamMap paramMap) {
-    parent = paramMap;
-    for (Object value : values.values()) {
-      if (value instanceof ParamMap childParamMap) {
-        childParamMap.propagateParent(this);
-      }
-      if (value instanceof List<?> list) {
-        for (Object lValue : list) {
-          if (lValue instanceof ParamMap childParamMap) {
-            childParamMap.propagateParent(this);
-          }
-        }
-      }
-    }
-  }
-
-  @Override
-  public ParamMap parent() {
-    return parent;
-  }
-
-  private static Boolean booleanValue(Object o) {
-    if (o == null) {
-      return null;
-    }
-    if (o instanceof String s) {
-      if (!s.equals("true") && !s.equals("false")) {
-        return null;
-      }
-      return Boolean.valueOf(s);
-    }
-    return null;
-  }
-
-
   private static int currentLineLength(String s) {
     String[] lines = s.split("\n");
     return lines[lines.length - 1].length();
@@ -328,9 +292,11 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
         isInt(d) ? set(Type.INT, Type.DOUBLE, Type.STRING) : set(Type.DOUBLE, Type.STRING);
       case Integer i -> set(Type.INT, Type.DOUBLE, Type.STRING);
       case String s ->
-        isBoolean(s) ? set(Type.STRING, Type.BOOLEAN, Type.ENUM) : set(Type.STRING, Type.ENUM);
+        isBoolean(s) ? set(Type.BOOLEAN, Type.STRING, Type.ENUM) : set(Type.STRING, Type.ENUM);
       case InterpolableString is -> set(Type.STRING);
-      case NamedParamMap npm -> set(Type.NAMED_PARAM_MAP);
+      case Enum<?> e -> set(Type.STRING, Type.ENUM);
+      case Boolean b -> set(Type.BOOLEAN, Type.STRING);
+      case NamedParamMap npm -> set(Type.NAMED_PARAM_MAP, Type.STRING);
       case List<?> list -> {
         if (list.isEmpty()) {
           yield set(
@@ -369,9 +335,23 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
             }
             yield set();
           }
+          case Enum<?> e -> {
+            if (list.stream()
+                .allMatch(o -> o instanceof String || o instanceof Enum<?>)) {
+              yield set(Type.STRINGS, Type.ENUMS);
+            }
+            yield set();
+          }
+          case Boolean b -> {
+            if (list.stream()
+                .allMatch(o -> o instanceof Boolean || isBoolean(o))) {
+              yield set(Type.BOOLEANS, Type.STRINGS);
+            }
+            yield set();
+          }
           case NamedParamMap npm -> {
             if (list.stream().allMatch(o -> o instanceof NamedParamMap)) {
-              yield set(Type.NAMED_PARAM_MAPS);
+              yield set(Type.NAMED_PARAM_MAPS, Type.STRINGS);
             }
             yield set();
           }
@@ -455,13 +435,35 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
   }
 
   @Override
+  public ParamMap parent() {
+    return parent;
+  }
+
+  @Override
+  public void propagateParent(ParamMap paramMap) {
+    parent = paramMap;
+    for (Object value : values.values()) {
+      if (value instanceof ParamMap childParamMap) {
+        childParamMap.propagateParent(this);
+      }
+      if (value instanceof List<?> list) {
+        for (Object lValue : list) {
+          if (lValue instanceof ParamMap childParamMap) {
+            childParamMap.propagateParent(this);
+          }
+        }
+      }
+    }
+  }
+
+  @Override
   public String toString() {
     return prettyToString(this, Integer.MAX_VALUE);
   }
 
   @Override
   public SequencedSet<Type> types(String name) {
-    return types.get(name);
+    return types.getOrDefault(name, set());
   }
 
   @Override
@@ -481,7 +483,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
         default -> null;
       };
       case NAMED_PARAM_MAP, NAMED_PARAM_MAPS -> values.get(name);
-      case BOOLEAN -> Boolean.parseBoolean((String) values.get(name));
+      case BOOLEAN -> booleanValue(values.get(name));
       case ENUM -> enumValue(values.get(name), enumClass);
       case STRING -> getOrInterpolate(values.get(name), this);
       case INTS -> ((List<?>) values.get(name)).stream()
@@ -499,13 +501,20 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
           })
           .toList();
       case BOOLEANS -> ((List<?>) values.get(name)).stream()
-          .map(o -> Boolean.parseBoolean(o.toString()))
+          .map(o -> booleanValue(o))
           .toList();
       case ENUMS ->
         ((List<?>) values.get(name)).stream().map(o -> enumValue(o, enumClass)).toList();
       case STRINGS ->
         ((List<?>) values.get(name)).stream().map(o -> getOrInterpolate(o, this)).toList();
     };
+  }
+
+  private boolean booleanValue(Object o) {
+    if (o instanceof Boolean b) {
+      return b;
+    }
+    return Boolean.parseBoolean(o.toString());
   }
 
   @Override

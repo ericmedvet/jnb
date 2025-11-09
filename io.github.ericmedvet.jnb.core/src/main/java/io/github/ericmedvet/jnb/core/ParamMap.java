@@ -21,7 +21,6 @@ package io.github.ericmedvet.jnb.core;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.SequencedSet;
 import java.util.Set;
 
@@ -53,24 +52,6 @@ public interface ParamMap {
 
   <E extends Enum<E>> Object value(String name, Type type, Class<E> enumClass);
 
-  private static boolean areEquals(ParamMap pm1, ParamMap pm2) {
-    if (!pm1.names().equals(pm2.names())) {
-      return false;
-    }
-    for (String name : pm1.names()) {
-      if (!Objects.equals(pm1.value(name), pm2.value(name))) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  private static int hash(ParamMap pm) {
-    return Objects.hash(
-        pm.names().stream().map(n -> Map.entry(n, pm.value(n))).toArray(Object[]::new)
-    );
-  }
-
   default ParamMap and(ParamMap other) {
     Map<String, Object> values = new HashMap<>();
     other.names().forEach(n -> values.put(n, other.value(n)));
@@ -93,6 +74,9 @@ public interface ParamMap {
   }
 
   default Object value(String name) {
+    if (types(name).isEmpty()) {
+      return null;
+    }
     return value(name, types(name).getFirst());
   }
 

@@ -115,7 +115,6 @@ public class Main {
   }
 
   private static void doParsingStuff() {
-
     System.out.println(
         MapNamedParamMap.prettyToString(
             StringParser.parse(
@@ -188,8 +187,8 @@ public class Main {
   }
 
   public static void main(String[] args) {
-    //doInterpolationStuff();
-    doParsingStuff();
+    doInterpolationStuff();
+    //doParsingStuff();
   }
 
   private static void doInterpolationStuff() {
@@ -198,7 +197,11 @@ public class Main {
         Map.ofEntries(
             Map.entry("name", "The office"),
             Map.entry("number", 46),
-            Map.entry("longName", new InterpolableString("{name} ({number})"))
+            Map.entry("gender", Gender.M),
+            Map.entry("genders", List.of(Gender.M, "f")),
+            Map.entry("longName", new InterpolableString("{name} ({number})")),
+            Map.entry("bool", false),
+            Map.entry("bools", List.of(false, true, "true"))
         )
     );
     System.out.println(pm);
