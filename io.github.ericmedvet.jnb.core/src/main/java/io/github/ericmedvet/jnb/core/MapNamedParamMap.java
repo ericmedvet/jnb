@@ -29,6 +29,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
   private final String name;
   private final SortedMap<String, Object> values;
   private final Map<String, SequencedSet<Type>> types;
+  private ParamMap parent;
 
   public MapNamedParamMap(String name, ParamMap paramMap) {
     this(
@@ -45,8 +46,13 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
   }
 
   public MapNamedParamMap(String name, Map<String, Object> values) {
+    this(name, values, null);
+  }
+
+  public MapNamedParamMap(String name, Map<String, Object> values, ParamMap parent) {
     this.name = name;
     this.values = Collections.unmodifiableSortedMap(new TreeMap<>(values));
+    this.parent = parent;
     types = new HashMap<>();
     values.forEach((n, v) -> types.put(n, typesFor(v)));
     for (String n : types.keySet()) {
@@ -59,6 +65,29 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
         );
       }
     }
+    propagateParent(parent);
+  }
+
+  @Override
+  public void propagateParent(ParamMap paramMap) {
+    parent = paramMap;
+    for (Object value : values.values()) {
+      if (value instanceof ParamMap childParamMap) {
+        childParamMap.propagateParent(this);
+      }
+      if (value instanceof List<?> list) {
+        for (Object lValue : list) {
+          if (lValue instanceof ParamMap childParamMap) {
+            childParamMap.propagateParent(this);
+          }
+        }
+      }
+    }
+  }
+
+  @Override
+  public ParamMap parent() {
+    return parent;
   }
 
   private static Boolean booleanValue(Object o) {
@@ -92,7 +121,13 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
 
   private static String getOrInterpolate(Object value, ParamMap paramMap) {
     return switch (value) {
-      case InterpolableString interpolableString -> interpolableString.interpolate(paramMap);
+      case InterpolableString interpolableString -> {
+        try {
+          yield interpolableString.interpolate(paramMap);
+        } catch (RuntimeException e) {
+          yield "ERR:" + interpolableString.format();
+        }
+      }
       default -> value.toString();
     };
   }
@@ -463,10 +498,9 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
             default -> null;
           })
           .toList();
-      case BOOLEANS ->
-        ((List<?>) values.get(name)).stream()
-            .map(o -> Boolean.parseBoolean(o.toString()))
-            .toList();
+      case BOOLEANS -> ((List<?>) values.get(name)).stream()
+          .map(o -> Boolean.parseBoolean(o.toString()))
+          .toList();
       case ENUMS ->
         ((List<?>) values.get(name)).stream().map(o -> enumValue(o, enumClass)).toList();
       case STRINGS ->

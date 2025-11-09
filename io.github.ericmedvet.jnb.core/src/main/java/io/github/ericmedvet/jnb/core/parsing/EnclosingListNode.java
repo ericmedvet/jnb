@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * jnb-core
  * %%
- * Copyright (C) 2023 - 2024 Eric Medvet
+ * Copyright (C) 2023 - 2025 Eric Medvet
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,6 @@
  */
 package io.github.ericmedvet.jnb.core.parsing;
 
-import java.util.List;
-
-public interface ListNode<N extends Node> extends Node {
-
-  List<N> children();
-
-  static <N extends Node> ListNode<N> from(Token token, List<N> children) {
-    record HardListNode<N extends Node>(Token token, List<N> children) implements ListNode<N> {}
-    return new HardListNode<>(token, children);
-  }
+public interface EnclosingListNode<N extends Node> extends Node {
+  ListNode<N> child();
 }

@@ -116,19 +116,32 @@ public class Main {
 
   private static void doParsingStuff() {
 
-    System.out.println(MapNamedParamMap.prettyToString(StringParser.parse("""
-        $name = eric
-        $vals = [1;2;3.5]
-        $things = [dog(name = sissi); chicken(name = olivia)]
-        person(
-          name = $name;
-          age = 46;
-          vals = $vals;
-          dVals = (val = $vals) * [dVal()];
-          animals = (nickName = "{name} of {^.name}") * (kind = [animal]) * [dog(name = sissi); chicken(name = olivia)];
-          animals2 = (kind = animal) * + $things + $things
+    System.out.println(
+        MapNamedParamMap.prettyToString(
+            StringParser.parse(
+                """
+                    $name = eric
+                    $vals = [1;2;3.5]
+                    $things = [dog(name = sissi); chicken(name = olivia)]
+                    person(
+                      name = $name;
+                      longerName = ""{name} ({age})"";
+                      longerNames = ["Eric"; ""{name} ({age})""];
+                      firstAnimalName = ""{animals[0].name}, which is a {animals[0].kind}"";
+                      age = 46;
+                      vals = $vals;
+                      dVals = (val = $vals) * [dVal()];
+                      animals = (nickName = ""{name} of {^.name}"") * (kind = [animal]) * [dog(name = sissi); chicken(name = olivia)];
+                      animals2 = (kind = animal) * + $things + $things;
+                      son = person(
+                        name = andrea;
+                        dog = dog(name = sissi; nickName = ""{name} of {^.^.name}"")
+                      )
+                    )
+                    """
+            )
         )
-        """)));
+    );
     System.exit(0);
 
     // justParse();

@@ -28,10 +28,17 @@ import java.util.regex.Pattern;
 public class Interpolator {
 
   private static final Logger L = Logger.getLogger(Interpolator.class.getName());
+  private static final String PARENT_KEY = "^";
   private static final String FORMAT_REGEX = "%#?\\d*(\\.\\d+)?[sdf]";
-  private static final String MAP_KEYS_REGEX = "[A-Za-z][A-Za-z0-9_]*";
+  private static final String MAP_KEY_REGEX = "[A-Za-z][A-Za-z0-9_]*";
+  private static final String ARRAY_INDEX_REGEX = Pattern.quote("[") + "(-?[0-9]+)" + Pattern.quote("]");
+  private static final String MAP_KEYS_REGEX = "(" + Pattern.quote(
+      PARENT_KEY
+  ) + "|" + MAP_KEY_REGEX + "|" + MAP_KEY_REGEX + ARRAY_INDEX_REGEX + ")(\\.(" + Pattern.quote(
+      PARENT_KEY
+  ) + "|" + MAP_KEY_REGEX + "|" + MAP_KEY_REGEX + ARRAY_INDEX_REGEX + "))*";
   private static final Pattern INTERPOLATOR = Pattern.compile(
-      "\\{(?<mapKeys>" + MAP_KEYS_REGEX + "(\\." + MAP_KEYS_REGEX + ")*)" + "(:(?<format>" + FORMAT_REGEX + "))?\\}"
+      "\\{(?<mapKeys>" + MAP_KEYS_REGEX + ")" + "(:(?<format>" + FORMAT_REGEX + "))?\\}"
   );
 
   private final String format;
@@ -43,14 +50,34 @@ public class Interpolator {
   }
 
   private static Object getKeyFromParamMap(ParamMap paramMap, List<String> keyPieces) {
-    if (keyPieces.size() == 1) {
-      return paramMap.value(keyPieces.getFirst());
+    String key = keyPieces.getFirst();
+    ;
+    if (key.equals(PARENT_KEY)) {
+      if (paramMap.parent() != null) {
+        return getKeyFromParamMap(paramMap.parent(), keyPieces.subList(1, keyPieces.size()));
+      }
     }
-    ParamMap innerParamMap = (ParamMap) paramMap.value(keyPieces.getFirst(), ParamMap.Type.NAMED_PARAM_MAP);
-    if (innerParamMap == null) {
+    Object value;
+    Matcher m = Pattern.compile(ARRAY_INDEX_REGEX).matcher(key);
+    if (m.find()) {
+      String indexString = m.group(1);
+      int i = Integer.parseInt(indexString);
+      Object listValue = paramMap.value(key.substring(0, m.start()));
+      if (listValue instanceof List<?> list) {
+        value = list.get(i < 0 ? (list.size() - i) : i);
+      } else {
+        return null;
+      }
+    } else {
+      value = paramMap.value(keyPieces.getFirst());
+    }
+    if (value == null) {
       return null;
     }
-    return getKeyFromParamMap(innerParamMap, keyPieces.subList(1, keyPieces.size()));
+    if (keyPieces.size() == 1) {
+      return value;
+    }
+    return getKeyFromParamMap((ParamMap) value, keyPieces.subList(1, keyPieces.size()));
   }
 
   public static String interpolate(String format, ParamMap m, String noValueDefault) {

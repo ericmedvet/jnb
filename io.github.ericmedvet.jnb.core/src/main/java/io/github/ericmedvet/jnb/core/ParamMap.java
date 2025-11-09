@@ -27,7 +27,6 @@ import java.util.Set;
 
 public interface ParamMap {
 
-
   enum Type {
     INT("i"), DOUBLE("d"), STRING("s"), BOOLEAN("b"), ENUM("e"), NAMED_PARAM_MAP("npm"), INTS("i[]"), DOUBLES(
         "d[]"
@@ -47,6 +46,10 @@ public interface ParamMap {
   Set<String> names();
 
   SequencedSet<Type> types(String name);
+
+  ParamMap parent();
+
+  void propagateParent(ParamMap paramMap);
 
   <E extends Enum<E>> Object value(String name, Type type, Class<E> enumClass);
 
