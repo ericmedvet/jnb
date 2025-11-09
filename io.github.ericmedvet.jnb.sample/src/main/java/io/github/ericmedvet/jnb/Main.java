@@ -118,14 +118,14 @@ public class Main {
 
     System.out.println(MapNamedParamMap.prettyToString(StringParser.parse("""
         $name = eric
-        $vals = [1;2;3]
+        $vals = [1;2;3.5]
         $things = [dog(name = sissi); chicken(name = olivia)]
         person(
           name = $name;
           age = 46;
           vals = $vals;
           dVals = (val = $vals) * [dVal()];
-          animals = (kind = animal) * [dog(name = sissi); chicken(name = olivia)];
+          animals = (nickName = "{name} of {^.name}") * (kind = [animal]) * [dog(name = sissi); chicken(name = olivia)];
           animals2 = (kind = animal) * + $things + $things
         )
         """)));
@@ -175,7 +175,8 @@ public class Main {
   }
 
   public static void main(String[] args) {
-    doInterpolationStuff();
+    //doInterpolationStuff();
+    doParsingStuff();
   }
 
   private static void doInterpolationStuff() {

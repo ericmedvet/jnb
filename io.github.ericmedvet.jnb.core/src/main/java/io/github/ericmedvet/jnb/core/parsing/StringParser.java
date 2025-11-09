@@ -51,79 +51,21 @@ public class StringParser {
   }
 
   private static NamedParamMap from(ENode eNode) {
-    // TODO can be simplified with an iteration and a switch expression, grouping cases
     Map<String, Object> values = new HashMap<>();
     eNode.child()
         .children()
-        .stream()
-        .filter(n -> n.value() instanceof DNode)
         .forEach(
             n -> values.put(
-                n.name,
-                ((DNode) n.value()).value().doubleValue()
-            )
-        );
-    eNode.child()
-        .children()
-        .stream()
-        .filter(n -> n.value() instanceof SNode)
-        .forEach(
-            n -> values.put(
-                n.name,
-                ((SNode) n.value()).value()
-            )
-        );
-    eNode.child()
-        .children()
-        .stream()
-        .filter(n -> n.value() instanceof ENode)
-        .forEach(
-            n -> values.put(
-                n.name,
-                from((ENode) n.value())
-            )
-        );
-    eNode.child()
-        .children()
-        .stream()
-        .filter(n -> n.value() instanceof LDNode)
-        .forEach(
-            n -> values.put(
-                n.name,
-                ((LDNode) n.value()).child.children()
-                    .stream()
-                    .map(c -> c.value().doubleValue())
-                    .toList()
-            )
-        );
-    eNode.child()
-        .children()
-        .stream()
-        .filter(n -> n.value() instanceof LSNode)
-        .forEach(
-            n -> values.put(
-                n.name,
-                ((LSNode) n.value())
-                    .child()
-                    .children()
-                    .stream()
-                    .map(SNode::value)
-                    .toList()
-            )
-        );
-    eNode.child()
-        .children()
-        .stream()
-        .filter(n -> n.value() instanceof LENode)
-        .forEach(
-            n -> values.put(
-                n.name,
-                ((LENode) n.value())
-                    .child()
-                    .children()
-                    .stream()
-                    .map(StringParser::from)
-                    .toList()
+                n.name(),
+                switch (n.value()) {
+                  case DNode dn -> dn.value();
+                  case SNode sn -> sn.value();
+                  case ENode en -> from(en);
+                  case LDNode ldn -> ldn.child().children().stream().map(DNode::value).toList();
+                  case LSNode lsn -> lsn.child().children().stream().map(SNode::value).toList();
+                  case LENode len -> len.child().children().stream().map(StringParser::from).toList();
+                  default -> null;
+                }
             )
         );
     return new MapNamedParamMap(eNode.name(), values);
@@ -307,9 +249,9 @@ public class StringParser {
       Token sep2 = TokenType.INTERVAL_SEPARATOR.next(s, stepDNode.token().end(), path);
       DNode maxDNode = parseD(sep2.end());
       Token closedT = TokenType.CLOSED_LIST.next(s, maxDNode.token().end(), path);
-      double min = minDNode.value().doubleValue();
-      double step = stepDNode.value().doubleValue();
-      double max = maxDNode.value().doubleValue();
+      double min = minDNode.value();
+      double step = stepDNode.value();
+      double max = maxDNode.value();
       if (min > max || step <= 0) {
         throw new ParseException(
             "Cannot build list of numbers because min>max or step<=0: min=%f, max=%f, step=%f"
@@ -352,7 +294,6 @@ public class StringParser {
     throw new CompositeWrongTokenException(wtes);
   }
 
-  @SuppressWarnings("InfiniteRecursion")
   private LENode parseLE(int i) throws ParseException {
     List<WrongTokenException> wtes = new ArrayList<>();
     // case: constant
@@ -361,7 +302,13 @@ public class StringParser {
       if (constNode instanceof LENode leNode) {
         return leNode;
       }
-      throw new ParseException("Wrong constant type: %s is not a list".formatted(constNode), null, i, s, path);
+      throw new ParseException(
+          "Wrong constant type: %s is not a list".formatted(constNode),
+          null,
+          i,
+          s,
+          path
+      );
     } catch (WrongTokenException wte) {
       wtes.add(wte);
     }
@@ -649,7 +596,7 @@ public class StringParser {
 
   }
 
-  record DNode(Token token, Number value) implements Node {
+  record DNode(Token token, Double value) implements Node {
 
   }
 
