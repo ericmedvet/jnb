@@ -47,71 +47,25 @@ public class Main {
           )
           """; // spotless:on
 
-  public enum DayOfWeek {
-    MON, TUE, WED, THU, FRI, SAT, SUN;
-
-    @Override
-    public String toString() {
-      return "DayOfWeek{}";
-    }
-  }
-
-  public enum Gender {
-    M, F, OTHER
-  }
-
-  public record Office(
-      @Param("roomNumbers") List<Integer> roomNumbers,
-      @Param("head") Person head,
-      @Param("staff") List<Person> staff,
-      @Param(
-          value = "spareStaff", dNPMs = {
-              "person(name = Gigi)"}) List<Person> spareStaff
-  ){
-  }
-
-  public record Person(
-      @Param(value = "", injection = Param.Injection.INDEX) int index,
-      @Param("name") String name,
-      @Param(value = "gender", dS = "m") Gender gender,
-      @Param(value = "age", dI = 44) int age,
-      @Param(value = "nice", dB = true) boolean nice,
-      @Param("nicknames") List<String> nicknames,
-      @Param(
-          value = "preferredDays", dSs = {
-              "mon", "fri"}) List<DayOfWeek> preferredDays,
-      @Param(value = "", injection = Param.Injection.MAP_WITH_DEFAULTS) ParamMap map
-  ){
-  }
-
-  @Alias(
-      name = "cat", value = "pet(kind = cat; owner = person(name = $ownerName; age = $age))", passThroughParams = {@PassThroughParam(name = "ownerName", type = Type.STRING, value = "ailo"), @PassThroughParam(name = "age", type = Type.INT, value = "45")
-      })
-  @Alias(
-      name = "tiger", value = "pet(kind = tiger; owner = $tOwner)", passThroughParams = {@PassThroughParam(name = "tOwner", type = Type.NAMED_PARAM_MAP)})
-  @Alias(name = "garfield", value = "cat(name = g; ownerName = gOwner)")
-  public record Pet(
-      @Param("name") String name,
-      @Param(value = "kind", dS = "dog") String kind,
-      @Param(
-          value = "legs", dIs = {
-              4}) List<Integer> legs,
-      @Param("owner") Person owner,
-      @Param(
-          value = "booleans", dBs = {false, false}) List<Boolean> booleans
-  ){
-  }
-
-  public static class Timed {
-
-    private final Instant creationInstant;
-    private final String name;
-
-    @Cacheable
-    public Timed(@Param("name") String name) {
-      this.creationInstant = Instant.now();
-      this.name = name;
-    }
+  private static void doInterpolationStuff() {
+    ParamMap pm = new MapNamedParamMap(
+        "office",
+        Map.ofEntries(
+            Map.entry("name", "The office"),
+            Map.entry("number", 46),
+            Map.entry("gender", Gender.M),
+            Map.entry("genders", List.of(Gender.M, "f")),
+            Map.entry("longName", new InterpolableString("{name} ({number})")),
+            Map.entry("bool", false),
+            Map.entry("bools", List.of(false, true, "true"))
+        )
+    );
+    System.out.println(pm);
+    System.out.println(pm.value("longName"));
+    System.out.println(pm.value("longName", Type.STRING));
+    System.out.println(pm.value("longName", Type.NAMED_PARAM_MAP));
+    System.out.println(pm.with("number", "quasi 47").types("number"));
+    System.out.println(pm.with("number", "quasi 47"));
   }
 
   private static void doParsingStuff() {
@@ -120,7 +74,7 @@ public class Main {
             StringParser.parse(
                 """
                     $name = eric
-                    $vals = [1;2;3.5]
+                    $vals = [1; 2; 3.5]
                     $things = [dog(name = sissi); chicken(name = olivia)]
                     person(
                       name = $name;
@@ -135,7 +89,9 @@ public class Main {
                       son = person(
                         name = andrea;
                         dog = dog(name = sissi; nickName = ""{name} of {^.^.name}"")
-                      )
+                      );
+                      nums = [1; 2; 3];
+                      exps = + [a(); b()] + [c()] + [d()]
                     )
                     """
             )
@@ -184,32 +140,6 @@ public class Main {
     System.out.println(
         nb.build("$nn1 = nn1 $number = \"45\" person(name = $nn1; nicknames = [$nn1; nn2; $number])")
     );
-  }
-
-  public static void main(String[] args) {
-    doInterpolationStuff();
-    //doParsingStuff();
-  }
-
-  private static void doInterpolationStuff() {
-    ParamMap pm = new MapNamedParamMap(
-        "office",
-        Map.ofEntries(
-            Map.entry("name", "The office"),
-            Map.entry("number", 46),
-            Map.entry("gender", Gender.M),
-            Map.entry("genders", List.of(Gender.M, "f")),
-            Map.entry("longName", new InterpolableString("{name} ({number})")),
-            Map.entry("bool", false),
-            Map.entry("bools", List.of(false, true, "true"))
-        )
-    );
-    System.out.println(pm);
-    System.out.println(pm.value("longName"));
-    System.out.println(pm.value("longName", Type.STRING));
-    System.out.println(pm.value("longName", Type.NAMED_PARAM_MAP));
-    System.out.println(pm.with("number", "quasi 47").types("number"));
-    System.out.println(pm.with("number", "quasi 47"));
   }
 
   private static String find(String s, String regex) {
@@ -275,5 +205,77 @@ public class Main {
     // NamedParamMap npm = StringParser.parse(se);
     // System.out.println(((List<?>) npm.value("runs", ParamMap.Type.NAMED_PARAM_MAPS)).size());
     System.exit(0);
+  }
+
+  public static void main(String[] args) {
+    //doInterpolationStuff();
+    doParsingStuff();
+  }
+
+  public enum DayOfWeek {
+    MON, TUE, WED, THU, FRI, SAT, SUN;
+
+    @Override
+    public String toString() {
+      return "DayOfWeek{}";
+    }
+  }
+
+  public enum Gender {
+    M, F, OTHER
+  }
+
+  public record Office(
+      @Param("roomNumbers") List<Integer> roomNumbers,
+      @Param("head") Person head,
+      @Param("staff") List<Person> staff,
+      @Param(
+          value = "spareStaff", dNPMs = {
+              "person(name = Gigi)"}) List<Person> spareStaff
+  ){
+  }
+
+  public record Person(
+      @Param(value = "", injection = Param.Injection.INDEX) int index,
+      @Param("name") String name,
+      @Param(value = "gender", dS = "m") Gender gender,
+      @Param(value = "age", dI = 44) int age,
+      @Param(value = "nice", dB = true) boolean nice,
+      @Param("nicknames") List<String> nicknames,
+      @Param(
+          value = "preferredDays", dSs = {
+              "mon", "fri"}) List<DayOfWeek> preferredDays,
+      @Param(value = "", injection = Param.Injection.MAP_WITH_DEFAULTS) ParamMap map
+  ){
+  }
+
+  @Alias(
+      name = "cat", value = "pet(kind = cat; owner = person(name = $ownerName; age = $age))", passThroughParams = {@PassThroughParam(name = "ownerName", type = Type.STRING, value = "ailo"), @PassThroughParam(name = "age", type = Type.INT, value = "45")
+      })
+  @Alias(
+      name = "tiger", value = "pet(kind = tiger; owner = $tOwner)", passThroughParams = {@PassThroughParam(name = "tOwner", type = Type.NAMED_PARAM_MAP)})
+  @Alias(name = "garfield", value = "cat(name = g; ownerName = gOwner)")
+  public record Pet(
+      @Param("name") String name,
+      @Param(value = "kind", dS = "dog") String kind,
+      @Param(
+          value = "legs", dIs = {
+              4}) List<Integer> legs,
+      @Param("owner") Person owner,
+      @Param(
+          value = "booleans", dBs = {false, false}) List<Boolean> booleans
+  ){
+  }
+
+  public static class Timed {
+
+    private final Instant creationInstant;
+    private final String name;
+
+    @Cacheable
+    public Timed(@Param("name") String name) {
+      this.creationInstant = Instant.now();
+      this.name = name;
+    }
   }
 }

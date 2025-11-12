@@ -72,7 +72,7 @@ Add this to your `pom.xml`:
 </dependency>
 ```
 
-If your Java project uses modules, you will **need** to modify your `module-info.java` by **requiring** the jnp core module and by **opening** every package you need to annotate the jnb core module (this is required because jnb uses reflection).
+If your Java project uses modules, you will **need** to modify your `module-info.java` by **requiring** the jnb core module and by **opening** every package you need to annotate the jnb core module (this is required because jnb uses reflection).
 Example:
 ```
 module io.github.ericmedvet.jnb.sample {
