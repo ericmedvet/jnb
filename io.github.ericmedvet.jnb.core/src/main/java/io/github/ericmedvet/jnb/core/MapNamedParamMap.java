@@ -325,6 +325,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
             }
             yield set(Type.INTS, Type.DOUBLES, Type.STRINGS);
           }
+          case InterpolableString is -> set(Type.STRINGS, Type.BOOLEANS, Type.ENUMS);
           case String s -> {
             if (list.stream().allMatch(MapNamedParamMap::isBoolean)) {
               yield set(Type.STRINGS, Type.BOOLEANS, Type.ENUMS);
@@ -501,7 +502,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
           })
           .toList();
       case BOOLEANS -> ((List<?>) values.get(name)).stream()
-          .map(o -> booleanValue(o))
+          .map(this::booleanValue)
           .toList();
       case ENUMS ->
         ((List<?>) values.get(name)).stream().map(o -> enumValue(o, enumClass)).toList();

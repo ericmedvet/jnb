@@ -71,6 +71,19 @@ public class Main {
   private static void doParsingStuff() {
     System.out.println(
         MapNamedParamMap.prettyToString(
+            StringParser.parse("""
+                a(
+                  vs = [1; 2];
+                  name = eric + " medvet";
+                  nicks = [""{name}"" + " il bello"; "erich"]
+                  % nick = ""{name}"" + " il bello"
+                )
+                """)
+        )
+    );
+    System.exit(0);
+    System.out.println(
+        MapNamedParamMap.prettyToString(
             StringParser.parse(
                 """
                     $name = eric
@@ -91,7 +104,7 @@ public class Main {
                         dog = dog(name = sissi; nickName = ""{name} of {^.^.name}"")
                       );
                       nums = [1; 2; 3];
-                      exps = + [a(); b()] + [c()] + [d()]
+                      exps = + [a(); b()] + [c(); d()]
                     )
                     """
             )

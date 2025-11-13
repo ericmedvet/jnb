@@ -50,7 +50,7 @@ public enum TokenType {
   ), IMPORT(
       StringParser.IMPORT_REGEX,
       StringParser.IMPORT_REGEX
-  );
+  ), STRING_CONCAT("\\+", "+");
 
   private final String regex;
   private final String rendered;
