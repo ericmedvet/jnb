@@ -299,6 +299,7 @@ public class StringParser {
 
   private ValuedNode<?> parseISOrS(int i) throws ParseException {
     List<WrongTokenException> wtes = new ArrayList<>();
+    // TODO add parse constant
     // try IS
     try {
       return parseIS(i);
