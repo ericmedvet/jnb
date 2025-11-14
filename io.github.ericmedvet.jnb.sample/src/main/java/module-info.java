@@ -19,6 +19,8 @@
  */
 module io.github.ericmedvet.jnb.sample {
   requires io.github.ericmedvet.jnb.core;
+  requires io.github.classgraph;
+  requires java.logging;
 
   opens io.github.ericmedvet.jnb to io.github.ericmedvet.jnb.core;
 }

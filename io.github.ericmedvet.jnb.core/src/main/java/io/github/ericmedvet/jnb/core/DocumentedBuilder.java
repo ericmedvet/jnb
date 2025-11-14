@@ -77,7 +77,7 @@ public interface DocumentedBuilder<T> extends Builder<T> {
     return null;
   }
 
-  default DocumentedBuilder<T> alias(String name, Alias alias) {
+  default DocumentedBuilder<T> alias(Alias alias) {
     NamedParamMap preMap = AutoBuiltDocumentedBuilder.fromAlias(alias, null);
     List<ParamInfo> newParams = Stream.concat(
         params().stream()
@@ -109,7 +109,7 @@ public interface DocumentedBuilder<T> extends Builder<T> {
     // descriptions for passThroughParams and defaulted params using do not show that
     // they are linked. however, drastic changes are needed in parsing result to fix this
     return new AutoBuiltDocumentedBuilder<>(
-        name,
+        alias.name(),
         builtType(),
         newParams,
         origin(),

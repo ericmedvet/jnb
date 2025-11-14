@@ -19,15 +19,22 @@
  */
 package io.github.ericmedvet.jnb;
 
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfo;
+import io.github.classgraph.ClassMemberInfo;
+import io.github.classgraph.ScanResult;
 import io.github.ericmedvet.jnb.core.*;
 import io.github.ericmedvet.jnb.core.ParamMap.Type;
 import io.github.ericmedvet.jnb.core.parsing.*;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -153,7 +160,8 @@ public class Main {
     System.out.println(nb.build("timed(name = a)"));
     System.out.println(nb.build("person(name = eric; nicknames = [nn1; nn2])"));
     System.out.println(
-        nb.build("$nn1 = nn1 $number = \"45\" person(name = $nn1; nicknames = [$nn1; nn2; $number])")
+        nb.build(
+            "$nn1 = nn1 $number = \"45\" person(name = $nn1; nicknames = [$nn1; nn2; $number])")
     );
   }
 
@@ -169,8 +177,9 @@ public class Main {
 
     String s = "    toio %;\nhugo %;";
     Matcher matcher = Pattern.compile(
-        "\\s*(%[^\\n\\r]*((\\r\\n)|(\\r)|(\\n))\\s*)*" + "[A-Za-z][A-Za-z0-9_]*" + "\\s*(%[^\\n\\r]*((\\r\\n)|(\\r)|(\\n))\\s*)*"
-    )
+            "\\s*(%[^\\n\\r]*((\\r\\n)|(\\r)|(\\n))\\s*)*" + "[A-Za-z][A-Za-z0-9_]*"
+                + "\\s*(%[^\\n\\r]*((\\r\\n)|(\\r)|(\\n))\\s*)*"
+        )
         .matcher(s);
     while (matcher.find()) {
       System.out.printf("`%s`%n", s.substring(matcher.start(), matcher.end()));
@@ -192,13 +201,13 @@ public class Main {
             )
             """; // spotless:on
     String s2 = // spotless:off
-    """
-        animal(
-          name = simba;
-          nums = [1; 2; 3];
-          age = 17
-        )
-        """; // spotless:on
+        """
+            animal(
+              name = simba;
+              nums = [1; 2; 3];
+              age = 17
+            )
+            """; // spotless:on
     String s3 = // spotless:off
         """
             animal(
@@ -210,7 +219,8 @@ public class Main {
             """; // spotless:on
     String se = Files.readString(
         Path.of(
-            "../jgea/io.github.ericmedvet.jgea" + ".experimenter/src/main/resources/exp-examples/mini-robot-vs-nav.txt"
+            "../jgea/io.github.ericmedvet.jgea"
+                + ".experimenter/src/main/resources/exp-examples/mini-robot-vs-nav.txt"
         )
     );
     // System.out.println(StringParser.parse(s2));
@@ -224,7 +234,61 @@ public class Main {
 
   public static void main(String[] args) {
     //doInterpolationStuff();
-    doParsingStuff();
+    //doParsingStuff();
+    doDiscoveryStuff();
+
+    @Discoverable
+    @Alias(
+        name = "eric",
+        value = "person.young(name = eric)"
+    )
+    class Things {
+
+      private Things() {
+      }
+    }
+
+    try (ScanResult scanResult = new ClassGraph().enableAllInfo().acceptPackages().scan()) {
+      for (ClassInfo classInfo : scanResult.getAllClasses()
+          .filter(classInfo -> classInfo.hasAnnotation(Discoverable.class))) {
+        String[] prefixes = (String[]) classInfo
+            .getAnnotationInfo(Discoverable.class)
+            .getParameterValues()
+            .getValue("prefixes");
+        String prefixTemplate = (String) classInfo
+            .getAnnotationInfo(Discoverable.class)
+            .getParameterValues()
+            .getValue("prefixTemplate");
+        if (prefixes.length > 0 && !prefixTemplate.isEmpty()) {
+          Logger.getLogger(Main.class.getName()).warning(
+              "Both prefixes and prefixTemplate are set for discoverable class %s: using prefixes %s"
+                  .formatted(classInfo.getName(), Arrays.toString(prefixes))
+          );
+        } else if (prefixes.length == 0 && !prefixTemplate.isEmpty()) {
+          List<List<String>> tokens = Arrays.stream(
+                  prefixTemplate.split(Pattern.quote("" + NamedBuilder.NAME_SEPARATOR)))
+              .map(
+                  t -> Arrays.stream(t.split(Pattern.quote("" + NamedBuilder.PREFIX_SEPARATOR)))
+                      .toList()
+              )
+              .toList();
+          prefixes = new String[]{"prefix"}; // TODO wrong
+        }
+        if (classInfo.getDeclaredConstructorInfo().stream().noneMatch(ClassMemberInfo::isPublic)) {
+          // look here for out-of-place aliases
+          System.out.println(classInfo);
+          for (ClassInfo annotationInfo : classInfo.getAnnotations()) {
+            System.out.println("\t" + annotationInfo);
+          }
+        }
+      }
+    }
+  }
+
+  private static void doDiscoveryStuff() {
+    NamedBuilder<?> nb = NamedBuilder.fromDiscovery();
+    System.out.println(NamedBuilder.prettyToString(nb, true));
+
   }
 
   public enum DayOfWeek {
@@ -246,8 +310,9 @@ public class Main {
       @Param("staff") List<Person> staff,
       @Param(
           value = "spareStaff", dNPMs = {
-              "person(name = Gigi)"}) List<Person> spareStaff
-  ){
+          "person(name = Gigi)"}) List<Person> spareStaff
+  ) {
+
   }
 
   public record Person(
@@ -259,27 +324,32 @@ public class Main {
       @Param("nicknames") List<String> nicknames,
       @Param(
           value = "preferredDays", dSs = {
-              "mon", "fri"}) List<DayOfWeek> preferredDays,
+          "mon", "fri"}) List<DayOfWeek> preferredDays,
       @Param(value = "", injection = Param.Injection.MAP_WITH_DEFAULTS) ParamMap map
-  ){
+  ) {
+
   }
 
   @Alias(
-      name = "cat", value = "pet(kind = cat; owner = person(name = $ownerName; age = $age))", passThroughParams = {@PassThroughParam(name = "ownerName", type = Type.STRING, value = "ailo"), @PassThroughParam(name = "age", type = Type.INT, value = "45")
-      })
+      name = "cat", value = "pet(kind = cat; owner = person(name = $ownerName; age = $age))", passThroughParams = {
+      @PassThroughParam(name = "ownerName", type = Type.STRING, value = "ailo"),
+      @PassThroughParam(name = "age", type = Type.INT, value = "45")
+  })
   @Alias(
-      name = "tiger", value = "pet(kind = tiger; owner = $tOwner)", passThroughParams = {@PassThroughParam(name = "tOwner", type = Type.NAMED_PARAM_MAP)})
+      name = "tiger", value = "pet(kind = tiger; owner = $tOwner)", passThroughParams = {
+      @PassThroughParam(name = "tOwner", type = Type.NAMED_PARAM_MAP)})
   @Alias(name = "garfield", value = "cat(name = g; ownerName = gOwner)")
   public record Pet(
       @Param("name") String name,
       @Param(value = "kind", dS = "dog") String kind,
       @Param(
           value = "legs", dIs = {
-              4}) List<Integer> legs,
+          4}) List<Integer> legs,
       @Param("owner") Person owner,
       @Param(
           value = "booleans", dBs = {false, false}) List<Boolean> booleans
-  ){
+  ) {
+
   }
 
   public static class Timed {

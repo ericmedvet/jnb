@@ -264,7 +264,7 @@ public record AutoBuiltDocumentedBuilder<T>(
                   )
           );
         }
-        builders.put(alias.name(), toAliasBuilder.alias(alias.name(), alias));
+        builders.put(alias.name(), toAliasBuilder.alias(alias));
       }
       return builders.values().stream().toList();
     } catch (Exception ex) {

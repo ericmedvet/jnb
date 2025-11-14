@@ -37,7 +37,7 @@ public class Starter {
       @Param("name") String name, @Param("age") int age, @Param("nicknames") List<String> nicknames
   ) {}
 
-  @Discoverable(prefixTemplate = "p|persons")
+  @Discoverable(prefixTemplate = "p|person")
   public static class Persons {
 
     private Persons() {
