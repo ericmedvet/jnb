@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -274,6 +275,29 @@ public class StringParser {
     return new ISCSENode(new Token(start, eNode.token().end()), iNodes, cNodes, eNode);
   }
 
+  private <LN extends EnclosingListNode<N>, N extends Node> LN parseConcatList(
+      int i,
+      NodeParser<LN> nodeParser,
+      BiFunction<Token, ListNode<N>, LN> builder,
+      Class<? extends LN> lnClass
+  ) throws ParseException {
+    ListNode<LN> elnsNode = parseListNode(
+        i,
+        nodeParser,
+        TokenType.LIST_CONCAT,
+        true,
+        Set.of(lnClass)
+    );
+    if (elnsNode.children().isEmpty()) {
+      throw new ParseException("Empty list concatenation", null, i, s, path);
+    }
+    List<N> ns = elnsNode.children()
+        .stream()
+        .flatMap(eln -> eln.child().children().stream())
+        .toList();
+    return builder.apply(elnsNode.token(), ListNode.from(elnsNode.token(), ns));
+  }
+
   private ValuedNode<?> parseConcatS(int i) throws ParseException {
     ListNode<ValuedNode<?>> ssNode = parseListNode(
         i,
@@ -335,7 +359,13 @@ public class StringParser {
   }
 
   private LDNode parseLD(int i) throws ParseException {
-    List<WrongTokenException> wtes = new ArrayList<>();
+    List<ParseException> pes = new ArrayList<>();
+    // case: constant
+    try {
+      return parseConst(i, Set.of(LDNode.class));
+    } catch (WrongTokenException wte) {
+      pes.add(wte);
+    }
     // case: interval
     try {
       Token openT = TokenType.OPEN_LIST.next(s, i, path);
@@ -375,7 +405,13 @@ public class StringParser {
           )
       );
     } catch (WrongTokenException wte) {
-      wtes.add(wte);
+      pes.add(wte);
+    }
+    // case: list with mult
+    try {
+      return parseMultipliedList(i, this::parseLD, LDNode::new);
+    } catch (ParseException pe) {
+      pes.add(pe);
     }
     // case: list of values
     try {
@@ -390,19 +426,49 @@ public class StringParser {
       Token closedT = TokenType.CLOSED_LIST.next(s, dsNode.token().end(), path);
       return new LDNode(new Token(openT.start(), closedT.end()), dsNode);
     } catch (WrongTokenException wte) {
-      wtes.add(wte);
+      pes.add(wte);
     }
     // nothing
-    throw new CompositeParseException(wtes);
+    throw new CompositeParseException(pes);
+  }
+
+  private <LN extends EnclosingListNode<N>, N extends Node> LN parseMultipliedList(
+      int i,
+      NodeParser<LN> nodeParser,
+      BiFunction<Token, ListNode<N>, LN> builder
+  ) throws ParseException {
+    try {
+      Token multToken = TokenType.I_NUM.next(s, i, path);
+      int multiplier = Integer.parseInt(multToken.trimmedContent(s));
+      Token jointT = TokenType.LIST_JOIN.next(s, multToken.end(), path);
+      LN innerLN = nodeParser.parse(jointT.end());
+      // multiply
+      List<N> nodes = new ArrayList<>();
+      for (int j = 0; j < multiplier; j++) {
+        nodes.addAll(innerLN.child().children());
+      }
+      return builder.apply(
+          new Token(multToken.start(), innerLN.token().end()),
+          ListNode.from(
+              new Token(
+                  innerLN.token().start(),
+                  innerLN.token().end()
+              ),
+              nodes
+          )
+      );
+    } catch (NumberFormatException e) {
+      throw new ParseException(e.getMessage(), e, i, s, path);
+    }
   }
 
   private LENode parseLE(int i) throws ParseException {
-    List<WrongTokenException> wtes = new ArrayList<>();
+    List<ParseException> pes = new ArrayList<>();
     // case: constant
     try {
       return parseConst(i, Set.of(LENode.class));
     } catch (WrongTokenException wte) {
-      wtes.add(wte);
+      pes.add(wte);
     }
     // case: list with join
     try {
@@ -458,54 +524,13 @@ public class StringParser {
           )
       );
     } catch (WrongTokenException wte) {
-      wtes.add(wte);
+      pes.add(wte);
     }
     // case: list with mult
     try {
-      Token multToken = TokenType.I_NUM.next(s, i, path);
-      int multiplier = Integer.parseInt(multToken.trimmedContent(s));
-      Token jointT = TokenType.LIST_JOIN.next(s, multToken.end(), path);
-      LENode originalLENode = parseLE(jointT.end());
-      // multiply
-      List<ENode> eNodes = new ArrayList<>();
-      for (int j = 0; j < multiplier; j++) {
-        eNodes.addAll(originalLENode.child().children());
-      }
-      return new LENode(
-          new Token(multToken.start(), originalLENode.token().end()),
-          ListNode.from(
-              new Token(
-                  originalLENode.token().start(),
-                  originalLENode.token().end()
-              ),
-              eNodes
-          )
-      );
-    } catch (NumberFormatException e) {
-      throw new ParseException(e.getMessage(), e, i, s, path);
-    } catch (WrongTokenException wte) {
-      wtes.add(wte);
-    }
-    // case: list with concat
-    try {
-      Token firstConcatT = TokenType.LIST_CONCAT.next(s, i, path);
-      LENode firstLENode = parseLE(firstConcatT.end());
-      Token secondConcatT = TokenType.LIST_CONCAT.next(s, firstLENode.token().end(), path);
-      LENode secondLENode = parseLE(secondConcatT.end());
-      // concat
-      return new LENode(
-          new Token(firstConcatT.start(), secondLENode.token().end()),
-          ListNode.from(
-              new Token(firstConcatT.start(), secondLENode.token().end()),
-              Stream.concat(
-                  firstLENode.child().children().stream(),
-                  secondLENode.child().children().stream()
-              )
-                  .toList()
-          )
-      );
-    } catch (WrongTokenException wte) {
-      wtes.add(wte);
+      return parseMultipliedList(i, this::parseLE, LENode::new);
+    } catch (ParseException pe) {
+      pes.add(pe);
     }
     // case: just list
     try {
@@ -520,23 +545,43 @@ public class StringParser {
       Token closedT = TokenType.CLOSED_LIST.next(s, esNode.token().end(), path);
       return new LENode(new Token(openT.start(), closedT.end()), esNode);
     } catch (WrongTokenException wte) {
-      wtes.add(wte);
+      pes.add(wte);
     }
     // nothing
-    throw new CompositeParseException(wtes);
+    throw new CompositeParseException(pes);
   }
 
   private LSNode parseLS(int i) throws ParseException {
-    Token openT = TokenType.OPEN_LIST.next(s, i, path);
-    ListNode<ValuedNode<?>> ssNode = parseListNode(
-        openT.end(),
-        this::parseConcatS,
-        TokenType.LIST_SEPARATOR,
-        true,
-        Set.of(SNode.class, ISNode.class)
-    );
-    Token closedT = TokenType.CLOSED_LIST.next(s, ssNode.token().end(), path);
-    return new LSNode(new Token(openT.start(), closedT.end()), ssNode);
+    List<ParseException> pes = new ArrayList<>();
+    // case: constant
+    try {
+      return parseConst(i, Set.of(LSNode.class));
+    } catch (WrongTokenException wte) {
+      pes.add(wte);
+    }
+    // case: list with mult
+    try {
+      return parseMultipliedList(i, this::parseLS, LSNode::new);
+    } catch (ParseException pe) {
+      pes.add(pe);
+    }
+    // case: list of values
+    try {
+      Token openT = TokenType.OPEN_LIST.next(s, i, path);
+      ListNode<ValuedNode<?>> ssNode = parseListNode(
+          openT.end(),
+          this::parseConcatS,
+          TokenType.LIST_SEPARATOR,
+          true,
+          Set.of(SNode.class, ISNode.class)
+      );
+      Token closedT = TokenType.CLOSED_LIST.next(s, ssNode.token().end(), path);
+      return new LSNode(new Token(openT.start(), closedT.end()), ssNode);
+    } catch (WrongTokenException wte) {
+      pes.add(wte);
+    }
+    // nothing
+    throw new CompositeParseException(pes);
   }
 
   private <N extends Node> ListNode<N> parseListNode(
@@ -612,14 +657,24 @@ public class StringParser {
     List<ParseException> pes = new ArrayList<>();
     // these order is with a purpose!
     try {
+      return parseConcatList(i, this::parseLE, LENode::new, LENode.class);
+    } catch (ParseException pe) {
+      pes.add(pe);
+    }
+    try {
+      return parseConcatList(i, this::parseLD, LDNode::new, LDNode.class);
+    } catch (ParseException pe) {
+      pes.add(pe);
+    }
+    try {
+      return parseConcatList(i, this::parseLS, LSNode::new, LSNode.class);
+    } catch (ParseException pe) {
+      pes.add(pe);
+    }
+    try {
       return parseE(i);
     } catch (ParseException wte) {
       pes.add(wte);
-    }
-    try {
-      return parseLE(i);
-    } catch (ParseException pe) {
-      pes.add(pe);
     }
     try {
       return parseD(i);
@@ -628,16 +683,6 @@ public class StringParser {
     }
     try {
       return parseConcatS(i);
-    } catch (ParseException pe) {
-      pes.add(pe);
-    }
-    try {
-      return parseLD(i);
-    } catch (ParseException pe) {
-      pes.add(pe);
-    }
-    try {
-      return parseLS(i);
     } catch (ParseException pe) {
       pes.add(pe);
     }

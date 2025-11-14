@@ -74,10 +74,11 @@ public class Main {
             StringParser.parse("""
                 $title = doc
                 a(
+                  address = "" + "";
                   text = ''{name}'';
-                  vs = [1; 2];
+                  vs = 2 * [1; 2] + [10:1:13];
                   name = eric + " " + medvet;
-                  nicks = [''{nick}''; "erich"; $title];
+                  nicks = 2 * [''{nick}''; "erich"; $title];
                   nick = $title + '' {name}'' + " il bello"
                 )
                 """)
@@ -99,13 +100,13 @@ public class Main {
                       vals = $vals;
                       dVals = (val = $vals) * [dVal()];
                       animals = (nickName = ''{name} of {^.name}'') * (kind = [animal]) * [dog(name = sissi); chicken(name = olivia)];
-                      animals2 = (kind = animal) * + $things + $things;
+                      animals2 = (kind = animal) * $things + $things;
                       son = person(
                         name = andrea;
                         dog = dog(name = sissi; nickName = ''{name} of {^.^.name}'')
                       );
                       nums = [1; 2; 3];
-                      exps = + [a(); b()] + [c(); d()]
+                      exps = [a(); b()] + [c(); d()]
                     )
                     """
             )
