@@ -37,9 +37,11 @@ public class StringParser {
   public static final String COMMENT_REGEX = "%[^\\n\\r]*(" + LINE_TERMINATOR_REGEX + ")\\s*";
   public static final String VOID_REGEX = "\\s*(" + COMMENT_REGEX + ")*";
   public static final String CONST_NAME_PREFIX = "$";
+  public static final String QUOTED_STRING_BOUNDARY = "\"";
+  public static final String INTERPOLATED_STRING_BOUNDARY = "''";
   public static final String PLAIN_STRING_REGEX = "[A-Za-z][A-Za-z0-9_]*";
-  public static final String QUOTED_STRING_REGEX = "\"[^\"]*\"";
-  public static final String INTERPOLATED_STRING_REGEX = "\"\"[^\"]*\"\"";
+  public static final String QUOTED_STRING_REGEX = QUOTED_STRING_BOUNDARY + "[^" + QUOTED_STRING_BOUNDARY + "]*" + QUOTED_STRING_BOUNDARY;
+  public static final String INTERPOLATED_STRING_REGEX = INTERPOLATED_STRING_BOUNDARY + "[^" + INTERPOLATED_STRING_BOUNDARY + "]*" + INTERPOLATED_STRING_BOUNDARY;
   public static final String IMPORT_REGEX = "@import";
 
   private static final Logger L = Logger.getLogger(StringParser.class.getName());
@@ -298,21 +300,20 @@ public class StringParser {
   }
 
   private ValuedNode<?> parseISOrS(int i) throws ParseException {
-    List<WrongTokenException> wtes = new ArrayList<>();
-    // TODO add parse constant
+    List<ParseException> pes = new ArrayList<>();
     // try IS
     try {
       return parseIS(i);
     } catch (WrongTokenException wte) {
-      wtes.add(wte);
+      pes.add(wte);
     }
     // try S
     try {
       return parseS(i);
     } catch (WrongTokenException wte) {
-      wtes.add(wte);
+      pes.add(wte);
     }
-    throw new ParseException(wtes);
+    throw new ParseException(pes);
   }
 
   private LDNode parseLD(int i) throws ParseException {
@@ -573,10 +574,12 @@ public class StringParser {
           wtes.add(wte);
         }
       }
-      try {
-        child = nodeParser.parse(j);
-      } catch (WrongTokenException wte) {
-        wtes.add(wte);
+      if (child == null) {
+        try {
+          child = nodeParser.parse(j);
+        } catch (WrongTokenException wte) {
+          wtes.add(wte);
+        }
       }
       if (child == null) {
         if (Objects.isNull(separatorToken) || children.isEmpty()) {

@@ -34,11 +34,11 @@ public record Token(int start, int end) {
     Matcher m;
     m = Pattern.compile(TokenType.INTERPOLATED_STRING.getRegex()).matcher(innerS);
     if (m.find()) {
-      return innerS.substring(m.start(), m.end()).replace("\"", "");
+      return innerS.substring(m.start(), m.end()).replace(StringParser.INTERPOLATED_STRING_BOUNDARY, "");
     }
     m = Pattern.compile(TokenType.STRING.getRegex()).matcher(innerS);
     if (m.find()) {
-      return innerS.substring(m.start(), m.end()).replace("\"", "");
+      return innerS.substring(m.start(), m.end()).replace(StringParser.QUOTED_STRING_BOUNDARY, "");
     }
     return "";
   }

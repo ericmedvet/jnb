@@ -72,11 +72,13 @@ public class Main {
     System.out.println(
         MapNamedParamMap.prettyToString(
             StringParser.parse("""
+                $title = doc
                 a(
+                  text = ''{name}'';
                   vs = [1; 2];
-                  name = eric + " medvet";
-                  nicks = [""{name}"" + " il bello"; "erich"]
-                  % nick = ""{name}"" + " il bello"
+                  name = eric + " " + medvet;
+                  nicks = [''{nick}''; "erich"; $title];
+                  nick = "" + $title + '' {name}'' + " il bello"
                 )
                 """)
         )
