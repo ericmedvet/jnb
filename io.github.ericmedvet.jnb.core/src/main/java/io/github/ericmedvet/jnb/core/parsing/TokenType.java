@@ -28,10 +28,10 @@ import java.util.regex.Pattern;
 public enum TokenType {
   NUM("(-?[0-9]+(\\.[0-9]+)?)|(-?Infinity)", "0.0"), I_NUM("[0-9]+", "0"), STRING(
       "((" + StringParser.PLAIN_STRING_REGEX + ")|(" + StringParser.QUOTED_STRING_REGEX + "))",
-      "a|\"a\""
+      "a|" + StringParser.QUOTED_STRING_BOUNDARY + "a" + StringParser.QUOTED_STRING_BOUNDARY
   ), INTERPOLATED_STRING(
       "(" + StringParser.INTERPOLATED_STRING_REGEX + ")",
-      "\"\"a\"\""
+      StringParser.INTERPOLATED_STRING_BOUNDARY + "a" + StringParser.INTERPOLATED_STRING_BOUNDARY
   ), CONST_NAME(
       "(" + Pattern.quote(StringParser.CONST_NAME_PREFIX) + StringParser.PLAIN_STRING_REGEX + ")",
       StringParser.CONST_NAME_PREFIX + "a"

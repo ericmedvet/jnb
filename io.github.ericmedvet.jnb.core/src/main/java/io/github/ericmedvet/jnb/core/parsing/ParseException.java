@@ -20,8 +20,6 @@
 package io.github.ericmedvet.jnb.core.parsing;
 
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 
 public class ParseException extends Exception {
@@ -30,6 +28,7 @@ public class ParseException extends Exception {
   protected final int index;
   protected final String string;
   protected final Path path;
+  protected final String rawMessage;
 
   public ParseException(String message, Throwable cause, int index, String string, Path path) {
     super(
@@ -42,41 +41,10 @@ public class ParseException extends Exception {
             ),
         cause
     );
+    this.rawMessage = message;
     this.index = index;
     this.string = string;
     this.path = path;
-  }
-
-  public ParseException(Collection<? extends ParseException> exceptions) {
-    this(
-        collapse(exceptions).getMessage(),
-        collapse(exceptions).getCause(),
-        collapse(exceptions).index,
-        collapse(exceptions).string,
-        collapse(exceptions).path
-    );
-  }
-
-  private static ParseException collapse(Collection<? extends ParseException> exceptions) {
-    if (exceptions.isEmpty()) {
-      throw new IllegalArgumentException("Empty collection of exceptions");
-    }
-    String s = exceptions.iterator().next().getString();
-    Path path = exceptions.iterator().next().getPath();
-    int maxIndex = exceptions.stream().mapToInt(ParseException::getIndex).max().orElseThrow();
-    List<WrongTokenException> wtes = exceptions.stream()
-        .filter(e -> e.getIndex() == maxIndex)
-        .filter(e -> e instanceof WrongTokenException)
-        .map(e -> (WrongTokenException) e)
-        .toList();
-    if (!wtes.isEmpty()) {
-      List<TokenType> expectedTokens = wtes.stream()
-          .flatMap(e -> e.getExpectedTokenTypes().stream())
-          .distinct()
-          .toList();
-      return new WrongTokenException(maxIndex, s, path, expectedTokens);
-    }
-    return exceptions.stream().filter(e -> !(e instanceof WrongTokenException)).findFirst().orElseThrow();
   }
 
   protected static String linearize(String string, int start, int end) {

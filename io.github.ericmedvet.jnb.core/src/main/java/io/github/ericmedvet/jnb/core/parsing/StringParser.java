@@ -124,10 +124,28 @@ public class StringParser {
     return new CNode(new Token(tName.start(), value.token().end()), constantName, value);
   }
 
-  private Node parseConst(int i) throws ParseException {
+  @SuppressWarnings("unchecked")
+  private <N extends Node> N parseConst(int i, Set<Class<? extends N>> nodeClasses) throws ParseException {
     Token tConstName = TokenType.CONST_NAME.next(s, i, path);
     String constName = tConstName.trimmedContent(s);
     Node value = consts.get(constName);
+    if (nodeClasses.stream()
+        .noneMatch(nodeClass -> nodeClass.isAssignableFrom(value.getClass()))) {
+      throw new ParseException(
+          "Wrong const type for %s: %s found, %s expected"
+              .formatted(
+                  constName,
+                  value.getClass().getSimpleName(),
+                  nodeClasses.stream()
+                      .map(Class::getSimpleName)
+                      .collect(Collectors.joining("|"))
+              ),
+          null,
+          value.token().start(),
+          s,
+          path
+      );
+    }
     return switch (value) {
       case null -> throw new UndefinedConstantNameException(
           i,
@@ -136,12 +154,12 @@ public class StringParser {
           constName,
           consts.keySet().stream().toList()
       );
-      case DNode dNode -> new DNode(tConstName, dNode.value());
-      case ENode eNode -> new ENode(tConstName, eNode.child(), eNode.name());
-      case SNode sNode -> new SNode(tConstName, sNode.value());
-      case LDNode ldNode -> new LDNode(tConstName, ldNode.child());
-      case LENode leNode -> new LENode(tConstName, leNode.child());
-      case LSNode lsNode -> new LSNode(tConstName, lsNode.child());
+      case DNode dNode -> (N) new DNode(tConstName, dNode.value());
+      case ENode eNode -> (N) new ENode(tConstName, eNode.child(), eNode.name());
+      case SNode sNode -> (N) new SNode(tConstName, sNode.value());
+      case LDNode ldNode -> (N) new LDNode(tConstName, ldNode.child());
+      case LENode leNode -> (N) new LENode(tConstName, leNode.child());
+      case LSNode lsNode -> (N) new LSNode(tConstName, lsNode.child());
       default -> throw new ParseException(
           "Unknown type %s of const %s".formatted(value.getClass().getSimpleName(), constName),
           null,
@@ -313,7 +331,7 @@ public class StringParser {
     } catch (WrongTokenException wte) {
       pes.add(wte);
     }
-    throw new ParseException(pes);
+    throw new CompositeParseException(pes);
   }
 
   private LDNode parseLD(int i) throws ParseException {
@@ -375,24 +393,14 @@ public class StringParser {
       wtes.add(wte);
     }
     // nothing
-    throw new ParseException(wtes);
+    throw new CompositeParseException(wtes);
   }
 
   private LENode parseLE(int i) throws ParseException {
     List<WrongTokenException> wtes = new ArrayList<>();
     // case: constant
     try {
-      Node constNode = parseConst(i);
-      if (constNode instanceof LENode leNode) {
-        return leNode;
-      }
-      throw new ParseException(
-          "Wrong constant type: %s is not a list".formatted(constNode),
-          null,
-          i,
-          s,
-          path
-      );
+      return parseConst(i, Set.of(LENode.class));
     } catch (WrongTokenException wte) {
       wtes.add(wte);
     }
@@ -515,7 +523,7 @@ public class StringParser {
       wtes.add(wte);
     }
     // nothing
-    throw new ParseException(wtes);
+    throw new CompositeParseException(wtes);
   }
 
   private LSNode parseLS(int i) throws ParseException {
@@ -546,30 +554,7 @@ public class StringParser {
       N child = null;
       if (withConstant) {
         try {
-          Node node = parseConst(j);
-          if (nodeClasses.stream()
-              .noneMatch(nodeClass -> nodeClass.isAssignableFrom(node.getClass())) && !children
-                  .isEmpty()) {
-            throw new ParseException(
-                "Wrong const type fo %s: %s found, %s expected"
-                    .formatted(
-                        s.substring(
-                            node.token().start(),
-                            node.token().end()
-                        ),
-                        node.getClass().getSimpleName(),
-                        nodeClasses.stream()
-                            .map(Class::getSimpleName)
-                            .collect(Collectors.joining("|"))
-                    ),
-                null,
-                node.token().start(),
-                s,
-                path
-            );
-          }
-          //noinspection unchecked
-          child = (N) node;
+          child = parseConst(j, nodeClasses);
         } catch (WrongTokenException wte) {
           wtes.add(wte);
         }
@@ -625,12 +610,6 @@ public class StringParser {
 
   private Node parseValue(int i) throws ParseException {
     List<ParseException> pes = new ArrayList<>();
-    // try parse const name
-    try {
-      return parseConst(i);
-    } catch (ParseException pe) {
-      pes.add(pe);
-    }
     // these order is with a purpose!
     try {
       return parseE(i);
@@ -662,7 +641,24 @@ public class StringParser {
     } catch (ParseException pe) {
       pes.add(pe);
     }
-    throw new ParseException(pes);
+    // try parse const name
+    try {
+      return parseConst(
+          i,
+          Set.of(
+              ENode.class,
+              LENode.class,
+              DNode.class,
+              LDNode.class,
+              SNode.class,
+              LSNode.class,
+              ISNode.class
+          )
+      );
+    } catch (ParseException pe) {
+      pes.add(pe);
+    }
+    throw new CompositeParseException(pes);
   }
 
   @FunctionalInterface

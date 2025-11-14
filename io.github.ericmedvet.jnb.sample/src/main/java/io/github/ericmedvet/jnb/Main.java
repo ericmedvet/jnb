@@ -78,12 +78,11 @@ public class Main {
                   vs = [1; 2];
                   name = eric + " " + medvet;
                   nicks = [''{nick}''; "erich"; $title];
-                  nick = "" + $title + '' {name}'' + " il bello"
+                  nick = $title + '' {name}'' + " il bello"
                 )
                 """)
         )
     );
-    System.exit(0);
     System.out.println(
         MapNamedParamMap.prettyToString(
             StringParser.parse(
@@ -93,17 +92,17 @@ public class Main {
                     $things = [dog(name = sissi); chicken(name = olivia)]
                     person(
                       name = $name;
-                      longerName = ""{name} ({age})"";
-                      longerNames = ["Eric"; ""{name} ({age})""];
-                      firstAnimalName = ""{animals[0].name}, which is a {animals[0].kind}"";
+                      longerName = ''{name} ({age})'';
+                      longerNames = ["Eric"; ''{name} ({age})''];
+                      firstAnimalName = ''{animals[0].name}, which is a {animals[0].kind}'';
                       age = 46;
                       vals = $vals;
                       dVals = (val = $vals) * [dVal()];
-                      animals = (nickName = ""{name} of {^.name}"") * (kind = [animal]) * [dog(name = sissi); chicken(name = olivia)];
+                      animals = (nickName = ''{name} of {^.name}'') * (kind = [animal]) * [dog(name = sissi); chicken(name = olivia)];
                       animals2 = (kind = animal) * + $things + $things;
                       son = person(
                         name = andrea;
-                        dog = dog(name = sissi; nickName = ""{name} of {^.^.name}"")
+                        dog = dog(name = sissi; nickName = ''{name} of {^.^.name}'')
                       );
                       nums = [1; 2; 3];
                       exps = + [a(); b()] + [c(); d()]
