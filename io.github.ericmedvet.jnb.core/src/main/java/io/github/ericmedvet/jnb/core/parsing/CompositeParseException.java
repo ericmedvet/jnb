@@ -30,13 +30,7 @@ public class CompositeParseException extends ParseException {
   private final Collection<? extends ParseException> exceptions;
 
   public CompositeParseException(Collection<? extends ParseException> exceptions) {
-    super(
-        collapse(exceptions).rawMessage,
-        collapse(exceptions).getCause(),
-        collapse(exceptions).index,
-        collapse(exceptions).string,
-        collapse(exceptions).path
-    );
+    super(collapse(exceptions));
     this.exceptions = exceptions;
   }
 
@@ -54,7 +48,10 @@ public class CompositeParseException extends ParseException {
     if (!expectedTokens.isEmpty()) {
       return new WrongTokenException(maxIndex, s, path, expectedTokens.stream().toList());
     }
-    return exceptions.stream().filter(e -> !(e instanceof WrongTokenException)).findFirst().orElseThrow();
+    return exceptions.stream()
+        .filter(e -> !(e instanceof WrongTokenException))
+        .findFirst()
+        .orElseThrow();
   }
 
   private static Set<TokenType> expectedToken(ParseException ex) {

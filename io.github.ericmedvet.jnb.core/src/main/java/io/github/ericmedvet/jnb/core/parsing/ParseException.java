@@ -47,6 +47,10 @@ public class ParseException extends Exception {
     this.path = path;
   }
 
+  public ParseException(ParseException pe) {
+    this(pe.rawMessage, pe.getCause(), pe.index, pe.string, pe.path);
+  }
+
   protected static String linearize(String string, int start, int end) {
     return string.substring(Math.max(0, start), Math.min(end, string.length()))
         .replaceAll(StringParser.LINE_TERMINATOR_REGEX, "↲")
