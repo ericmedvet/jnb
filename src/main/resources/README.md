@@ -127,6 +127,7 @@ where:
 
 The format is reasonably robust to spaces and line-breaks.
 Moreover, you can include line comments in the string describing the map, with the syntax `% comment`, to be put reasonably everywhere in the line.
+Finally, you can add constants before the first `<npm>` in the format `$constantName = <npm> | <d> | <s> | <llnpm> | <lld> | <lls>`; constants can be reused where the assigned value is appropriate; you can define more than one constant, without special separator dividing them.
 
 An example of a syntactically valid named parameter map is:
 ```
