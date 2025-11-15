@@ -45,13 +45,94 @@ public class NamedBuilder<X> {
     this.builders = new TreeMap<>(builders);
   }
 
+  private record DiscoverableClassInfo(
+      List<String> prefixes,
+      Class<?> clazz,
+      boolean utility
+  ) {
+
+  }
+
   public static NamedBuilder<Object> empty() {
     return EMPTY;
   }
 
   public static NamedBuilder<Object> fromDiscovery(String... packageNames) {
     NamedBuilder<Object> nb = NamedBuilder.empty();
-    try (ScanResult scanResult = new ClassGraph().enableAllInfo().acceptPackages(packageNames).scan()) {
+    List<DiscoverableClassInfo> discoverableClassInfos = findDiscoverableClasses(packageNames);
+    // add actual builders and in-place aliases
+    for (DiscoverableClassInfo dci : discoverableClassInfos) {
+      if (dci.utility) {
+        nb = nb.and(dci.prefixes, NamedBuilder.fromUtilityClass(dci.clazz));
+      } else {
+        nb = nb.and(dci.prefixes, NamedBuilder.fromClass(dci.clazz));
+      }
+    }
+    record DiscoverableAlias(List<String> prefixes, Alias alias) {
+
+      public String of() {
+        return AutoBuiltDocumentedBuilder.fromAlias(alias, null).getName();
+      }
+    }
+    // find out-of-place aliases
+    List<DiscoverableAlias> discoverableAliases = new ArrayList<>(
+        discoverableClassInfos.stream()
+            .filter(DiscoverableClassInfo::utility)
+            .flatMap(
+                dci -> Arrays.stream(dci.clazz().getAnnotationsByType(Alias.class))
+                    .map(alias -> new DiscoverableAlias(dci.prefixes, alias))
+            )
+            .toList()
+    );
+    // add actual builders
+    while (true) {
+      boolean added = false;
+      List<DiscoverableAlias> foundDas = new ArrayList<>();
+      for (DiscoverableAlias da : discoverableAliases) {
+        Builder<?> builder = nb.getBuilders().get(da.of());
+        if (builder instanceof DocumentedBuilder<?> documentedBuilder) {
+          nb = nb.and(
+              da.prefixes,
+              new NamedBuilder<>(Map.of(da.alias.name(), documentedBuilder.alias(da.alias)))
+          );
+          foundDas.add(da);
+          added = true;
+        } else if (builder != null) {
+          throw new IllegalArgumentException(
+              "Cannot build alias from builder of type %s".formatted(
+                  builder.getClass().getSimpleName()
+              )
+          );
+        }
+      }
+      if (!added) {
+        break;
+      }
+      discoverableAliases.removeAll(foundDas);
+    }
+    if (!discoverableAliases.isEmpty()) {
+      throw new IllegalArgumentException(
+          "Cannot build one or more aliases: %s".formatted(
+              discoverableAliases.stream()
+                  .map(
+                      da -> "%s of %s".formatted(
+                          da.prefixes.isEmpty() ? da.alias.name() : (da.prefixes.getFirst() + NAME_SEPARATOR + da.alias
+                              .name()),
+                          da.of()
+                      )
+                  )
+                  .collect(Collectors.joining(", "))
+          )
+      );
+    }
+    return nb;
+  }
+
+  private static List<DiscoverableClassInfo> findDiscoverableClasses(String... packageNames) {
+    List<DiscoverableClassInfo> discoverableClassInfos = new ArrayList<>();
+    try (ScanResult scanResult = new ClassGraph().enableAllInfo()
+        .acceptPackages(packageNames)
+        .scan()) {
       for (ClassInfo classInfo : scanResult.getAllClasses()
           .filter(classInfo -> classInfo.hasAnnotation(Discoverable.class))) {
         String[] prefixes = (String[]) classInfo
@@ -68,7 +149,9 @@ public class NamedBuilder<X> {
                   .formatted(classInfo.getName(), Arrays.toString(prefixes))
           );
         } else if (prefixes.length == 0 && !prefixTemplate.isEmpty()) {
-          List<List<String>> tokens = Arrays.stream(prefixTemplate.split(Pattern.quote("" + NAME_SEPARATOR)))
+          List<List<String>> tokens = Arrays.stream(
+              prefixTemplate.split(Pattern.quote("" + NAME_SEPARATOR))
+          )
               .map(
                   t -> Arrays.stream(t.split(Pattern.quote("" + PREFIX_SEPARATOR)))
                       .toList()
@@ -78,14 +161,18 @@ public class NamedBuilder<X> {
               .map(l -> String.join("" + NAME_SEPARATOR, l))
               .toArray(String[]::new);
         }
-        if (classInfo.getDeclaredConstructorInfo().stream().noneMatch(ClassMemberInfo::isPublic)) {
-          nb = nb.and(Arrays.stream(prefixes).toList(), NamedBuilder.fromUtilityClass(classInfo.loadClass()));
-        } else {
-          nb = nb.and(Arrays.stream(prefixes).toList(), NamedBuilder.fromClass(classInfo.loadClass()));
-        }
+        discoverableClassInfos.add(
+            new DiscoverableClassInfo(
+                Arrays.stream(prefixes).toList(),
+                classInfo.loadClass(),
+                classInfo.getDeclaredConstructorInfo()
+                    .stream()
+                    .noneMatch(ClassMemberInfo::isPublic)
+            )
+        );
       }
     }
-    return nb;
+    return discoverableClassInfos;
   }
 
   private static List<List<String>> flatTokens(List<List<String>> tokens) {
@@ -121,7 +208,10 @@ public class NamedBuilder<X> {
       );
     }
     return (NamedBuilder<C>) (new NamedBuilder<>(
-        AutoBuiltDocumentedBuilder.from(constructors.getFirst(), c.getAnnotationsByType(Alias.class))
+        AutoBuiltDocumentedBuilder.from(
+            constructors.getFirst(),
+            c.getAnnotationsByType(Alias.class)
+        )
             .stream()
             .collect(Collectors.toMap(DocumentedBuilder::name, b -> b))
     ));
