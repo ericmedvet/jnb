@@ -29,25 +29,19 @@ import java.util.function.Supplier;
 
 public interface AccumulatorFactory<E, O, K> extends ListenerFactory<E, K> {
 
-  Accumulator<E, O> build(K k);
-
-  @Override
-  default AccumulatorFactory<E, O, K> conditional(Predicate<K> kPredicate, Predicate<E> ePredicate) {
-    return from(
-        "%s[if:%s;%s]".formatted(this, kPredicate, ePredicate),
-        k -> kPredicate.test(k) ? build(k).conditional(ePredicate) : Accumulator.nullAccumulator(),
-        this::shutdown
-    );
-  }
-
-  @Override
-  default <X> AccumulatorFactory<X, O, K> on(Function<X, E> function) {
-    return from("%s[on:%s]".formatted(this, function), k -> build(k).on(function), this::shutdown);
-  }
-
   static <E, O, K> AccumulatorFactory<E, List<O>, K> collector(Function<E, O> function) {
     return from("collector[%s]".formatted(function), k -> Accumulator.collector(function), () -> {
     });
+  }
+
+  static <E, O, K> AccumulatorFactory<E, O, K> first(BiFunction<E, K, O> function) {
+    return from(
+        "first[then:%s]".formatted(function),
+        k -> Accumulator.<E>first()
+            .then(NamedFunction.from(e -> function.apply(e, k), function.toString())),
+        () -> {
+        }
+    );
   }
 
   static <E, O, K> AccumulatorFactory<E, O, K> from(
@@ -81,6 +75,22 @@ public interface AccumulatorFactory<E, O, K> extends ListenerFactory<E, K> {
         () -> {
         }
     );
+  }
+
+  Accumulator<E, O> build(K k);
+
+  @Override
+  default AccumulatorFactory<E, O, K> conditional(Predicate<K> kPredicate, Predicate<E> ePredicate) {
+    return from(
+        "%s[if:%s;%s]".formatted(this, kPredicate, ePredicate),
+        k -> kPredicate.test(k) ? build(k).conditional(ePredicate) : Accumulator.nullAccumulator(),
+        this::shutdown
+    );
+  }
+
+  @Override
+  default <X> AccumulatorFactory<X, O, K> on(Function<X, E> function) {
+    return from("%s[on:%s]".formatted(this, function), k -> build(k).on(function), this::shutdown);
   }
 
   default <Q> AccumulatorFactory<E, Q, K> then(Function<O, Q> function) {

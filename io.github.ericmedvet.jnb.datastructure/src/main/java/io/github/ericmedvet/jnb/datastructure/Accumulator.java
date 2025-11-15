@@ -29,8 +29,6 @@ import java.util.function.Supplier;
 
 public interface Accumulator<E, O> extends Listener<E> {
 
-  O get();
-
   static <E, O> Accumulator<E, List<O>> collector(Function<E, O> function) {
     return from(
         "collector[%s]".formatted(function),
@@ -44,6 +42,41 @@ public interface Accumulator<E, O> extends Listener<E> {
     );
   }
 
+  static <E> Accumulator<E, E> first() {
+    return from("first", () -> null, (e, oldE) -> oldE, e -> {});
+  }
+
+  static <E, O> Accumulator<E, O> from(
+      String name,
+      Supplier<O> oInitializer,
+      BiFunction<E, O, O> oUpdater,
+      Consumer<O> doneOConsumer
+  ) {
+    return new Accumulator<>() {
+      private O o = oInitializer.get();
+
+      @Override
+      public void done() {
+        doneOConsumer.accept(o);
+      }
+
+      @Override
+      public O get() {
+        return o;
+      }
+
+      @Override
+      public void listen(E e) {
+        o = oUpdater.apply(e, o);
+      }
+
+      @Override
+      public String toString() {
+        return name;
+      }
+    };
+  }
+
   static <OE, OO, IE, IO> Accumulator<OE, OO> from(
       String name,
       Accumulator<IE, IO> accumulator,
@@ -53,6 +86,12 @@ public interface Accumulator<E, O> extends Listener<E> {
       Consumer<Accumulator<IE, IO>> ioConsumer
   ) {
     return new Accumulator<>() {
+      @Override
+      public void done() {
+        ioConsumer.accept(accumulator);
+        accumulator.done();
+      }
+
       @Override
       public OO get() {
         return oGetterFunction.apply(accumulator.get());
@@ -66,43 +105,6 @@ public interface Accumulator<E, O> extends Listener<E> {
       }
 
       @Override
-      public void done() {
-        ioConsumer.accept(accumulator);
-        accumulator.done();
-      }
-
-      @Override
-      public String toString() {
-        return name;
-      }
-    };
-  }
-
-  static <E, O> Accumulator<E, O> from(
-      String name,
-      Supplier<O> oInitializer,
-      BiFunction<E, O, O> oUpdater,
-      Consumer<O> doneOConsumer
-  ) {
-    return new Accumulator<>() {
-      private O o = oInitializer.get();
-
-      @Override
-      public O get() {
-        return o;
-      }
-
-      @Override
-      public void listen(E e) {
-        o = oUpdater.apply(e, o);
-      }
-
-      @Override
-      public void done() {
-        doneOConsumer.accept(o);
-      }
-
-      @Override
       public String toString() {
         return name;
       }
@@ -110,12 +112,27 @@ public interface Accumulator<E, O> extends Listener<E> {
   }
 
   static <E> Accumulator<E, E> last() {
-    return from("last", () -> null, (e, oldE) -> e, oldE -> {});
+    return from("last", () -> null, (e, oldE) -> e, e -> {});
   }
 
   static <E, O> Accumulator<E, O> nullAccumulator() {
     return from("null", () -> null, (e, o) -> null, o -> {});
   }
+
+  @Override
+  default Accumulator<E, O> conditional(Predicate<E> predicate) {
+    return from(
+        "%s[if:%s]".formatted(this, predicate),
+        this,
+        predicate,
+        Function.identity(),
+        Function.identity(),
+        a -> {
+        }
+    );
+  }
+
+  O get();
 
   @Override
   default <X> Accumulator<X, O> on(Function<X, E> function) {
@@ -150,19 +167,6 @@ public interface Accumulator<E, O> extends Listener<E> {
         Function.identity(),
         Function.identity(),
         consumer
-    );
-  }
-
-  @Override
-  default Accumulator<E, O> conditional(Predicate<E> predicate) {
-    return from(
-        "%s[if:%s]".formatted(this, predicate),
-        this,
-        predicate,
-        Function.identity(),
-        Function.identity(),
-        a -> {
-        }
     );
   }
 }
