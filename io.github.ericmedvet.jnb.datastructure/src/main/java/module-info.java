@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * jnb-datastructure
  * %%
- * Copyright (C) 2023 - 2024 Eric Medvet
+ * Copyright (C) 2023 - 2025 Eric Medvet
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,5 +18,8 @@
  * =========================LICENSE_END==================================
  */
 module io.github.ericmedvet.jnb.datastructure {
+  requires java.logging;
+  requires org.apache.commons.csv;
+
   exports io.github.ericmedvet.jnb.datastructure;
 }
