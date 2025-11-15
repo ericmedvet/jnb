@@ -94,6 +94,9 @@ public interface FormattedFunction<T, R> extends Function<T, R> {
   }
 
   default FormattedFunction<T, R> reformattedToFit(Collection<? extends T> ts) {
+    if (ts.isEmpty()) {
+      return this;
+    }
     if (!format().equals("%s")) {
       return this;
     }
