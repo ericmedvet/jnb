@@ -23,6 +23,7 @@ package io.github.ericmedvet.jnb.buildable;
 import io.github.ericmedvet.jnb.core.Discoverable;
 import io.github.ericmedvet.jnb.core.Param;
 import io.github.ericmedvet.jnb.datastructure.AccumulatorFactory;
+import io.github.ericmedvet.jnb.datastructure.CSVPrinter;
 import io.github.ericmedvet.jnb.datastructure.FormattedFunction;
 import io.github.ericmedvet.jnb.datastructure.Listener;
 import io.github.ericmedvet.jnb.datastructure.ListenerFactory;
@@ -47,11 +48,137 @@ public class Listeners {
   private Listeners() {
   }
 
-  public static class ListenerFactoryAndMonitor<E, K> implements ListenerFactory<E, K> {
+  @SuppressWarnings("unused")
+  public static <E, K, EX> BiFunction<EX, Executor, ListenerFactory<E, K>> console(
+      @Param("defaultEFunctions") List<Function<E, ?>> defaultEFunctions,
+      @Param(value = "eFunctions") List<Function<E, ?>> eFunctions,
+      @Param("defaultKFunctions") List<Function<K, ?>> defaultKFunctions,
+      @Param("kFunctions") List<Function<K, ?>> kFunctions,
+      @Param(value = "deferred") boolean deferred,
+      @Param(value = "onlyLast") boolean onlyLast,
+      @Param(value = "eCondition", dNPM = "predicate.always()") Predicate<E> ePredicate,
+      @Param(value = "kCondition", dNPM = "predicate.always()") Predicate<K> kPredicate,
+      @Param(value = "eToKsFunction", dNPM = "f.emptySplitter()") Function<EX, Collection<K>> eToKsFunction,
+      @Param("logExceptions") boolean logExceptions
+  ) {
+    return (ex, executor) -> new CustomListenerFactory<>(
+        new TabularPrinter<>(
+            Stream.of(defaultEFunctions, eFunctions)
+                .flatMap(List::stream)
+                .toList(),
+            Stream.concat(defaultKFunctions.stream(), kFunctions.stream())
+                .map(f -> reformatToFit(f, eToKsFunction.apply(ex)))
+                .toList(),
+            logExceptions
+        ),
+        kPredicate,
+        ePredicate,
+        deferred ? executor : null,
+        onlyLast
+    );
+  }
+
+  @SuppressWarnings("unused")
+  public static <E, K, EX> BiFunction<EX, Executor, ListenerFactory<E, K>> csv(
+      @Param("defaultEFunctions") List<Function<E, ?>> defaultEFunctions,
+      @Param(value = "eFunctions") List<Function<E, ?>> eFunctions,
+      @Param("defaultKFunctions") List<Function<K, ?>> defaultKFunctions,
+      @Param("kFunctions") List<Function<K, ?>> kFunctions,
+      @Param(value = "deferred") boolean deferred,
+      @Param(value = "onlyLast") boolean onlyLast,
+      @Param(value = "eCondition", dNPM = "predicate.always()") Predicate<E> ePredicate,
+      @Param(value = "kCondition", dNPM = "predicate.always()") Predicate<K> kPredicate,
+      @Param("path") String path,
+      @Param(value = "errorString", dS = "NA") String errorString,
+      @Param(value = "intFormat", dS = "%d") String intFormat,
+      @Param(value = "doubleFormat", dS = "%.5e") String doubleFormat
+  ) {
+    return (ex, executor) -> new CustomListenerFactory<>(
+        new CSVPrinter<>(
+            Stream.of(defaultEFunctions, eFunctions)
+                .flatMap(List::stream)
+                .toList(),
+            Stream.concat(defaultKFunctions.stream(), kFunctions.stream())
+                .toList(),
+            path,
+            errorString,
+            intFormat,
+            doubleFormat
+        ),
+        kPredicate,
+        ePredicate,
+        deferred ? executor : null,
+        onlyLast
+    );
+  }
+
+  @SuppressWarnings("unused")
+  public static <E, O, P, K, EX> BiFunction<EX, Executor, ListenerFactory<E, K>> onDone(
+      @Param("of") AccumulatorFactory<E, O, K> accumulatorFactory,
+      @Param(value = "preprocessor", dNPM = "f.identity()") Function<? super O, ? extends P> preprocessor,
+      @Param(
+          value = "consumers", dNPMs = {"ea.consumer.deaf()"}) List<TriConsumer<? super P, K, EX>> consumers,
+      @Param(value = "deferred") boolean deferred,
+      @Param(value = "eCondition", dNPM = "predicate.always()") Predicate<E> ePredicate,
+      @Param(value = "kCondition", dNPM = "predicate.always()") Predicate<K> kPredicate
+  ) {
+    return (experiment, executor) -> new CustomListenerFactory<>(
+        accumulatorFactory.thenOnShutdown(
+            Naming.named(
+                consumers.toString(),
+                (Consumer<O>) (o -> {
+                  if (o != null) {
+                    P p = preprocessor.apply(o);
+                    consumers.forEach(c -> c.accept(p, null, experiment));
+                  }
+                })
+            )
+        ),
+        kPredicate,
+        ePredicate,
+        deferred ? executor : null,
+        false
+    );
+  }
+
+  @SuppressWarnings("unused")
+  public static <E, O, P, K, EX> BiFunction<EX, Executor, ListenerFactory<E, K>> onKDone(
+      @Param("of") AccumulatorFactory<E, O, K> accumulatorFactory,
+      @Param(value = "preprocessor", dNPM = "f.identity()") Function<? super O, ? extends P> preprocessor,
+      @Param(
+          value = "consumers", dNPMs = {"ea.consumer.deaf()"}) List<TriConsumer<? super P, K, EX>> consumers,
+      @Param(value = "deferred") boolean deferred,
+      @Param(value = "eCondition", dNPM = "predicate.always()") Predicate<E> ePredicate,
+      @Param(value = "kCondition", dNPM = "predicate.always()") Predicate<K> kPredicate
+  ) {
+    return (ex, executor) -> new CustomListenerFactory<>(
+        accumulatorFactory.thenOnDone(
+            Naming.named(
+                consumers.toString(),
+                (k, a) -> {
+                  P p = preprocessor.apply(a.get());
+                  consumers.forEach(c -> c.accept(p, k, ex));
+                }
+            )
+        ),
+        kPredicate,
+        ePredicate,
+        deferred ? executor : null,
+        false
+    );
+  }
+
+  private static <T, R> Function<T, R> reformatToFit(Function<T, R> f, Collection<?> ts) {
+    //noinspection unchecked
+    return FormattedFunction.from(f)
+        .reformattedToFit(ts.stream().map(t -> (T) t).toList());
+  }
+
+  private static class CustomListenerFactory<E, K> implements ListenerFactory<E, K> {
 
     private final ListenerFactory<E, K> innerListenerFactory;
 
-    public ListenerFactoryAndMonitor(
+    public CustomListenerFactory(
         ListenerFactory<E, K> innerListenerFactory,
         Predicate<K> kPredicate,
         Predicate<E> ePredicate,
@@ -81,98 +208,6 @@ public class Listeners {
     public String toString() {
       return innerListenerFactory.toString();
     }
-  }
-
-  @SuppressWarnings("unused")
-  public static <E, K, EX> BiFunction<EX, Executor, ListenerFactory<E, K>> console(
-      @Param("defaultEFunctions") List<Function<E, ?>> defaultEFunctions,
-      @Param(value = "eFunctions") List<Function<E, ?>> eFunctions,
-      @Param("defaultKFunctions") List<Function<K, ?>> defaultKFunctions,
-      @Param("kFunctions") List<Function<K, ?>> kFunctions,
-      @Param(value = "deferred") boolean deferred,
-      @Param(value = "onlyLast") boolean onlyLast,
-      @Param(value = "eCondition", dNPM = "predicate.always()") Predicate<E> ePredicate,
-      @Param(value = "kCondition", dNPM = "predicate.always()") Predicate<K> kPredicate,
-      @Param(value = "eToKsFunction", dNPM = "f.emptySplitter()") Function<EX, Collection<K>> eToKsFunction,
-      @Param("logExceptions") boolean logExceptions
-  ) {
-    return (ex, executor) -> new ListenerFactoryAndMonitor<>(
-        new TabularPrinter<>(
-            Stream.of(defaultEFunctions, eFunctions)
-                .flatMap(List::stream)
-                .toList(),
-            Stream.concat(defaultKFunctions.stream(), kFunctions.stream())
-                .map(f -> reformatToFit(f, eToKsFunction.apply(ex)))
-                .toList(),
-            logExceptions
-        ),
-        kPredicate,
-        ePredicate,
-        deferred ? executor : null,
-        onlyLast
-    );
-  }
-
-  @SuppressWarnings("unused")
-  public static <E, O, P, K, EX> BiFunction<EX, Executor, ListenerFactory<E, K>> onDone(
-      @Param("of") AccumulatorFactory<E, O, K> accumulatorFactory,
-      @Param(value = "preprocessor", dNPM = "f.identity()") Function<? super O, ? extends P> preprocessor,
-      @Param(
-          value = "consumers", dNPMs = {"ea.consumer.deaf()"}) List<TriConsumer<? super P, K, EX>> consumers,
-      @Param(value = "deferred") boolean deferred,
-      @Param(value = "eCondition", dNPM = "predicate.always()") Predicate<E> ePredicate,
-      @Param(value = "kCondition", dNPM = "predicate.always()") Predicate<K> kPredicate
-  ) {
-    return (experiment, executor) -> new ListenerFactoryAndMonitor<>(
-        accumulatorFactory.thenOnShutdown(
-            Naming.named(
-                consumers.toString(),
-                (Consumer<O>) (o -> {
-                  if (o != null) {
-                    P p = preprocessor.apply(o);
-                    consumers.forEach(c -> c.accept(p, null, experiment));
-                  }
-                })
-            )
-        ),
-        kPredicate,
-        ePredicate,
-        deferred ? executor : null,
-        false
-    );
-  }
-
-  @SuppressWarnings("unused")
-  public static <E, O, P, K, EX> BiFunction<EX, Executor, ListenerFactory<E, K>> onKDone(
-      @Param("of") AccumulatorFactory<E, O, K> accumulatorFactory,
-      @Param(value = "preprocessor", dNPM = "f.identity()") Function<? super O, ? extends P> preprocessor,
-      @Param(
-          value = "consumers", dNPMs = {"ea.consumer.deaf()"}) List<TriConsumer<? super P, K, EX>> consumers,
-      @Param(value = "deferred") boolean deferred,
-      @Param(value = "eCondition", dNPM = "predicate.always()") Predicate<E> ePredicate,
-      @Param(value = "kCondition", dNPM = "predicate.always()") Predicate<K> kPredicate
-  ) {
-    return (experiment, executor) -> new ListenerFactoryAndMonitor<>(
-        accumulatorFactory.thenOnDone(
-            Naming.named(
-                consumers.toString(),
-                (run, a) -> {
-                  P p = preprocessor.apply(a.get());
-                  consumers.forEach(c -> c.accept(p, run, experiment));
-                }
-            )
-        ),
-        kPredicate,
-        ePredicate,
-        deferred ? executor : null,
-        false
-    );
-  }
-
-  private static <T, R> Function<T, R> reformatToFit(Function<T, R> f, Collection<?> ts) {
-    //noinspection unchecked
-    return FormattedFunction.from(f)
-        .reformattedToFit(ts.stream().map(t -> (T) t).toList());
   }
 
 }
