@@ -158,6 +158,7 @@ public class StringParser {
       case DNode dNode -> (N) new DNode(tConstName, dNode.value());
       case ENode eNode -> (N) new ENode(tConstName, eNode.child(), eNode.name());
       case SNode sNode -> (N) new SNode(tConstName, sNode.value());
+      case ISNode isNode -> (N) new ISNode(tConstName, isNode.value());
       case LDNode ldNode -> (N) new LDNode(tConstName, ldNode.child());
       case LENode leNode -> (N) new LENode(tConstName, leNode.child());
       case LSNode lsNode -> (N) new LSNode(tConstName, lsNode.child());
@@ -240,7 +241,7 @@ public class StringParser {
 
   private ISNode parseIS(int i) throws ParseException {
     Token sToken = TokenType.INTERPOLATED_STRING.next(s, i, path);
-    return new ISNode(sToken, new InterpolableString(sToken.trimmedUnquotedContent(s)));
+    return new ISNode(sToken, InterpolableString.from(sToken.trimmedUnquotedContent(s)));
   }
 
   private ISCSENode parseISCSE(int i) throws ParseException {
@@ -308,12 +309,12 @@ public class StringParser {
     );
     BinaryOperator<Object> concatenator = (o1, o2) -> switch (o1) {
       case InterpolableString is1 -> switch (o2) {
-        case InterpolableString is2 -> new InterpolableString(is1.format() + is2.format());
-        case String s2 -> new InterpolableString(is1.format() + s2);
+        case InterpolableString is2 -> is1.and(is2);
+        case String s2 -> is1.suffixed(s2);
         default -> Optional.empty();
       };
       case String s1 -> switch (o2) {
-        case InterpolableString is2 -> new InterpolableString(s1 + is2.format());
+        case InterpolableString is2 -> is2.prefixed(s1);
         case String s2 -> s1 + s2;
         default -> Optional.empty();
       };

@@ -19,13 +19,49 @@
  */
 package io.github.ericmedvet.jnb.core;
 
-public record InterpolableString(String format) {
-  public String interpolate(ParamMap paramMap) {
-    return Interpolator.interpolate(format, paramMap);
+import java.util.function.Function;
+
+public interface InterpolableString {
+
+  String interpolate(ParamMap paramMap);
+
+  static InterpolableString from(String format) {
+    return from(pm -> Interpolator.interpolate(format, pm), format);
   }
 
-  @Override
-  public String toString() {
-    return format;
+  static InterpolableString from(Function<ParamMap, String> interpolator, String representation) {
+    return new InterpolableString() {
+      @Override
+      public String interpolate(ParamMap paramMap) {
+        return interpolator.apply(paramMap);
+      }
+
+      @Override
+      public String toString() {
+        return representation;
+      }
+    };
   }
+
+  default InterpolableString and(InterpolableString other) {
+    return from(
+        pm -> interpolate(pm) + other.interpolate(pm),
+        this + other.toString()
+    );
+  }
+
+  default InterpolableString prefixed(String string) {
+    return from(
+        pm -> string + interpolate(pm),
+        string + this
+    );
+  }
+
+  default InterpolableString suffixed(String string) {
+    return from(
+        pm -> interpolate(pm) + string,
+        this + string
+    );
+  }
+
 }

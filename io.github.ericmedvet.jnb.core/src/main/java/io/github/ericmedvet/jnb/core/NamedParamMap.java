@@ -24,7 +24,10 @@ import java.util.Map;
 
 public interface NamedParamMap extends ParamMap {
   static NamedParamMap from(String name, ParamMap paramMap) {
-    return new MapNamedParamMap(name, paramMap);
+    return new MapNamedParamMap(
+        name,
+        paramMap
+    );
   }
 
   @Override

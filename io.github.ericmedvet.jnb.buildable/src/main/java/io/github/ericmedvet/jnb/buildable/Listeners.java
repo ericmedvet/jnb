@@ -29,16 +29,15 @@ import io.github.ericmedvet.jnb.datastructure.Listener;
 import io.github.ericmedvet.jnb.datastructure.ListenerFactory;
 import io.github.ericmedvet.jnb.datastructure.Naming;
 import io.github.ericmedvet.jnb.datastructure.TabularPrinter;
-import io.github.ericmedvet.jnb.datastructure.TriConsumer;
+import io.github.ericmedvet.jnb.datastructure.Utils;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.function.BiFunction;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
 
 @Discoverable(prefixTemplate = "listener|list")
 public class Listeners {
@@ -49,7 +48,7 @@ public class Listeners {
   }
 
   @SuppressWarnings("unused")
-  public static <E, K, EX> BiFunction<EX, Executor, ListenerFactory<E, K>> console(
+  public static <E, K> Function<Executor, ListenerFactory<E, K>> console(
       @Param("defaultEFunctions") List<Function<E, ?>> defaultEFunctions,
       @Param(value = "eFunctions") List<Function<E, ?>> eFunctions,
       @Param("defaultKFunctions") List<Function<K, ?>> defaultKFunctions,
@@ -58,17 +57,12 @@ public class Listeners {
       @Param(value = "onlyLast") boolean onlyLast,
       @Param(value = "eCondition", dNPM = "predicate.always()") Predicate<E> ePredicate,
       @Param(value = "kCondition", dNPM = "predicate.always()") Predicate<K> kPredicate,
-      @Param(value = "eToKsFunction", dNPM = "f.emptySplitter()") Function<EX, Collection<K>> eToKsFunction,
       @Param("logExceptions") boolean logExceptions
   ) {
-    return (ex, executor) -> new CustomListenerFactory<>(
+    return executor -> new CustomListenerFactory<>(
         new TabularPrinter<>(
-            Stream.of(defaultEFunctions, eFunctions)
-                .flatMap(List::stream)
-                .toList(),
-            Stream.concat(defaultKFunctions.stream(), kFunctions.stream())
-                .map(f -> reformatToFit(f, eToKsFunction.apply(ex)))
-                .toList(),
+            Utils.concat(defaultEFunctions, eFunctions),
+            Utils.concat(defaultKFunctions, kFunctions),
             logExceptions
         ),
         kPredicate,
@@ -79,7 +73,7 @@ public class Listeners {
   }
 
   @SuppressWarnings("unused")
-  public static <E, K, EX> BiFunction<EX, Executor, ListenerFactory<E, K>> csv(
+  public static <E, K> Function<Executor, ListenerFactory<E, K>> csv(
       @Param("defaultEFunctions") List<Function<E, ?>> defaultEFunctions,
       @Param(value = "eFunctions") List<Function<E, ?>> eFunctions,
       @Param("defaultKFunctions") List<Function<K, ?>> defaultKFunctions,
@@ -93,13 +87,10 @@ public class Listeners {
       @Param(value = "intFormat", dS = "%d") String intFormat,
       @Param(value = "doubleFormat", dS = "%.5e") String doubleFormat
   ) {
-    return (ex, executor) -> new CustomListenerFactory<>(
+    return executor -> new CustomListenerFactory<>(
         new CSVPrinter<>(
-            Stream.of(defaultEFunctions, eFunctions)
-                .flatMap(List::stream)
-                .toList(),
-            Stream.concat(defaultKFunctions.stream(), kFunctions.stream())
-                .toList(),
+            Utils.concat(defaultEFunctions, eFunctions),
+            Utils.concat(defaultKFunctions, kFunctions),
             path,
             errorString,
             intFormat,
@@ -113,23 +104,23 @@ public class Listeners {
   }
 
   @SuppressWarnings("unused")
-  public static <E, O, P, K, EX> BiFunction<EX, Executor, ListenerFactory<E, K>> onDone(
+  public static <E, O, P, K> Function<Executor, ListenerFactory<E, K>> onDone(
       @Param("of") AccumulatorFactory<E, O, K> accumulatorFactory,
       @Param(value = "preprocessor", dNPM = "f.identity()") Function<? super O, ? extends P> preprocessor,
       @Param(
-          value = "consumers", dNPMs = {"ea.consumer.deaf()"}) List<TriConsumer<? super P, K, EX>> consumers,
+          value = "consumers", dNPMs = {"ea.consumer.deaf()"}) List<BiConsumer<? super P, K>> consumers,
       @Param(value = "deferred") boolean deferred,
       @Param(value = "eCondition", dNPM = "predicate.always()") Predicate<E> ePredicate,
       @Param(value = "kCondition", dNPM = "predicate.always()") Predicate<K> kPredicate
   ) {
-    return (experiment, executor) -> new CustomListenerFactory<>(
+    return executor -> new CustomListenerFactory<>(
         accumulatorFactory.thenOnShutdown(
             Naming.named(
                 consumers.toString(),
                 (Consumer<O>) (o -> {
                   if (o != null) {
                     P p = preprocessor.apply(o);
-                    consumers.forEach(c -> c.accept(p, null, experiment));
+                    consumers.forEach(c -> c.accept(p, null));
                   }
                 })
             )
@@ -142,22 +133,22 @@ public class Listeners {
   }
 
   @SuppressWarnings("unused")
-  public static <E, O, P, K, EX> BiFunction<EX, Executor, ListenerFactory<E, K>> onKDone(
+  public static <E, O, P, K> Function<Executor, ListenerFactory<E, K>> onKDone(
       @Param("of") AccumulatorFactory<E, O, K> accumulatorFactory,
       @Param(value = "preprocessor", dNPM = "f.identity()") Function<? super O, ? extends P> preprocessor,
       @Param(
-          value = "consumers", dNPMs = {"ea.consumer.deaf()"}) List<TriConsumer<? super P, K, EX>> consumers,
+          value = "consumers", dNPMs = {"ea.consumer.deaf()"}) List<BiConsumer<? super P, K>> consumers,
       @Param(value = "deferred") boolean deferred,
       @Param(value = "eCondition", dNPM = "predicate.always()") Predicate<E> ePredicate,
       @Param(value = "kCondition", dNPM = "predicate.always()") Predicate<K> kPredicate
   ) {
-    return (ex, executor) -> new CustomListenerFactory<>(
+    return executor -> new CustomListenerFactory<>(
         accumulatorFactory.thenOnDone(
             Naming.named(
                 consumers.toString(),
                 (k, a) -> {
                   P p = preprocessor.apply(a.get());
-                  consumers.forEach(c -> c.accept(p, k, ex));
+                  consumers.forEach(c -> c.accept(p, k));
                 }
             )
         ),

@@ -17,11 +17,10 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-module io.github.ericmedvet.jnb.datastructure {
-  requires java.logging;
-  requires org.apache.commons.csv;
-  requires java.desktop;
-  requires io.github.ericmedvet.jnb.core;
+package io.github.ericmedvet.jnb.datastructure;
 
-  exports io.github.ericmedvet.jnb.datastructure;
+public interface Binarizable {
+
+  byte[] data();
+
 }

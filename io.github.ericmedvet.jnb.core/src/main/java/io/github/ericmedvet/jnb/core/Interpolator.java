@@ -29,10 +29,11 @@ public class Interpolator {
 
   private static final Logger L = Logger.getLogger(Interpolator.class.getName());
   private static final String PARENT_KEY = "^";
+  private static final String ROOT_KEY = "^^";
   private static final String FORMAT_REGEX = "%#?\\d*(\\.\\d+)?[sdf]";
   private static final String MAP_KEY_REGEX = "[A-Za-z][A-Za-z0-9_]*";
   private static final String ARRAY_INDEX_REGEX = Pattern.quote("[") + "(-?[0-9]+)" + Pattern.quote("]");
-  private static final String MAP_KEYS_REGEX = "(" + Pattern.quote(
+  private static final String MAP_KEYS_REGEX = "(" + Pattern.quote(ROOT_KEY) + "|" + Pattern.quote(
       PARENT_KEY
   ) + "|" + MAP_KEY_REGEX + "|" + MAP_KEY_REGEX + ARRAY_INDEX_REGEX + ")(\\.(" + Pattern.quote(
       PARENT_KEY
@@ -51,11 +52,17 @@ public class Interpolator {
 
   private static Object getKeyFromParamMap(ParamMap paramMap, List<String> keyPieces) {
     String key = keyPieces.getFirst();
-    ;
     if (key.equals(PARENT_KEY)) {
       if (paramMap.parent() != null) {
         return getKeyFromParamMap(paramMap.parent(), keyPieces.subList(1, keyPieces.size()));
       }
+    }
+    if (key.equals(ROOT_KEY)) {
+      ParamMap pm = paramMap;
+      while (pm.parent() != null) {
+        pm = pm.parent();
+      }
+      return getKeyFromParamMap(pm, keyPieces.subList(1, keyPieces.size()));
     }
     Object value;
     Matcher m = Pattern.compile(ARRAY_INDEX_REGEX).matcher(key);
@@ -86,6 +93,14 @@ public class Interpolator {
 
   public static String interpolate(String format, ParamMap m) {
     return new Interpolator(format).interpolate(m);
+  }
+
+  public static String interpolate(String format, Object o) {
+    return switch (o) {
+      case ParamMap paramMap -> interpolate(format, paramMap);
+      case Mappable mappable -> interpolate(format, mappable.map());
+      case null, default -> format;
+    };
   }
 
   public String interpolate(ParamMap map) {

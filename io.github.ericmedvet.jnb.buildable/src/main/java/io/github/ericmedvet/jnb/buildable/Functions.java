@@ -25,6 +25,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -377,6 +378,18 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
+  public static <X> FormattedNamedFunction<X, String> interpolated(
+      @Param(value = "name", iS = "{s}") String name,
+      @Param("s") String s,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Object> beforeF,
+      @Param(value = "format", dS = "%s") String format
+  ) {
+    Function<Object, String> f = o -> Interpolator.interpolate(s, o);
+    return FormattedNamedFunction.from(f, format, name).compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
   public static <X, T> FormattedNamedFunction<X, T> mapValue(
       @Param("key") String key,
       @Param(value = "of", dNPM = "f.identity()") Function<X, Map<String, T>> beforeF,
@@ -689,6 +702,14 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
+  public static <X> FormattedNamedFunction<X, LocalDateTime> timestamp(
+      @Param(value = "format", dS = "%1$tH:%1$tM:%1$tS") String format
+  ) {
+    return FormattedNamedFunction.from(x -> LocalDateTime.now(), format, "timestamp");
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
   public static <X> NamedFunction<X, String> toBase64(
       @Param(value = "of", dNPM = "f.identity()") Function<X, Object> beforeF,
       @Param(value = "format", dS = "%s") String format
@@ -727,4 +748,6 @@ public class Functions {
     Function<Collection<?>, Double> f = ts -> (double) ts.stream().distinct().count() / (double) ts.size();
     return FormattedNamedFunction.from(f, format, "uniqueness").compose(beforeF);
   }
+
+
 }

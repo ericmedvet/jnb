@@ -19,19 +19,29 @@
  */
 package io.github.ericmedvet.jnb.datastructure;
 
+import io.github.ericmedvet.jnb.core.MapNamedParamMap;
+import io.github.ericmedvet.jnb.core.NamedParamMap;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import javax.imageio.ImageIO;
 
 public class Utils {
 
@@ -42,6 +52,11 @@ public class Utils {
 
   public static <K> List<K> concat(List<List<? extends K>> lists) {
     return lists.stream().flatMap(List::stream).collect(Collectors.toList());
+  }
+
+  @SafeVarargs
+  public static <K> List<K> concat(List<K>... lists) {
+    return Arrays.stream(lists).flatMap(List::stream).collect(Collectors.toList());
   }
 
   public static void doOrLog(
@@ -57,6 +72,17 @@ public class Utils {
     }
   }
 
+  public static <E> List<E> fold(List<E> items, int fold, int n) {
+    return folds(items, List.of(fold), n);
+  }
+
+  public static <E> List<E> folds(List<E> items, List<Integer> folds, int n) {
+    return IntStream.range(0, items.size())
+        .filter(i -> folds.contains(i % n))
+        .mapToObj(items::get)
+        .toList();
+  }
+
   public static String getUserMachineName() {
     String user = System.getProperty("user.name");
     String hostName = "unknown";
@@ -66,6 +92,10 @@ public class Utils {
       // ignore
     }
     return user + "@" + hostName;
+  }
+
+  public static <E> List<E> negatedFold(List<E> items, int fold, int n) {
+    return folds(items, IntStream.range(0, n).filter(j -> j != fold).boxed().toList(), n);
   }
 
   public static File robustGetFile(String pathName, boolean overwrite) throws IOException {
@@ -117,4 +147,53 @@ public class Utils {
     }
     return dirsPath.resolve(filePath).toFile();
   }
+
+  public static void save(Object o, String filePath, boolean overwrite, boolean verbose) {
+    File file = null;
+    try {
+      file = io.github.ericmedvet.jnb.datastructure.Utils.robustGetFile(filePath, overwrite);
+      switch (o) {
+        case BufferedImage image -> ImageIO.write(image, "png", file);
+        case String s -> Files.writeString(
+            file.toPath(),
+            s,
+            StandardOpenOption.WRITE,
+            StandardOpenOption.CREATE,
+            StandardOpenOption.TRUNCATE_EXISTING
+        );
+        case Binarizable binarizable -> Files.write(
+            file.toPath(),
+            binarizable.data(),
+            StandardOpenOption.WRITE,
+            StandardOpenOption.CREATE,
+            StandardOpenOption.TRUNCATE_EXISTING
+        );
+        case byte[] data -> {
+          try (OutputStream os = new FileOutputStream(file)) {
+            os.write(data);
+          }
+        }
+        case NamedParamMap npm -> Files.writeString(
+            file.toPath(),
+            MapNamedParamMap.prettyToString(npm),
+            StandardOpenOption.WRITE,
+            StandardOpenOption.CREATE,
+            StandardOpenOption.TRUNCATE_EXISTING
+        );
+        case null -> throw new IllegalArgumentException("Cannot save null data of type %s");
+        default -> throw new IllegalArgumentException(
+            "Cannot save data of type %s".formatted(o.getClass().getSimpleName())
+        );
+      }
+      if (verbose) {
+        L.info("Saved file at '%s'".formatted(file.getPath()));
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(
+          "Cannot save '%s'".formatted(Objects.isNull(file) ? filePath : file.getPath()),
+          e
+      );
+    }
+  }
+
 }

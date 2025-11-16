@@ -89,7 +89,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
         try {
           yield interpolableString.interpolate(paramMap);
         } catch (RuntimeException e) {
-          yield "ERR:" + interpolableString.format();
+          yield "ERR:" + interpolableString;
         }
       }
       default -> value.toString();
@@ -382,7 +382,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
       other.names().forEach(n -> newValues.put(n, other.value(n)));
     }
     newValues.putAll(values);
-    return new MapNamedParamMap(getName(), newValues);
+    return new MapNamedParamMap(getName(), newValues, parent);
   }
 
   @Override
@@ -393,7 +393,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     } else {
       other.names().forEach(n -> newValues.put(n, other.value(n)));
     }
-    return new MapNamedParamMap(getName(), newValues);
+    return new MapNamedParamMap(getName(), newValues, parent);
   }
 
   @Override
@@ -524,6 +524,6 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     for (String name : names) {
       newValues.remove(name);
     }
-    return new MapNamedParamMap(getName(), newValues);
+    return new MapNamedParamMap(getName(), newValues, parent);
   }
 }

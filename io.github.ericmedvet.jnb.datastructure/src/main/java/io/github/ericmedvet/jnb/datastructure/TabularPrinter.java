@@ -51,8 +51,9 @@ public class TabularPrinter<E, K> implements ListenerFactory<E, K> {
   private final boolean showVariation;
   private final boolean useColors;
   private final boolean logExceptions;
+  private final boolean adjustUnformattedColumnsWidth;
 
-  private final String header;
+  private String header;
   private final String legend;
 
   private int lineCounter = 0;
@@ -62,7 +63,7 @@ public class TabularPrinter<E, K> implements ListenerFactory<E, K> {
       List<? extends Function<? super K, ?>> kFunctions,
       boolean logExceptions
   ) {
-    this(eFunctions, kFunctions, System.out, 25, 100, true, true, true, logExceptions);
+    this(eFunctions, kFunctions, System.out, 25, 100, true, true, true, logExceptions, true);
   }
 
   public TabularPrinter(
@@ -74,7 +75,8 @@ public class TabularPrinter<E, K> implements ListenerFactory<E, K> {
       boolean showLegend,
       boolean showVariation,
       boolean useColors,
-      boolean logExceptions
+      boolean logExceptions,
+      boolean adjustUnformattedColumnsWidth
   ) {
     ePairs = eFunctions.stream()
         .map(FormattedNamedFunction::from)
@@ -107,13 +109,8 @@ public class TabularPrinter<E, K> implements ListenerFactory<E, K> {
     this.showVariation = showVariation;
     this.useColors = useColors;
     this.logExceptions = logExceptions;
-    List<String> kHeaders = kPairs.stream()
-        .map(p -> StringUtils.justify(StringUtils.collapse(p.first().name()), p.second()))
-        .toList();
-    List<String> eHeaders = ePairs.stream()
-        .map(p -> StringUtils.justify(StringUtils.collapse(p.first().name()), p.second()) + (showVariation ? " " : ""))
-        .toList();
-    header = String.join(SEP, Utils.concat(List.of(kHeaders, eHeaders)));
+    this.adjustUnformattedColumnsWidth = adjustUnformattedColumnsWidth;
+    updateHeader();
     int w = ePairs.stream()
         .mapToInt(p -> StringUtils.collapse(p.first().name()).length())
         .max()
@@ -131,12 +128,38 @@ public class TabularPrinter<E, K> implements ListenerFactory<E, K> {
         .collect(Collectors.joining("\n"));
   }
 
+  private void updateHeader() {
+    List<String> kHeaders = kPairs.stream()
+        .map(p -> StringUtils.justify(StringUtils.collapse(p.first().name()), p.second()))
+        .toList();
+    List<String> eHeaders = ePairs.stream()
+        .map(p -> StringUtils.justify(StringUtils.collapse(p.first().name()), p.second()) + (showVariation ? " " : ""))
+        .toList();
+    header = String.join(SEP, Utils.concat(List.of(kHeaders, eHeaders)));
+  }
+
   private static String format(Object currentValue, String format, int l) {
     return StringUtils.justify(String.format(format, currentValue), l);
   }
 
   @Override
   public Listener<E> build(K k) {
+    if (adjustUnformattedColumnsWidth) {
+      boolean changed = false;
+      for (int i = 0; i < kPairs.size(); i = i + 1) {
+        Pair<? extends FormattedNamedFunction<? super K, ?>, Integer> kPair = kPairs.get(i);
+        if (kPair.first().format().equals(FormattedFunction.UNFORMATTED_FORMAT)) {
+          int l = kPair.first().applyFormatted(k).length();
+          if (l > kPair.second()) {
+            kPairs.set(i, new Pair<>(kPairs.get(i).first(), l));
+            changed = true;
+          }
+        }
+      }
+      if (changed) {
+        updateHeader();
+      }
+    }
     List<?> fixedValues = kPairs.stream().map(p -> p.first().apply(k)).toList();
     final String fixedS = IntStream.range(0, kPairs.size())
         .mapToObj(
@@ -154,6 +177,22 @@ public class TabularPrinter<E, K> implements ListenerFactory<E, K> {
 
       @Override
       public void listen(E e) {
+        if (adjustUnformattedColumnsWidth) {
+          boolean changed = false;
+          for (int i = 0; i < ePairs.size(); i = i + 1) {
+            Pair<? extends FormattedNamedFunction<? super E, ?>, Integer> ePair = ePairs.get(i);
+            if (ePair.first().format().equals(FormattedFunction.UNFORMATTED_FORMAT)) {
+              int l = ePair.first().applyFormatted(e).length();
+              if (l > ePair.second()) {
+                ePairs.set(i, new Pair<>(ePairs.get(i).first(), l));
+                changed = true;
+              }
+            }
+          }
+          if (changed) {
+            updateHeader();
+          }
+        }
         List<?> values = ePairs.stream()
             .map(p -> {
               try {

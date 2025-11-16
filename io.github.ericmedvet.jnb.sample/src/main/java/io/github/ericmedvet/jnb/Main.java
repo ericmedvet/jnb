@@ -55,7 +55,7 @@ public class Main {
             Map.entry("number", 46),
             Map.entry("gender", Gender.M),
             Map.entry("genders", List.of(Gender.M, "f")),
-            Map.entry("longName", new InterpolableString("{name} ({number})")),
+            Map.entry("longName", InterpolableString.from("{name} ({number})")),
             Map.entry("bool", false),
             Map.entry("bools", List.of(false, true, "true"))
         )
@@ -73,7 +73,9 @@ public class Main {
         MapNamedParamMap.prettyToString(
             StringParser.parse("""
                 $title = doc
+                $prefix = ''{name}''
                 a(
+                  postfixedconst = $prefix + " {text}";
                   address = "" + "";
                   text = ''{name}'';
                   vs = 2 * [1; 2] + [10:1:13];
@@ -227,7 +229,17 @@ public class Main {
   public static void main(String[] args) {
     //doInterpolationStuff();
     //doParsingStuff();
-    doDiscoveryStuff();
+    //doDiscoveryStuff();
+    doManipulationStuff();
+  }
+
+  private static void doManipulationStuff() {
+    String s = """
+        person(name = eric; fullName = ''{name} {lastName}'')
+        """;
+    NamedParamMap npm = StringParser.parse(s);
+    System.out.println(MapNamedParamMap.prettyToString(npm));
+    System.out.println(MapNamedParamMap.prettyToString(npm.with("lastName", "medvet")));
   }
 
   private static void doDiscoveryStuff() {
