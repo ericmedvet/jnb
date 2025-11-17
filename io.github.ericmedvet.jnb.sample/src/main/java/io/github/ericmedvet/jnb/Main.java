@@ -22,6 +22,7 @@ package io.github.ericmedvet.jnb;
 import io.github.ericmedvet.jnb.core.*;
 import io.github.ericmedvet.jnb.core.ParamMap.Type;
 import io.github.ericmedvet.jnb.core.parsing.*;
+import io.github.ericmedvet.jnb.datastructure.FormattedNamedFunction;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -240,6 +241,14 @@ public class Main {
     NamedParamMap npm = StringParser.parse(s);
     System.out.println(MapNamedParamMap.prettyToString(npm));
     System.out.println(MapNamedParamMap.prettyToString(npm.with("lastName", "medvet")));
+
+    FormattedNamedFunction<Mappable, String> f1 = (FormattedNamedFunction<Mappable, String>) NamedBuilder
+        .fromDiscovery()
+        .build("f.mappableKey(key = name)");
+    FormattedNamedFunction<Object, String> f2 = (FormattedNamedFunction<Object, String>) NamedBuilder.fromDiscovery()
+        .build("f.interpolated(s = \"{name}\")");
+    System.out.println(f1);
+    System.out.println(f2);
   }
 
   private static void doDiscoveryStuff() {

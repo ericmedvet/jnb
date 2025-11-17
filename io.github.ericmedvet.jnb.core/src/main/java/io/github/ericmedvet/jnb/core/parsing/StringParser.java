@@ -130,6 +130,15 @@ public class StringParser {
     Token tConstName = TokenType.CONST_NAME.next(s, i, path);
     String constName = tConstName.trimmedContent(s);
     Node value = consts.get(constName);
+    if (value == null) {
+      throw new UndefinedConstantNameException(
+          i,
+          s,
+          path,
+          constName,
+          consts.keySet().stream().toList()
+      );
+    }
     if (nodeClasses.stream()
         .noneMatch(nodeClass -> nodeClass.isAssignableFrom(value.getClass()))) {
       throw new ParseException(
@@ -148,13 +157,6 @@ public class StringParser {
       );
     }
     return switch (value) {
-      case null -> throw new UndefinedConstantNameException(
-          i,
-          s,
-          path,
-          constName,
-          consts.keySet().stream().toList()
-      );
       case DNode dNode -> (N) new DNode(tConstName, dNode.value());
       case ENode eNode -> (N) new ENode(tConstName, eNode.child(), eNode.name());
       case SNode sNode -> (N) new SNode(tConstName, sNode.value());
