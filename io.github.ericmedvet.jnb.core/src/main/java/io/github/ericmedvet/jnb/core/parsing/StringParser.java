@@ -598,33 +598,36 @@ public class StringParser {
     int j = i;
     Token lastSeparatorToken = null;
     while (true) {
-      List<WrongTokenException> wtes = new ArrayList<>();
+      List<ParseException> pes = new ArrayList<>();
       N child = null;
       if (withConstant) {
         try {
           child = parseConst(j, nodeClasses);
         } catch (WrongTokenException wte) {
-          wtes.add(wte);
+          pes.add(wte);
         }
       }
       if (child == null) {
         try {
           child = nodeParser.parse(j);
         } catch (WrongTokenException wte) {
-          wtes.add(wte);
+          pes.add(wte);
         }
       }
       if (child == null) {
         if (Objects.isNull(separatorToken) || children.isEmpty()) {
           break;
         }
-        throw new ParseException(
-            "Trailing list separator %s".formatted(separatorToken.rendered()),
-            null,
-            lastSeparatorToken.start(),
-            s,
-            path
+        pes.add(
+            new ParseException(
+                "Trailing list separator %s".formatted(separatorToken.rendered()),
+                null,
+                lastSeparatorToken.start(),
+                s,
+                path
+            )
         );
+        throw new CompositeParseException(pes);
       }
       j = child.token().end();
       children.add(child);
@@ -633,6 +636,7 @@ public class StringParser {
           lastSeparatorToken = separatorToken.next(s, j, path);
           j = lastSeparatorToken.end();
         } catch (WrongTokenException wte) {
+          pes.add(wte);
           break;
         }
       }
