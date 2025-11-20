@@ -16,5 +16,6 @@
 				"vscjava.vscode-java-pack"
 			]
 		}
-	}
+	},
+	"postCreateCommand": "mvn dependency:go-offline -B"
 }
