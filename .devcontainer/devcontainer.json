@@ -6,11 +6,11 @@
 			"version": "none",
 			"installMaven": "true",
 			"installGradle": "false"
-		}
+		},
+		"ghcr.io/devcontainers/features/git-lfs:1": {}
 	},
 	"customizations": {
 		"vscode": {
-			// Add the IDs of extensions you want installed when the container is created.
 			"extensions": [
 				"streetsidesoftware.code-spell-checker",
 				"vscjava.vscode-java-pack"
