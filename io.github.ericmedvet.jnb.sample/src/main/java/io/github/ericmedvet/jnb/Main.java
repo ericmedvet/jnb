@@ -230,8 +230,8 @@ public class Main {
   public static void main(String[] args) {
     //doInterpolationStuff();
     //doParsingStuff();
-    //doDiscoveryStuff();
-    doManipulationStuff();
+    doDiscoveryStuff();
+    //doManipulationStuff();
   }
 
   private static void doManipulationStuff() {
