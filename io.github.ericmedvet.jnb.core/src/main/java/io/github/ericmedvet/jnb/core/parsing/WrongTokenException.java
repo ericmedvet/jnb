@@ -19,13 +19,14 @@
  */
 package io.github.ericmedvet.jnb.core.parsing;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class WrongTokenException extends ParseException {
   private final List<TokenType> expectedTokenTypes;
 
-  public WrongTokenException(int index, String string, List<TokenType> expectedTokenTypes) {
+  public WrongTokenException(int index, String string, Path path, List<TokenType> expectedTokenTypes) {
     super(
         "`%s` found instead of %s"
             .formatted(
@@ -36,17 +37,10 @@ public class WrongTokenException extends ParseException {
             ),
         null,
         index,
-        string
+        string,
+        path
     );
     this.expectedTokenTypes = expectedTokenTypes;
-  }
-
-  public int getIndex() {
-    return index;
-  }
-
-  public String getString() {
-    return string;
   }
 
   public List<TokenType> getExpectedTokenTypes() {

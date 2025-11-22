@@ -19,29 +19,53 @@
  */
 package io.github.ericmedvet.jnb.core.parsing;
 
+import java.nio.file.Path;
+import java.util.Objects;
+
 public class ParseException extends Exception {
 
   protected static final int CONTEXT_SIZE = 10;
   protected final int index;
   protected final String string;
+  protected final Path path;
+  protected final String rawMessage;
 
-  public ParseException(String message, Throwable cause, int index, String string) {
+  public ParseException(String message, Throwable cause, int index, String string, Path path) {
     super(
-        "%s @%s in `%s`"
+        "%s @%s %sin `%s`"
             .formatted(
                 message,
                 StringPosition.from(string, index),
+                Objects.nonNull(path) ? "of %s ".formatted(path) : "",
                 linearize(string, index - CONTEXT_SIZE, index + CONTEXT_SIZE)
             ),
         cause
     );
+    this.rawMessage = message;
     this.index = index;
     this.string = string;
+    this.path = path;
+  }
+
+  public ParseException(ParseException pe) {
+    this(pe.rawMessage, pe.getCause(), pe.index, pe.string, pe.path);
   }
 
   protected static String linearize(String string, int start, int end) {
     return string.substring(Math.max(0, start), Math.min(end, string.length()))
         .replaceAll(StringParser.LINE_TERMINATOR_REGEX, "↲")
         .replaceAll("\\s\\s+", "␣");
+  }
+
+  public int getIndex() {
+    return index;
+  }
+
+  public String getString() {
+    return string;
+  }
+
+  public Path getPath() {
+    return path;
   }
 }

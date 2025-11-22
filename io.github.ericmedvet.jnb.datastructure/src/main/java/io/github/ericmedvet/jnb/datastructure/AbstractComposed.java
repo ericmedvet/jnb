@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * jnb-sample
+ * jnb-datastructure
  * %%
  * Copyright (C) 2023 - 2025 Eric Medvet
  * %%
@@ -17,11 +17,17 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-module io.github.ericmedvet.jnb.sample {
-  requires io.github.ericmedvet.jnb.core;
-  requires io.github.classgraph;
-  requires java.logging;
-  requires io.github.ericmedvet.jnb.datastructure;
+package io.github.ericmedvet.jnb.datastructure;
 
-  opens io.github.ericmedvet.jnb to io.github.ericmedvet.jnb.core;
+public abstract class AbstractComposed<C> implements Composed<C> {
+  private final C inner;
+
+  public AbstractComposed(C inner) {
+    this.inner = inner;
+  }
+
+  @Override
+  public C inner() {
+    return inner;
+  }
 }

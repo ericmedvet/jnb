@@ -15,7 +15,7 @@
   <dependencies>
     <dependency>
       <groupId>io.github.ericmedvet</groupId>
-      <artifactId>jnb.core</artifactId>
+      <artifactId>jnb.buildable</artifactId>
       <version>${revision}</version>
     </dependency>
   </dependencies>

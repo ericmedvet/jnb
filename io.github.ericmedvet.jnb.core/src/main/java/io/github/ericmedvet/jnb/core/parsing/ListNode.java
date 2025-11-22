@@ -22,19 +22,11 @@ package io.github.ericmedvet.jnb.core.parsing;
 import java.util.List;
 
 public interface ListNode<N extends Node> extends Node {
+
   List<N> children();
 
   static <N extends Node> ListNode<N> from(Token token, List<N> children) {
-    return new ListNode<>() {
-      @Override
-      public List<N> children() {
-        return children;
-      }
-
-      @Override
-      public Token token() {
-        return token;
-      }
-    };
+    record HardListNode<N extends Node>(Token token, List<N> children) implements ListNode<N> {}
+    return new HardListNode<>(token, children);
   }
 }

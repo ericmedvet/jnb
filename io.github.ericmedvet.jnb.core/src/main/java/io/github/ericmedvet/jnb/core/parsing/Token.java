@@ -31,11 +31,16 @@ public record Token(int start, int end) {
 
   public String trimmedUnquotedContent(String s) {
     String innerS = s.substring(start, end).replaceAll("\\A" + StringParser.VOID_REGEX, "");
-    Matcher m = Pattern.compile(TokenType.STRING.getRegex()).matcher(innerS);
-    if (!m.find()) {
-      return "";
+    Matcher m;
+    m = Pattern.compile(TokenType.INTERPOLATED_STRING.getRegex()).matcher(innerS);
+    if (m.find()) {
+      return innerS.substring(m.start(), m.end()).replace(StringParser.INTERPOLATED_STRING_BOUNDARY, "");
     }
-    return innerS.substring(m.start(), m.end()).replace("\"", "");
+    m = Pattern.compile(TokenType.STRING.getRegex()).matcher(innerS);
+    if (m.find()) {
+      return innerS.substring(m.start(), m.end()).replace(StringParser.QUOTED_STRING_BOUNDARY, "");
+    }
+    return "";
   }
 
   public int length() {

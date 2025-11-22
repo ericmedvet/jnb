@@ -23,7 +23,6 @@ import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassMemberInfo;
 import io.github.classgraph.ScanResult;
-import io.github.ericmedvet.jnb.core.MapNamedParamMap.TypedName;
 import io.github.ericmedvet.jnb.core.ParamMap.Type;
 import io.github.ericmedvet.jnb.core.parsing.StringParser;
 import java.lang.reflect.Constructor;
@@ -34,51 +33,103 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/// A factory that can build objects of type `X` (or a subtype) from a `NamedParamMap`. Internally,
-/// it holds a collection of `Builder` instances, each associated with a unique name. When `build`
-/// is called, it looks up the appropriate `Builder` based on the `NamedParamMap` name and uses it
-/// to construct the object.
-///
-/// A `NamedBuilder` is typically obtained from existing utility classes (through
-/// [NamedBuilder#fromUtilityClass(Class)]), normal classes (through
-/// [NamedBuilder#fromClass(Class)]), or from both, automatically discovered in packages in the
-/// current classpath (through [NamedBuilder#fromDiscovery(String...)]). Such classes need to be
-/// annotated with the proper annotations ([Discoverable], [BuilderMethod], [Alias], [Param]).
-///
-/// @param <X> the type of objects this builder can produce
 public class NamedBuilder<X> {
 
-  /// The character used to separate parts of names in a hierarchical structure.
   public static final char NAME_SEPARATOR = '.';
-  /// The character used to separate prefixes synonyms, used by the [Discoverable] annotation.
   public static final char PREFIX_SEPARATOR = '|';
   private static final Logger L = Logger.getLogger(NamedBuilder.class.getName());
   private static final NamedBuilder<Object> EMPTY = new NamedBuilder<>(Map.of());
   private final Map<String, Builder<? extends X>> builders;
 
-  /// Constructs a `NamedBuilder` with the given map of builders.
-  ///
-  /// @param builders a map where keys are builder names and values are `Builder` instances
   private NamedBuilder(Map<String, Builder<? extends X>> builders) {
     this.builders = new TreeMap<>(builders);
   }
 
-  /// Returns an empty `NamedBuilder` that cannot build any object.
-  ///
-  /// @return an empty `NamedBuilder`
+  private record DiscoverableClassInfo(
+      List<String> prefixes,
+      Class<?> clazz,
+      boolean utility
+  ) {
+
+  }
+
   public static NamedBuilder<Object> empty() {
     return EMPTY;
   }
 
-  /// Returns a `NamedBuilder` with builders obtained by discovery from classes annotated with
-  /// `@Discoverable` within the specified packages (or everywhere if `packageNames` is empty).
-  /// Internally, this method work by invoking [NamedBuilder#fromClass(Class)] or
-  /// [NamedBuilder#fromUtilityClass(Class)] depending on the case.
-  ///
-  /// @param packageNames an array of package names to scan for discoverable classes
-  /// @return a `NamedBuilder` populated with discovered builders
   public static NamedBuilder<Object> fromDiscovery(String... packageNames) {
     NamedBuilder<Object> nb = NamedBuilder.empty();
+    List<DiscoverableClassInfo> discoverableClassInfos = findDiscoverableClasses(packageNames);
+    // add actual builders and in-place aliases
+    for (DiscoverableClassInfo dci : discoverableClassInfos) {
+      if (dci.utility) {
+        nb = nb.and(dci.prefixes, NamedBuilder.fromUtilityClass(dci.clazz));
+      } else {
+        nb = nb.and(dci.prefixes, NamedBuilder.fromClass(dci.clazz));
+      }
+    }
+    record DiscoverableAlias(List<String> prefixes, Alias alias) {
+
+      public String of() {
+        return AutoBuiltDocumentedBuilder.fromAlias(alias, null).getName();
+      }
+    }
+    // find out-of-place aliases
+    List<DiscoverableAlias> discoverableAliases = new ArrayList<>(
+        discoverableClassInfos.stream()
+            .filter(DiscoverableClassInfo::utility)
+            .flatMap(
+                dci -> Arrays.stream(dci.clazz().getAnnotationsByType(Alias.class))
+                    .map(alias -> new DiscoverableAlias(dci.prefixes, alias))
+            )
+            .toList()
+    );
+    // add actual builders
+    while (true) {
+      boolean added = false;
+      List<DiscoverableAlias> foundDas = new ArrayList<>();
+      for (DiscoverableAlias da : discoverableAliases) {
+        Builder<?> builder = nb.getBuilders().get(da.of());
+        if (builder instanceof DocumentedBuilder<?> documentedBuilder) {
+          nb = nb.and(
+              da.prefixes,
+              new NamedBuilder<>(Map.of(da.alias.name(), documentedBuilder.alias(da.alias)))
+          );
+          foundDas.add(da);
+          added = true;
+        } else if (builder != null) {
+          throw new IllegalArgumentException(
+              "Cannot build alias from builder of type %s".formatted(
+                  builder.getClass().getSimpleName()
+              )
+          );
+        }
+      }
+      if (!added) {
+        break;
+      }
+      discoverableAliases.removeAll(foundDas);
+    }
+    if (!discoverableAliases.isEmpty()) {
+      throw new IllegalArgumentException(
+          "Cannot build one or more aliases: %s".formatted(
+              discoverableAliases.stream()
+                  .map(
+                      da -> "%s of %s".formatted(
+                          da.prefixes.isEmpty() ? da.alias.name() : (da.prefixes.getFirst() + NAME_SEPARATOR + da.alias
+                              .name()),
+                          da.of()
+                      )
+                  )
+                  .collect(Collectors.joining(", "))
+          )
+      );
+    }
+    return nb;
+  }
+
+  private static List<DiscoverableClassInfo> findDiscoverableClasses(String... packageNames) {
+    List<DiscoverableClassInfo> discoverableClassInfos = new ArrayList<>();
     try (ScanResult scanResult = new ClassGraph().enableAllInfo()
         .acceptPackages(packageNames)
         .scan()) {
@@ -110,20 +161,18 @@ public class NamedBuilder<X> {
               .map(l -> String.join("" + NAME_SEPARATOR, l))
               .toArray(String[]::new);
         }
-        if (classInfo.getDeclaredConstructorInfo().stream().noneMatch(ClassMemberInfo::isPublic)) {
-          nb = nb.and(
-              Arrays.stream(prefixes).toList(),
-              NamedBuilder.fromUtilityClass(classInfo.loadClass())
-          );
-        } else {
-          nb = nb.and(
-              Arrays.stream(prefixes).toList(),
-              NamedBuilder.fromClass(classInfo.loadClass())
-          );
-        }
+        discoverableClassInfos.add(
+            new DiscoverableClassInfo(
+                Arrays.stream(prefixes).toList(),
+                classInfo.loadClass(),
+                classInfo.getDeclaredConstructorInfo()
+                    .stream()
+                    .noneMatch(ClassMemberInfo::isPublic)
+            )
+        );
       }
     }
-    return nb;
+    return discoverableClassInfos;
   }
 
   private static List<List<String>> flatTokens(List<List<String>> tokens) {
@@ -141,19 +190,9 @@ public class NamedBuilder<X> {
         .toList();
   }
 
-  /// Creates a `NamedBuilder` from a given class. It expects the class to have exactly one public
-  /// constructor, or exactly one public constructor annotated with `@BuilderMethod`. In that
-  /// constructor, parameters (whose type is different of `NamedParameter`, which can appear at most
-  /// once, as type) have to be annotated with [Param]. Internally, it invokes
-  /// [AutoBuiltDocumentedBuilder#from(java.lang.reflect.Executable, Alias\[\])].
-  ///
-  /// @param clazz the class from which to create the builder
-  /// @param <C>   the type of the class
-  /// @return a `NamedBuilder` capable of building instances of `C`, whose name is the simple name
-  ///  of the class in lower camel case
   @SuppressWarnings({"unchecked", "unused"})
-  public static <C> NamedBuilder<C> fromClass(Class<? extends C> clazz) {
-    List<Constructor<?>> constructors = Arrays.stream(clazz.getConstructors()).toList();
+  public static <C> NamedBuilder<C> fromClass(Class<? extends C> c) {
+    List<Constructor<?>> constructors = Arrays.stream(c.getConstructors()).toList();
     if (constructors.size() > 1) {
       constructors = constructors.stream()
           .filter(constructor -> constructor.getAnnotation(BuilderMethod.class) != null)
@@ -163,44 +202,31 @@ public class NamedBuilder<X> {
       throw new IllegalArgumentException(
           String.format(
               "Cannot build named builder from class %s that has %d!=1 constructors",
-              clazz.getSimpleName(),
-              clazz.getConstructors().length
+              c.getSimpleName(),
+              c.getConstructors().length
           )
       );
     }
     return (NamedBuilder<C>) (new NamedBuilder<>(
         AutoBuiltDocumentedBuilder.from(
             constructors.getFirst(),
-            clazz.getAnnotationsByType(Alias.class)
+            c.getAnnotationsByType(Alias.class)
         )
             .stream()
             .collect(Collectors.toMap(DocumentedBuilder::name, b -> b))
     ));
   }
 
-  /// Creates a `NamedBuilder` from a given utility class. It discovers public static methods in the
-  /// class and attempts to create builders from them: each public static method in the class will
-  /// have a builder whose name is the one of the method.
-  ///
-  /// @param clazz the utility class from which to create the builder
-  /// @return a `NamedBuilder` capable of building objects using the utility methods
   @SuppressWarnings("unused")
-  public static NamedBuilder<Object> fromUtilityClass(Class<?> clazz) {
+  public static NamedBuilder<Object> fromUtilityClass(Class<?> c) {
     return new NamedBuilder<>(
-        Arrays.stream(clazz.getMethods())
+        Arrays.stream(c.getMethods())
             .map(m -> AutoBuiltDocumentedBuilder.from(m, m.getAnnotationsByType(Alias.class)))
             .flatMap(List::stream)
             .collect(Collectors.toMap(DocumentedBuilder::name, b -> b))
     );
   }
 
-  /// Returns a pretty string representation of the `NamedBuilder`, listing all registered
-  /// builders.
-  ///
-  /// @param namedBuilder the `NamedBuilder` to represent
-  /// @param newLine      if true, each builder will be on a new line; otherwise, they will be
-  ///                     separated by "; "
-  /// @return a string representation of the `NamedBuilder`
   public static String prettyToString(NamedBuilder<?> namedBuilder, boolean newLine) {
     return namedBuilder.builders.entrySet()
         .stream()
@@ -214,84 +240,50 @@ public class NamedBuilder<X> {
         .collect(Collectors.joining(newLine ? "\n" : "; "));
   }
 
-  /// Creates a new `NamedBuilder` by adding all builders from `otherNamedBuilder` under a given
-  /// prefix. The returned `NamedBuilder will have all the builders of this `NamedBuilder`, with
-  /// their original name, and all the builders of `otherNamedBuilder`, with their name prefixed by
-  ///`prefix` followed by [NamedBuilder#NAME_SEPARATOR].
-  ///
-  /// @param prefix            the prefix to apply to the names of the added builders
-  /// @param otherNamedBuilder the `NamedBuilder` whose builders are to be added
-  /// @return a new `NamedBuilder` with the combined builders
-  public NamedBuilder<X> and(String prefix, NamedBuilder<? extends X> otherNamedBuilder) {
-    return and(List.of(prefix), otherNamedBuilder);
+  public NamedBuilder<X> and(String prefix, NamedBuilder<? extends X> namedBuilder) {
+    return and(List.of(prefix), namedBuilder);
   }
 
-  /// Creates a new `NamedBuilder` by adding all builders from `otherNamedBuilder` under a list of
-  /// given prefixes. Every builder of `otherNamedBuilder` is added once for every prefix, with a
-  /// name which is the original name prefixed by `prefix` followed by
-  /// [NamedBuilder#NAME_SEPARATOR].
-  ///
-  /// @param prefixes          a list of prefixes to apply to the names of the added builders
-  /// @param otherNamedBuilder the `NamedBuilder` whose builders are to be added
-  /// @return a new `NamedBuilder` with the combined builders
-  public NamedBuilder<X> and(List<String> prefixes, NamedBuilder<? extends X> otherNamedBuilder) {
+  public NamedBuilder<X> and(List<String> prefixes, NamedBuilder<? extends X> namedBuilder) {
     if (prefixes.isEmpty()) {
-      return and(otherNamedBuilder);
+      return and(namedBuilder);
     }
     Map<String, Builder<? extends X>> allBuilders = new HashMap<>(builders);
     prefixes.forEach(
-        prefix -> otherNamedBuilder.builders.forEach(
+        prefix -> namedBuilder.builders.forEach(
             (k, v) -> allBuilders.put(prefix.isEmpty() ? k : (prefix + NAME_SEPARATOR + k), v)
         )
     );
     return new NamedBuilder<>(allBuilders);
   }
 
-  /// Creates a new `NamedBuilder` by adding all builders from `otherNamedBuilder` without any
-  /// prefix.
-  ///
-  /// @param otherNamedBuilder the `NamedBuilder` whose builders are to be added
-  /// @return a new `NamedBuilder` with the combined builders
-  public NamedBuilder<X> and(NamedBuilder<? extends X> otherNamedBuilder) {
-    return and("", otherNamedBuilder);
+  public NamedBuilder<X> and(NamedBuilder<? extends X> namedBuilder) {
+    return and("", namedBuilder);
   }
 
-  /// Builds an object of type `T` (a subtype of `X`) from the provided `NamedParamMap`. If no
-  /// builder is found for the map name, `defaultSupplier` is used if provided, otherwise a
-  /// `BuilderException` is thrown. The `index` is available when building sequences and is expected
-  /// to be set accordingly by the caller.
-  ///
-  /// @param map             the `NamedParamMap` containing the parameters for building the object
-  /// @param defaultSupplier a supplier for a default object, used if no builder is found
-  /// @param index           the index of the object to build (different from 0 if the object is a
-  ///                        part of sequence)
-  /// @param <T>             the specific type of object to build
-  /// @return the built object
-  /// @throws BuilderException if there is no builder for the map name or the building fails and no
-  ///                          default supplier is provided
   @SuppressWarnings("unchecked")
   public <T extends X> T build(NamedParamMap map, Supplier<T> defaultSupplier, int index) throws BuilderException {
     if (map == null) {
       throw new BuilderException("Null input map");
     }
-    if (!builders.containsKey(map.mapName())) {
+    if (!builders.containsKey(map.getName())) {
       if (defaultSupplier != null) {
         return defaultSupplier.get();
       }
       throw new BuilderException(
           String.format(
               "No builder for %s: closest matches are %s",
-              map.mapName(),
+              map.getName(),
               builders.keySet()
                   .stream()
-                  .sorted((Comparator.comparing(s -> distance(s, map.mapName()))))
+                  .sorted((Comparator.comparing(s -> distance(s, map.getName()))))
                   .limit(3)
                   .collect(Collectors.joining(", "))
           )
       );
     }
     try {
-      return (T) builders.get(map.mapName()).build(map, this, index);
+      return (T) builders.get(map.getName()).build(map, this, index);
     } catch (BuilderException e) {
       if (defaultSupplier != null) {
         return defaultSupplier.get();
@@ -300,36 +292,15 @@ public class NamedBuilder<X> {
     }
   }
 
-  /// Builds an object of type `T` (a subtype of `X`) from the provided `mapString`, which is parsed
-  /// into a `NamedParamMap` using [StringParser#parse(String)]. If no builder is found for the map
-  /// name, `defaultSupplier` is used if provided, otherwise a `BuilderException` is thrown.
-  ///
-  /// @param mapString       the string representation of the `NamedParamMap`
-  /// @param defaultSupplier a supplier for a default object, used if no builder is found
-  /// @param <T>             the specific type of object to build
-  /// @return the built object
-  /// @throws BuilderException if there is no builder for the map name or the building fails and no
-  ///                          default supplier is provided
   @SuppressWarnings("unused")
   public <T extends X> T build(String mapString, Supplier<T> defaultSupplier) throws BuilderException {
     return build(StringParser.parse(mapString), defaultSupplier, 0);
   }
 
-  /// Builds an object of type `X` using the provided `NamedParamMap`.
-  ///
-  /// @param map the `NamedParamMap` containing the parameters for building the object
-  /// @return the built object
-  /// @throws BuilderException if there is no builder for the map name or the building fails
   public X build(NamedParamMap map) throws BuilderException {
     return build(map, null, 0);
   }
 
-  /// Builds an object of type `T` (a subtype of `X`) from the provided `mapString`, which is parsed
-  /// into a `NamedParamMap` using [StringParser#parse(String)].
-  ///
-  /// @param mapString the string representation of the `NamedParamMap`
-  /// @return the built object
-  /// @throws BuilderException if there is no builder for the map name or the building fails
   @SuppressWarnings("UnusedReturnValue")
   public X build(String mapString) throws BuilderException {
     return build(StringParser.parse(mapString));
@@ -363,36 +334,24 @@ public class NamedBuilder<X> {
     return (double) cost[len0 - 1];
   }
 
-  /// Returns an unmodifiable map of the builders currently registered with this `NamedBuilder`.
-  ///
-  /// @return an unmodifiable map of builders
   public Map<String, Builder<? extends X>> getBuilders() {
     return Collections.unmodifiableMap(builders);
   }
 
-  /// Returns a string representation of this `NamedBuilder`.
-  ///
-  /// @return a string representation
   @Override
   public String toString() {
     return prettyToString(this, false);
   }
 
-  /// Fills the provided `NamedParamMap` with default values where parameters are missing, based on
-  /// the builder, if any, associated with the map name in this `NamedBuilder`. Note that default values are present in
-  /// builders of type [DocumentedBuilder], not necessarily in any builder.
-  ///
-  /// @param map the `NamedParamMap` to fill with defaults
-  /// @return a new `NamedParamMap` with default values applied
   public NamedParamMap fillWithDefaults(NamedParamMap map) {
-    if (!builders.containsKey(map.mapName())) {
+    if (!builders.containsKey(map.getName())) {
       return map;
     }
-    if (!(builders.get(map.mapName()) instanceof DocumentedBuilder<?> builder)) {
+    if (!(builders.get(map.getName()) instanceof DocumentedBuilder<?> builder)) {
       return map;
     }
     // fill map
-    Map<TypedName, Object> values = new HashMap<>();
+    Map<String, Object> values = new HashMap<>();
     for (DocumentedBuilder.ParamInfo p : builder.params()
         .stream()
         .sorted((p1, p2) -> p1.interpolationString() == null ? -1 : (p2.interpolationString() == null ? 1 : 0))
@@ -410,15 +369,15 @@ public class NamedBuilder<X> {
         if (value == null && p.type().equals(Type.STRING) && p.interpolationString() != null) {
           value = Interpolator.interpolate(
               p.interpolationString(),
-              new MapNamedParamMap(map.mapName(), values)
+              new MapNamedParamMap(map.getName(), values)
           );
         }
       }
       if (value instanceof NamedParamMap npm) {
         value = fillWithDefaults(npm);
       }
-      values.put(new TypedName(p.name(), p.type()), value);
+      values.put(p.name(), value);
     }
-    return new MapNamedParamMap(map.mapName(), values);
+    return new MapNamedParamMap(map.getName(), values);
   }
 }

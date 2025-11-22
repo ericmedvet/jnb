@@ -23,5 +23,10 @@
 /// concepts (e.g., [io.github.ericmedvet.jnb.datastructure.NamedFunction],
 /// [io.github.ericmedvet.jnb.datastructure.Parametrized]).
 module io.github.ericmedvet.jnb.datastructure {
+  requires java.logging;
+  requires org.apache.commons.csv;
+  requires java.desktop;
+  requires io.github.ericmedvet.jnb.core;
+
   exports io.github.ericmedvet.jnb.datastructure;
 }

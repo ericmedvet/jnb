@@ -25,6 +25,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -129,7 +130,11 @@ public class Functions {
       @Param(value = "of", dNPM = "f.identity()") Function<X, Z> beforeF,
       @Param(value = "then", dNPM = "f.identity()") Function<Z, Y> afterF
   ) {
-    return FormattedNamedFunction.from(afterF, FormattedFunction.format(afterF), NamedFunction.name(afterF))
+    return FormattedNamedFunction.from(
+        afterF,
+        FormattedFunction.format(afterF),
+        NamedFunction.name(afterF)
+    )
         .compose(beforeF);
   }
 
@@ -181,6 +186,17 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
+  public static <X, T, K> NamedFunction<X, List<K>> emptySplitter(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, T> beforeF,
+      @Param(value = "name", dS = "empty") String name,
+      @Param(value = "format", dS = "%s") String format
+  ) {
+    Function<T, List<K>> f = t -> List.of();
+    return FormattedNamedFunction.from(f, format, name).compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
   public static <X, T> NamedFunction<X, Collection<T>> filter(
       @Param(value = "condition", dNPM = "predicate.always()") Predicate<T> condition,
       @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<T>> beforeF,
@@ -197,7 +213,9 @@ public class Functions {
       @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<? extends Collection<T>>> beforeF,
       @Param(value = "format", dS = "%.1f") String format
   ) {
-    Function<Collection<? extends Collection<T>>, List<T>> f = c -> c.stream().flatMap(Collection::stream).toList();
+    Function<Collection<? extends Collection<T>>, List<T>> f = c -> c.stream()
+        .flatMap(Collection::stream)
+        .toList();
     return FormattedNamedFunction.from(f, format, "flat").compose(beforeF);
   }
 
@@ -308,12 +326,29 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
+  public static <X, T, R> NamedFunction<X, R> iApply(
+      @Param("iF") Function<X, Function<T, R>> iMapF,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, T> beforeF
+  ) {
+    return NamedFunction.from(
+        x -> iMapF.apply(x).apply(beforeF.apply(x)),
+        NamedFunction.composeNames(
+            NamedFunction.name(beforeF),
+            "(%s)".formatted(NamedFunction.name(iMapF))
+        )
+    );
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
   public static <X, A, B, C, D> NamedFunction<X, Function<A, D>> iComposition(
       @Param(value = "of", dNPM = "f.identity()") Function<X, Function<B, C>> ofF,
       @Param(value = "before", dNPM = "f.identity()") Function<A, B> beforeF,
       @Param(value = "then", dNPM = "f.identity()") Function<C, D> thenF
   ) {
-    Function<Function<B, C>, Function<A, D>> composedF = midF -> a -> beforeF.andThen(midF).andThen(thenF).apply(a);
+    Function<Function<B, C>, Function<A, D>> composedF = midF -> a -> beforeF.andThen(midF)
+        .andThen(thenF)
+        .apply(a);
     return NamedFunction.from(
         composedF.compose(ofF),
         NamedFunction.composeNames(
@@ -342,6 +377,38 @@ public class Functions {
   }
 
   @SuppressWarnings("unused")
+  @Cacheable
+  public static <X, C> NamedFunction<X, C> inner(
+      @Param(value = "name", iS = "inner") String name,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Composed<C>> beforeF
+  ) {
+    Function<Composed<C>, C> f = Composed::inner;
+    return NamedFunction.from(f, name).compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X> FormattedNamedFunction<X, String> interpolated(
+      @Param(value = "name", iS = "{s}") String name,
+      @Param("s") String s,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Object> beforeF,
+      @Param(value = "format", dS = "%s") String format
+  ) {
+    Function<Object, String> f = o -> Interpolator.interpolate(s, o);
+    return FormattedNamedFunction.from(f, format, name).compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  public static <X> FormattedNamedFunction<X, String> mappableKey(
+      @Param(value = "name", iS = "{key}") String name,
+      @Param("key") String key,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Mappable> beforeF,
+      @Param(value = "format", dS = "%s") String format
+  ) {
+    Function<Mappable, String> f = m -> Interpolator.interpolate("{" + key + ":" + format + "}", m);
+    return FormattedNamedFunction.from(f, "%s", name).compose(beforeF);
+  }
+
   @Cacheable
   public static <X, T> FormattedNamedFunction<X, T> mapValue(
       @Param("key") String key,
@@ -391,7 +458,9 @@ public class Functions {
       @Param(value = "by", dNPM = "f.identity()") Function<T, C> byFunction,
       @Param(value = "format", dS = "%s") String format
   ) {
-    Function<Collection<T>, T> f = cs -> cs.stream().max(Comparator.comparing(byFunction)).orElseThrow();
+    Function<Collection<T>, T> f = cs -> cs.stream()
+        .max(Comparator.comparing(byFunction))
+        .orElseThrow();
     return FormattedNamedFunction.from(
         f,
         format,
@@ -409,7 +478,9 @@ public class Functions {
       @Param(value = "by", dNPM = "f.identity()") Function<T, C> byFunction,
       @Param(value = "format", dS = "%s") String format
   ) {
-    Function<Collection<T>, T> f = cs -> cs.stream().min(Comparator.comparing(byFunction)).orElseThrow();
+    Function<Collection<T>, T> f = cs -> cs.stream()
+        .min(Comparator.comparing(byFunction))
+        .orElseThrow();
     return FormattedNamedFunction.from(
         f,
         format,
@@ -498,7 +569,8 @@ public class Functions {
       @Param(value = "format", dS = "%s") String format
   ) {
     Function<F, Pair<F, S>> f = first -> new Pair<>(first, second);
-    return FormattedNamedFunction.from(f, format, "pairWith[s=%s]".formatted(second)).compose(beforeF);
+    return FormattedNamedFunction.from(f, format, "pairWith[s=%s]".formatted(second))
+        .compose(beforeF);
   }
 
   @SuppressWarnings("unused")
@@ -509,7 +581,8 @@ public class Functions {
       @Param(value = "format", dS = "%s") String format
   ) {
     Function<S, Pair<F, S>> f = second -> new Pair<>(first, second);
-    return FormattedNamedFunction.from(f, format, "pairWith[f=%s]".formatted(first)).compose(beforeF);
+    return FormattedNamedFunction.from(f, format, "pairWith[f=%s]".formatted(first))
+        .compose(beforeF);
   }
 
   @SuppressWarnings("unused")
@@ -627,7 +700,11 @@ public class Functions {
         (int) Math.min(Math.max(0, relative ? (from * ts.size()) : from), ts.size()),
         (int) Math.min(Math.max(0, relative ? (to * ts.size()) : to), ts.size())
     );
-    return FormattedNamedFunction.from(f, format, "sub[%s%f-%f]".formatted(relative ? "%" : "", from, to))
+    return FormattedNamedFunction.from(
+        f,
+        format,
+        "sub[%s%f-%f]".formatted(relative ? "%" : "", from, to)
+    )
         .compose(beforeF);
   }
 
@@ -637,8 +714,18 @@ public class Functions {
       @Param(value = "of", dNPM = "f.identity()") Function<X, List<? extends Number>> beforeF,
       @Param(value = "format", dS = "%.1f") String format
   ) {
-    Function<List<? extends Number>, Double> f = vs -> vs.stream().mapToDouble(Number::doubleValue).sum();
+    Function<List<? extends Number>, Double> f = vs -> vs.stream()
+        .mapToDouble(Number::doubleValue)
+        .sum();
     return FormattedNamedFunction.from(f, format, "sum").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X> FormattedNamedFunction<X, LocalDateTime> timestamp(
+      @Param(value = "format", dS = "%1$tH:%1$tM:%1$tS") String format
+  ) {
+    return FormattedNamedFunction.from(x -> LocalDateTime.now(), format, "timestamp");
   }
 
   @SuppressWarnings("unused")
@@ -681,4 +768,6 @@ public class Functions {
     Function<Collection<?>, Double> f = ts -> (double) ts.stream().distinct().count() / (double) ts.size();
     return FormattedNamedFunction.from(f, format, "uniqueness").compose(beforeF);
   }
+
+
 }

@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * jnb-sample
+ * jnb-core
  * %%
  * Copyright (C) 2023 - 2025 Eric Medvet
  * %%
@@ -17,11 +17,8 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-module io.github.ericmedvet.jnb.sample {
-  requires io.github.ericmedvet.jnb.core;
-  requires io.github.classgraph;
-  requires java.logging;
-  requires io.github.ericmedvet.jnb.datastructure;
+package io.github.ericmedvet.jnb.core.parsing;
 
-  opens io.github.ericmedvet.jnb to io.github.ericmedvet.jnb.core;
+public interface EnclosingListNode<N extends Node> extends Node {
+  ListNode<N> child();
 }

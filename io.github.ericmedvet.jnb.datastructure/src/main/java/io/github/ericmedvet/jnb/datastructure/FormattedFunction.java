@@ -160,6 +160,9 @@ public interface FormattedFunction<T, R> extends Function<T, R> {
   /// @param ts the input arguments to fit the format to
   /// @return the reformatted named function
   default FormattedFunction<T, R> reformattedToFit(Collection<? extends T> ts) {
+    if (ts.isEmpty()) {
+      return this;
+    }
     if (!format().equals("%s")) {
       return this;
     }

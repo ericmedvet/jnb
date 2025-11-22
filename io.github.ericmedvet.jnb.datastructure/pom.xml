@@ -12,6 +12,17 @@
   <name>jnb-datastructure</name>
   <description>Misc classes for storing data.</description>
 
-  <dependencies/>
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-csv</artifactId>
+      <version>1.14.1</version>
+    </dependency>
+    <dependency>
+      <groupId>io.github.ericmedvet</groupId>
+      <artifactId>jnb.core</artifactId>
+      <version>${revision}</version>
+    </dependency>
+  </dependencies>
 
 </project>

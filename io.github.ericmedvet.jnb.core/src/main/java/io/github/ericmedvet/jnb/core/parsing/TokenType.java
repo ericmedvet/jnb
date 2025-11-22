@@ -20,6 +20,7 @@
 package io.github.ericmedvet.jnb.core.parsing;
 
 import io.github.ericmedvet.jnb.core.NamedBuilder;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,20 +28,29 @@ import java.util.regex.Pattern;
 public enum TokenType {
   NUM("(-?[0-9]+(\\.[0-9]+)?)|(-?Infinity)", "0.0"), I_NUM("[0-9]+", "0"), STRING(
       "((" + StringParser.PLAIN_STRING_REGEX + ")|(" + StringParser.QUOTED_STRING_REGEX + "))",
-      "a|\"a\""
+      "a|" + StringParser.QUOTED_STRING_BOUNDARY + "a" + StringParser.QUOTED_STRING_BOUNDARY
+  ), INTERPOLATED_STRING(
+      "(" + StringParser.INTERPOLATED_STRING_REGEX + ")",
+      StringParser.INTERPOLATED_STRING_BOUNDARY + "a" + StringParser.INTERPOLATED_STRING_BOUNDARY
   ), CONST_NAME(
       "(" + Pattern.quote(StringParser.CONST_NAME_PREFIX) + StringParser.PLAIN_STRING_REGEX + ")",
       StringParser.CONST_NAME_PREFIX + "a"
-  ), NAME("[A-Za-z][" + NamedBuilder.NAME_SEPARATOR + "A-Za-z0-9_]*", "a.a"), OPEN_CONTENT("\\(", "("), CLOSED_CONTENT(
+  ), NAME("[A-Za-z][" + NamedBuilder.NAME_SEPARATOR + "A-Za-z0-9_]*", "a.a"), OPEN_CONTENT(
+      "\\(",
+      "("
+  ), CLOSED_CONTENT(
       "\\)",
       ")"
   ), ASSIGN_SEPARATOR("=", "="), LIST_SEPARATOR(";", ";"), INTERVAL_SEPARATOR(":", ":"), OPEN_LIST(
       "\\[",
       "["
-  ), CLOSED_LIST("\\]", "]"), LIST_JOIN("\\*", "*"), LIST_CONCAT("\\+", "+"), END_OF_STRING("\\z", "EOS"), IMPORT(
+  ), CLOSED_LIST("\\]", "]"), LIST_JOIN("\\*", "*"), LIST_CONCAT("\\+", "+"), END_OF_STRING(
+      "\\z",
+      "EOS"
+  ), IMPORT(
       StringParser.IMPORT_REGEX,
       StringParser.IMPORT_REGEX
-  );
+  ), STRING_CONCAT("\\+", "+");
 
   private final String regex;
   private final String rendered;
@@ -54,11 +64,11 @@ public enum TokenType {
     return regex;
   }
 
-  public Token next(String s, int i) throws WrongTokenException {
+  public Token next(String s, int i, Path path) throws WrongTokenException {
     Pattern pattern = Pattern.compile(StringParser.VOID_REGEX + regex + StringParser.VOID_REGEX);
     Matcher matcher = pattern.matcher(s);
     if (!matcher.find(i) || matcher.start() != i) {
-      throw new WrongTokenException(i, s, List.of(this));
+      throw new WrongTokenException(i, s, path, List.of(this));
     }
     return new Token(matcher.start(), matcher.end());
   }
@@ -66,4 +76,5 @@ public enum TokenType {
   public String rendered() {
     return rendered;
   }
+
 }
