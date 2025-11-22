@@ -72,6 +72,19 @@ public class Main {
   private static void doParsingStuff() {
     System.out.println(
         MapNamedParamMap.prettyToString(
+            StringParser.parse(
+                """
+                    a(values = [
+                      inner(x = 1);
+                      inner(x = 2; c);
+                      inner(x = 3)
+                    ])
+                    """
+            )
+        )
+    );
+    System.out.println(
+        MapNamedParamMap.prettyToString(
             StringParser.parse("""
                 $title = doc
                 $prefix = ''{name}''
@@ -229,8 +242,8 @@ public class Main {
 
   public static void main(String[] args) {
     //doInterpolationStuff();
-    //doParsingStuff();
-    doDiscoveryStuff();
+    doParsingStuff();
+    //doDiscoveryStuff();
     //doManipulationStuff();
   }
 
