@@ -52,7 +52,7 @@ public class TableAccumulatorFactory<E, V, K> implements AccumulatorFactory<E, T
 
       @Override
       public void listen(E e) {
-        int ri = table.nRows();
+        int ri = table.nOfRows();
         kValues.forEach((k, v) -> table.set(ri, k, v));
         eFunctions.forEach(f -> table.set(ri, NamedFunction.name(f), f.apply(e)));
       }

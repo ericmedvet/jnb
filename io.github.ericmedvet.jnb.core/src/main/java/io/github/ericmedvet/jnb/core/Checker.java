@@ -34,7 +34,7 @@ public class Checker {
     try (BufferedReader br = new BufferedReader(new FileReader(args[0]))) {
       String s = br.lines().collect(Collectors.joining("\n"));
       NamedParamMap npm = StringParser.parse(s);
-      System.out.println(ParamMap.prettyToString(npm));
+      System.out.println(MapNamedParamMap.prettyToString(npm));
     }
   }
 }

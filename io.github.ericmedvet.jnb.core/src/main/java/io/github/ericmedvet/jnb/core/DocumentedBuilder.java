@@ -26,14 +26,30 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
+/// A `Builder` which provides additional information about its capability. Namely, it provides its
+/// name, the type of the built objects, the param it takes, and the method it has been built from.
+///
+/// @param <T> the type of the object to build
 public interface DocumentedBuilder<T> extends Builder<T> {
 
+  /// Returns the Java type of objects being built by this builder.
+  ///
+  /// @return the Java type of objects being built
   java.lang.reflect.Type builtType();
 
+  /// Returns the name of this builder.
+  ///
+  /// @return the name of this builder
   String name();
 
+  /// Returns the list of params of this builder.
+  ///
+  /// @return the params of this builder
   List<ParamInfo> params();
 
+  /// Returns the executable this builder has been built from.
+  ///
+  /// @return the executable this builder has been built from
   Executable origin();
 
   private Object aliasedParamDefaultValue(ParamMap.Type type, Class<?> clazz, String value) {
@@ -77,6 +93,12 @@ public interface DocumentedBuilder<T> extends Builder<T> {
     return null;
   }
 
+  /// Returns a new `DocumentedBuilder` that is an alias of this builder.
+  /// The new builder has name dictated by `alias.name()` and uses this builder as dictated by `alias.value()`.
+  /// Optionally, can define new params that are passed to this builder through `alias.passThroughParams()`.
+  ///
+  /// @param alias the alias to apply
+  /// @return a new `DocumentedBuilder`
   default DocumentedBuilder<T> alias(Alias alias) {
     NamedParamMap preMap = AutoBuiltDocumentedBuilder.fromAlias(alias, null);
     List<ParamInfo> newParams = Stream.concat(
@@ -126,6 +148,16 @@ public interface DocumentedBuilder<T> extends Builder<T> {
     );
   }
 
+  /// A record storing the information about a param of a `DocumentedBuilder`.
+  ///
+  /// @param type                the type of the param
+  /// @param enumClass           the (optional) `enum` class of the param (if any)
+  /// @param name                the name of the param
+  /// @param defaultValue        the (optional) default value of the param
+  /// @param interpolationString the (optional) interpolation string of the param
+  /// @param injection           an enum saying if the param, when building, has to be filled with
+  ///                            special values
+  /// @param javaType            the Java type of the param
   record ParamInfo(
       ParamMap.Type type,
       Class<?> enumClass,
@@ -136,6 +168,10 @@ public interface DocumentedBuilder<T> extends Builder<T> {
       java.lang.reflect.Type javaType
   ) {
 
+    /// Returns a string representation of this `ParamInfo`, in the form `name = type[defaultValue]`
+    /// or `name = type`.
+    ///
+    /// @return a string representation
     @Override
     public String toString() {
       String defaultValueString = defaultValue != null ? defaultValue.toString() : "";

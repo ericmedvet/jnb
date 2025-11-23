@@ -34,15 +34,6 @@ public class Miscs {
   }
 
   @SuppressWarnings("unused")
-  @Cacheable
-  public static <T> T nth(
-      @Param("n") int n,
-      @Param("values") List<T> values
-  ) {
-    return n >= 0 ? values.get(n) : values.get(values.size() + n);
-  }
-
-  @SuppressWarnings("unused")
   public static RandomGenerator defaultRG(@Param(value = "seed", dI = 0) int seed) {
     return seed >= 0 ? new Random(seed) : new Random();
   }
@@ -56,6 +47,15 @@ public class Miscs {
       );
     }
     return Grid.create(w, h, items);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <T> T nth(
+      @Param("n") int n,
+      @Param("values") List<T> values
+  ) {
+    return n >= 0 ? values.get(n) : values.get(values.size() + n);
   }
 
   @SuppressWarnings("unused")

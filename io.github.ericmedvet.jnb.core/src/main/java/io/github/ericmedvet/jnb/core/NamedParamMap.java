@@ -22,7 +22,14 @@ package io.github.ericmedvet.jnb.core;
 import java.util.HashMap;
 import java.util.Map;
 
+/// A [ParamMap] with a name.
 public interface NamedParamMap extends ParamMap {
+  /// Creates a named map from an existing map.
+  /// The returned map is a view of the provided `paramMap`.
+  ///
+  /// @param name the name of the named map
+  /// @param paramMap the map the returned named map will be a view of
+  /// @return the new named map
   static NamedParamMap from(String name, ParamMap paramMap) {
     return new MapNamedParamMap(
         name,
@@ -46,11 +53,14 @@ public interface NamedParamMap extends ParamMap {
     return new MapNamedParamMap(getName(), values);
   }
 
+  /// Returns the name of this named map.
+  ///
+  /// @return the name of this named map
   String getName();
 
   @Override
-  default NamedParamMap with(String name, Object value) {
-    return andOverwrite(new MapNamedParamMap("", Map.of(name, value)));
+  default NamedParamMap with(String newName, Object newValue) {
+    return andOverwrite(new MapNamedParamMap("", Map.of(newName, newValue)));
   }
 
   @Override

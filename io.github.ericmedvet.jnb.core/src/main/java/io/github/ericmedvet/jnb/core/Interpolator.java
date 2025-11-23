@@ -25,6 +25,19 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/// A class that can be used to interpolate templated strings with the contents of a `ParamMap`. The
+/// typical usage is as follows. Assume a `ParamMap` with the following contents: `person.height` ->
+/// `1.746`, `person.name` -> `Eric` The code:
+/// ```java
+/// String s = Interpolator.interpolate("The person is {person.name}({person.name:%.2f}m)", map);
+/// ```
+/// would result in `s` being `The person is Eric (1.75m)`.
+///
+/// The variable parts of the template, i.e., the data placeholders, have the format `{name:format}`,
+/// where `name` is a string valid as a `ParamMap` name and `format` is a format usable by
+/// [java.io.PrintStream#printf(String, Object...)].
+/// More precisely, `name` must match the pattern <code>{@value MAP_KEYS_REGEX}</code> and `format` must match
+/// <code>{@value FORMAT_REGEX}</code>.
 public class Interpolator {
 
   private static final Logger L = Logger.getLogger(Interpolator.class.getName());
@@ -45,6 +58,11 @@ public class Interpolator {
   private final String format;
   private final Matcher matcher;
 
+  /// Constructs an `Interpolator` with the given template string. The template string can contain
+  /// placeholders for interpolation.
+  ///
+  /// @param format the template string, potentially containing placeholders like `{name}` or
+  ///                 `{name:template}`
   public Interpolator(String format) {
     this.format = format;
     matcher = INTERPOLATOR.matcher(format);
@@ -87,14 +105,34 @@ public class Interpolator {
     return getKeyFromParamMap((ParamMap) value, keyPieces.subList(1, keyPieces.size()));
   }
 
-  public static String interpolate(String format, ParamMap m, String noValueDefault) {
-    return new Interpolator(format).interpolate(m, noValueDefault);
+  /// Interpolates the given `template` with the given `map`. If a `name` used in a placeholder is
+  /// not in the `map`, the `noValueDefault` string is used to interpolate that placeholder. If a
+  /// placeholder cannot be interpolated, the `noValueDefault` is used; if the latter is null, a
+  /// `RuntimeException` is thrown.
+  ///
+  /// @param format         the template string, potentially containing placeholders like `{name}`
+  ///                       or `{name:template}`
+  /// @param map            the `ParamMap` containing the values for the interpolation
+  /// @param noValueDefault the string to be used if a `name` is used in a placeholder but is not in
+  ///                       the `map`
+  /// @return the interpolated string
+  public static String interpolate(String format, ParamMap map, String noValueDefault) {
+    return new Interpolator(format).interpolate(map, noValueDefault);
   }
 
-  public static String interpolate(String format, ParamMap m) {
-    return new Interpolator(format).interpolate(m);
+  /// Interpolates the given `template` with the given `map`. If a `name` used in a placeholder is
+  /// not in the `map` or if the placeholder cannot be interpolated, a `RuntimeException` is
+  /// thrown.
+  ///
+  /// @param format the template string, potentially containing placeholders like `{name}` or
+  ///                 `{name:template}`
+  /// @param map      the `ParamMap` containing the values for the interpolation
+  /// @return the interpolated string
+  public static String interpolate(String format, ParamMap map) {
+    return new Interpolator(format).interpolate(map);
   }
 
+  // TODO write doc
   public static String interpolate(String format, Object o) {
     return switch (o) {
       case ParamMap paramMap -> interpolate(format, paramMap);
@@ -103,10 +141,25 @@ public class Interpolator {
     };
   }
 
+  /// Interpolates the template of this interpolator with the given `map`. If a `name` used in a
+  /// placeholder is not in the `map` or if the placeholder cannot be interpolated, a
+  /// `RuntimeException` is thrown.
+  ///
+  /// @param map the `ParamMap` containing the values for the interpolation
+  /// @return the interpolated string
   public String interpolate(ParamMap map) {
     return interpolate(map, null);
   }
 
+  /// Interpolates the template of this interpolator with the given `map`. If a `name` used in a
+  /// placeholder is not in the `map`, the `noValueDefault` string is used to interpolate that
+  /// placeholder. If a placeholder cannot be interpolated, the `noValueDefault` is used; if the
+  /// latter is null, a `RuntimeException` is thrown.
+  ///
+  /// @param map            the `ParamMap` containing the values for the interpolation
+  /// @param noValueDefault the string to be used if a `name` is used in a placeholder but is not in
+  ///                       the `map`
+  /// @return the interpolated string
   public String interpolate(ParamMap map, String noValueDefault) {
     StringBuilder sb = new StringBuilder();
     int c = 0;

@@ -309,7 +309,7 @@ public record AutoBuiltDocumentedBuilder<T>(
       Map<String, DocumentedBuilder<Object>> builders = new TreeMap<>();
       builders.put(mainBuilder.name(), mainBuilder);
       for (Alias alias : aliases) {
-        String aliasName = fromAlias(alias, null).mapName();
+        String aliasName = fromAlias(alias, null).getName();
         DocumentedBuilder<Object> toAliasBuilder = builders.get(aliasName);
         if (toAliasBuilder == null) {
           throw new BuilderException(
