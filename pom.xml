@@ -192,7 +192,7 @@
             <trimTrailingWhitespace/>
             <removeUnusedImports/>
             <eclipse>
-              <version>4.26</version>
+              <version>4.33</version>
               <file>${maven.multiModuleProjectDirectory}/code-style.xml</file>
             </eclipse>
             <formatAnnotations/>
