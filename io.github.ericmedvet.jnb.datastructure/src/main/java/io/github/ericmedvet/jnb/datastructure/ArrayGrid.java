@@ -23,10 +23,17 @@ package io.github.ericmedvet.jnb.datastructure;
 import java.io.Serializable;
 import java.util.Arrays;
 
+/// An implementation of [Grid] which internally stores the elements with an array.
+///
+/// @param <T> the type of cell values
 public class ArrayGrid<T> extends AbstractGrid<T> implements Serializable {
 
   private final Object[] ts;
 
+  /// Builds an empty grid with the provided width and height.
+  ///
+  /// @param w the width of the grid
+  /// @param h the height of the grid
   public ArrayGrid(int w, int h) {
     super(w, h);
     this.ts = new Object[w * h];
@@ -45,6 +52,9 @@ public class ArrayGrid<T> extends AbstractGrid<T> implements Serializable {
     ts[(key.y() * w()) + key.x()] = t;
   }
 
+  /// Returns the hash code value for this grid.
+  ///
+  /// @return the hash code value for this grid
   @Override
   public int hashCode() {
     int result = super.hashCode();
@@ -52,14 +62,24 @@ public class ArrayGrid<T> extends AbstractGrid<T> implements Serializable {
     return result;
   }
 
+  /// Compares the specified object with this grid for equality. Two grids are considered equal if
+  /// both the following condition hold:
+  /// - they have the same width and height
+  /// - for each cell, the elements in the two grid are either `null` or equal
+  ///
+  /// @param o the object to be compared for equality with this list
+  /// @return true if the specified object is equal to this grid, false otherwise
   @Override
   public boolean equals(Object o) {
-    if (this == o)
+    if (this == o) {
       return true;
-    if (o == null || getClass() != o.getClass())
+    }
+    if (o == null || getClass() != o.getClass()) {
       return false;
-    if (!super.equals(o))
+    }
+    if (!super.equals(o)) {
       return false;
+    }
     ArrayGrid<?> arrayGrid = (ArrayGrid<?>) o;
     return Arrays.equals(ts, arrayGrid.ts);
   }

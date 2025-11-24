@@ -23,15 +23,23 @@ package io.github.ericmedvet.jnb.datastructure;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
+/// A partly abstract implementation of [Grid]. It provides the concrete implementation of a few
+/// methods, but does not specify how data is stored. Internally, this implementation stores the
+/// keys (coordinates) of the grid.
+///
+/// @param <T> the type of cell values
 public abstract class AbstractGrid<T> implements Grid<T> {
 
   private final int w;
   private final int h;
   private final List<Key> keys;
 
-  public AbstractGrid(int w, int h) {
+  /// Constructor to call by subclasses.
+  ///
+  /// @param w the width of the grid
+  /// @param h the height of the grid
+  protected AbstractGrid(int w, int h) {
     this.w = w;
     this.h = h;
     List<Key> localKeys = new ArrayList<>(w() * h());
@@ -43,6 +51,12 @@ public abstract class AbstractGrid<T> implements Grid<T> {
     keys = Collections.unmodifiableList(localKeys);
   }
 
+  /// Checks if the provided coordinate `key` is valid based on this grid width and height and
+  /// throws an exception if it is not. Works like [Grid#isValid(Key)] (which this method internally
+  /// calls), but the outcome is a possible exception, rather than a Boolean.
+  ///
+  /// @param key the coordinate to test for validity
+  /// @throws IllegalArgumentException if `key` is not valid
   protected void checkValidity(Key key) {
     if (!isValid(key)) {
       throw new IllegalArgumentException(
@@ -66,21 +80,9 @@ public abstract class AbstractGrid<T> implements Grid<T> {
     return keys;
   }
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(w, h);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    AbstractGrid<?> that = (AbstractGrid<?>) o;
-    return w == that.w && h == that.h;
-  }
-
+  /// Returns a simple string representation of this grid.
+  ///
+  /// @return a simple string representation of this grid
   @Override
   public String toString() {
     return "%s(%dx%d)%s".formatted(getClass().getSimpleName(), w(), h(), entries());

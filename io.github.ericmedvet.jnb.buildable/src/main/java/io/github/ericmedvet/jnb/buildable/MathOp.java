@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * jnb-core
+ * jnb-buildable
  * %%
  * Copyright (C) 2023 - 2025 Eric Medvet
  * %%
@@ -17,7 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package io.github.ericmedvet.jnb.core;
+package io.github.ericmedvet.jnb.buildable;
 
 import java.util.Arrays;
 import java.util.function.ToDoubleFunction;

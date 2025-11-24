@@ -19,11 +19,11 @@
  */
 package io.github.ericmedvet.jnb.datastructure;
 
+import io.github.ericmedvet.jnb.datastructure.Table.Series;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class GroupedTablesAccumulatorFactory<E, V, R, K> implements AccumulatorFactory<E, Map<List<R>, Table<Integer, String, V>>, K> {
 
@@ -58,8 +58,10 @@ public class GroupedTablesAccumulatorFactory<E, V, R, K> implements AccumulatorF
       public void listen(E e) {
         synchronized (data) {
           table.addRow(
-              table.nRows(),
-              eFunctions.stream().collect(Collectors.toMap(NamedFunction::name, f -> f.apply(e)))
+              new Series<>(
+                  table.nOfRows(),
+                  eFunctions.stream().collect(Utils.toSequencedMap(NamedFunction::name, f -> f.apply(e)))
+              )
           );
         }
       }

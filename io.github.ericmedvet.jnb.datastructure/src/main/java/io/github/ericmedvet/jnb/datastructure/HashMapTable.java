@@ -23,50 +23,61 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.SequencedSet;
 
-/** @author "Eric Medvet" on 2023/11/03 for jgea */
+/// A table that internally stores its values in an [HashMap].
+///
+/// @param <R> the type of row indexes
+/// @param <C> the type of column indexes
+/// @param <T> the type of values in the cells
 public class HashMapTable<R, C, T> implements Table<R, C, T> {
 
   private final Map<Key<R, C>, T> map;
-  private final LinkedHashSet<R> rowIndexes;
-  private final LinkedHashSet<C> colIndexes;
+  private final SequencedSet<R> rowIndexes;
+  private final SequencedSet<C> colIndexes;
 
+  /// Constructs an empty `HashMapTable`.
   public HashMapTable() {
     this.map = new HashMap<>();
     rowIndexes = new LinkedHashSet<>();
     colIndexes = new LinkedHashSet<>();
   }
 
-  private record Key<R, C>(R r, C c) {}
+  private record Key<R, C>(R r, C c) {
 
-  @Override
-  public List<R> rowIndexes() {
-    return rowIndexes.stream().toList();
   }
 
   @Override
-  public List<C> colIndexes() {
-    return colIndexes.stream().toList();
+  public void addColumn(Series<C, R, T> column) {
+    colIndexes.add(column.primaryIndex());
+    rowIndexes.addAll(column.values().keySet());
+    column.values()
+        .forEach((rowIndex, value) -> map.put(new Key<>(rowIndex, column.primaryIndex()), value));
   }
 
   @Override
-  public void addColumn(C columnIndex, Map<R, T> values) {
-    if (colIndexes.contains(columnIndex)) {
-      throw new IllegalArgumentException("Column %s is already in the table".formatted(columnIndex));
-    }
-    colIndexes.add(columnIndex);
-    rowIndexes.addAll(values.keySet());
-    values.forEach((rowIndex, value) -> map.put(new Key<>(rowIndex, columnIndex), value));
+  public void addRow(Series<R, C, T> row) {
+    rowIndexes.add(row.primaryIndex());
+    colIndexes.addAll(row.values().keySet());
+    row.values()
+        .forEach((colIndex, value) -> map.put(new Key<>(row.primaryIndex(), colIndex), value));
   }
 
   @Override
-  public void addRow(R rowIndex, Map<C, T> values) {
-    if (rowIndexes.contains(rowIndex)) {
-      throw new IllegalArgumentException("Row %s is already in the table".formatted(rowIndex));
-    }
-    rowIndexes.add(rowIndex);
-    colIndexes.addAll(values.keySet());
-    values.forEach((colIndex, value) -> map.put(new Key<>(rowIndex, colIndex), value));
+  public SequencedSet<C> colIndexes() {
+    return colIndexes;
+  }
+
+  @Override
+  public T get(R rowIndex, C colIndex) {
+    return map.get(new Key<>(rowIndex, colIndex));
+  }
+
+  @Override
+  public void removeColumn(C colIndex) {
+    colIndexes.remove(colIndex);
+    List<Key<R, C>> toRemoveKeys = map.keySet().stream().filter(k -> k.c.equals(colIndex)).toList();
+    toRemoveKeys.forEach(map.keySet()::remove);
   }
 
   @Override
@@ -77,26 +88,24 @@ public class HashMapTable<R, C, T> implements Table<R, C, T> {
   }
 
   @Override
-  public void removeColumn(C columnIndex) {
-    colIndexes.remove(columnIndex);
-    List<Key<R, C>> toRemoveKeys = map.keySet().stream().filter(k -> k.c.equals(columnIndex)).toList();
-    toRemoveKeys.forEach(map.keySet()::remove);
+  public SequencedSet<R> rowIndexes() {
+    return rowIndexes;
   }
 
   @Override
-  public T get(R rowIndex, C columnIndex) {
-    return map.get(new Key<>(rowIndex, columnIndex));
-  }
-
-  @Override
-  public void set(R rowIndex, C columnIndex, T t) {
+  public void set(R rowIndex, C colIndex, T t) {
     rowIndexes.add(rowIndex);
-    colIndexes.add(columnIndex);
-    map.put(new Key<>(rowIndex, columnIndex), t);
+    colIndexes.add(colIndex);
+    map.put(new Key<>(rowIndex, colIndex), t);
   }
 
+  /// Returns a string representation of this table, which shows only the number of rows and columns.
+  /// For a more informative, yet human-friendly string representation, see
+  ///  [Table#prettyToString(Function, Function, Function)].
+  ///
+  /// @return a string representation of this table
   @Override
   public String toString() {
-    return "Table[%dx%d]".formatted(nRows(), nColumns());
+    return "Table[%dx%d]".formatted(nOfRows(), nOfColumns());
   }
 }

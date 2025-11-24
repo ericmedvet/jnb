@@ -17,6 +17,11 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
+/// Contains a single package [io.github.ericmedvet.jnb.datastructure] which provides interfaces and classes for
+/// modeling a few data structures (e.g.,
+/// [io.github.ericmedvet.jnb.datastructure.Grid], [io.github.ericmedvet.jnb.datastructure.Table]) and useful
+/// concepts (e.g., [io.github.ericmedvet.jnb.datastructure.NamedFunction],
+/// [io.github.ericmedvet.jnb.datastructure.Parametrized]).
 module io.github.ericmedvet.jnb.datastructure {
   requires java.logging;
   requires org.apache.commons.csv;

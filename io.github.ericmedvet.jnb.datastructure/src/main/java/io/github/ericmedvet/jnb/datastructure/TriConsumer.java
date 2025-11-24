@@ -19,8 +19,18 @@
  */
 package io.github.ericmedvet.jnb.datastructure;
 
-/** @author "Eric Medvet" on 2024/05/27 for jnb */
+/// An operation that accepts three input arguments and returns no result.
+/// Unlike most other functional interfaces, `TriConsumer` is expected to operate via side-effects.
+///
+/// @param <I1> the type of the first input argument
+/// @param <I2> the type of the second input argument
+/// @param <I3> the type of the third input argument
 @FunctionalInterface
 public interface TriConsumer<I1, I2, I3> {
+  /// Performs this operation on the given arguments.
+  ///
+  /// @param i1 the first argument
+  /// @param i2 the second argument
+  /// @param i3 the third argument
   void accept(I1 i1, I2 i2, I3 i3);
 }

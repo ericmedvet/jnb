@@ -19,6 +19,9 @@
  */
 package io.github.ericmedvet.jnb.core;
 
+import java.lang.annotation.Documented;
+
+@Documented
 public @interface PassThroughParam {
   String name();
 

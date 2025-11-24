@@ -24,6 +24,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+/// A [NamedParamMap] that internally stores its parameter names and values using a [SortedMap]. The
+/// parameter names are returned by [ParamMap#names()] in lexicographical order.
 public class MapNamedParamMap implements NamedParamMap, Formattable {
 
   private final String name;
@@ -31,6 +33,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
   private final Map<String, SequencedSet<Type>> types;
   private ParamMap parent;
 
+  // TODO write doc
   public MapNamedParamMap(String name, ParamMap paramMap) {
     this(
         name,
@@ -45,10 +48,16 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     );
   }
 
+  /// Constructs a named map given a name and a map of parameters which also includes parameter
+  /// types.
+  ///
+  /// @param name   the name of the map
+  /// @param values a map containing the parameter values keyed by their typed names
   public MapNamedParamMap(String name, Map<String, Object> values) {
     this(name, values, null);
   }
 
+  // TODO write doc
   public MapNamedParamMap(String name, Map<String, Object> values, ParamMap parent) {
     this.name = name;
     this.values = Collections.unmodifiableSortedMap(new TreeMap<>(values));
@@ -242,37 +251,69 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     sb.append("\n").append(indent(w));
   }
 
+  /// Returns a human-friendly string representation of the provided named `map`.
+  ///
+  /// @param map the map to be represented as string
+  /// @return the string representation of the provided `map`
   @SuppressWarnings("unused")
   public static String prettyToString(ParamMap map) {
     return prettyToString(map, 80);
   }
 
-  public static String prettyToString(ParamMap map, int maxW) {
+  /// Returns a human-friendly string representation of the provided named `map`, possibly with
+  /// indentation, depending on `maxLineLength`.
+  ///
+  /// Internally uses [#prettyToString(ParamMap, StringBuilder, int, int, int, String)], with a
+  /// blank space as indentation token, an indentation size of 2 tokens, and no offset.
+  ///
+  /// @param map           the map to be represented as string
+  /// @param maxLineLength the maximum line length in the string representation, impacting also on
+  /// @return the string representation of the provided `map`
+  public static String prettyToString(ParamMap map, int maxLineLength) {
     StringBuilder sb = new StringBuilder();
-    prettyToString(map, sb, maxW, 0, 2, " ");
+    prettyToString(map, sb, maxLineLength, 0, 2, " ");
     return sb.toString();
   }
 
+  /// Produces a human-friendly string representation of the provided named `map` and puts it in the
+  /// provided [StringBuilder]. The string representation will have reasonable indentation according
+  /// to the parameters `maxLineLength`, `indentOffset`, `indentSize`, and `indentToken`. The string
+  /// representation will be parsable by the
+  /// [io.github.ericmedvet.jnb.core.parsing.StringParser#parse(String)] method: this method hence
+  /// acts like a serialization method, while the mentioned `parse()` method acts like a
+  /// deserialization method.
+  ///
+  /// If the provided map is a [NamedParamMap], also the name of the map is represented in the
+  /// string.
+  ///
+  /// @param map           the map to be represented as string
+  /// @param stringBuilder the string builder to direct the representation to
+  /// @param maxLineLength the maximum line length in the string representation, impacting also on
+  ///                      indentation style
+  /// @param indentOffset  the offset for indentation (each line in the produced string
+  ///                      representation will have `indentOffset` indentation tokens)
+  /// @param indentSize    the number of indentation tokens to be used at each indentation
+  /// @param indentToken   the indentation token (a blank indentToken being a reasonable value)
   public static void prettyToString(
       ParamMap map,
-      StringBuilder sb,
-      int maxW,
-      int w,
-      int indent,
-      String space
+      StringBuilder stringBuilder,
+      int maxLineLength,
+      int indentOffset,
+      int indentSize,
+      String indentToken
   ) {
     // iterate
     if (map instanceof NamedParamMap namedParamMap) {
-      sb.append(namedParamMap.getName());
+      stringBuilder.append(namedParamMap.getName());
     }
-    sb.append(TokenType.OPEN_CONTENT.rendered());
-    String content = mapContentToInlineString(map, space);
-    if (map.names().isEmpty() || content.length() + currentLineLength(sb.toString()) < maxW) {
-      sb.append(content);
+    stringBuilder.append(TokenType.OPEN_CONTENT.rendered());
+    String content = mapContentToInlineString(map, indentToken);
+    if (map.names().isEmpty() || content.length() + currentLineLength(stringBuilder.toString()) < maxLineLength) {
+      stringBuilder.append(content);
     } else {
-      mapContentToMultilineString(sb, maxW, w, indent, space, map);
+      mapContentToMultilineString(stringBuilder, maxLineLength, indentOffset, indentSize, indentToken, map);
     }
-    sb.append(TokenType.CLOSED_CONTENT.rendered());
+    stringBuilder.append(TokenType.CLOSED_CONTENT.rendered());
   }
 
   @SafeVarargs

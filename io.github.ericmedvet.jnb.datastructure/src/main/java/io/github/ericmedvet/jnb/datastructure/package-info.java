@@ -17,14 +17,8 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
+/// Provides interfaces and classes for modeling a few data structures (e.g.,
+/// [io.github.ericmedvet.jnb.datastructure.Grid], [io.github.ericmedvet.jnb.datastructure.Table]) and useful
+/// concepts (e.g., [io.github.ericmedvet.jnb.datastructure.NamedFunction],
+/// [io.github.ericmedvet.jnb.datastructure.Parametrized]).
 package io.github.ericmedvet.jnb.datastructure;
-
-import java.io.Serializable;
-
-/// A pair of two elements of (in general) different types.
-///
-/// @param first the first element of the pair
-/// @param second the second element of the pair
-/// @param <F> the type of the first element
-/// @param <S> the type of the second element
-public record Pair<F, S>(F first, S second) implements Serializable {}

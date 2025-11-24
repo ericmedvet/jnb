@@ -19,11 +19,20 @@
  */
 package io.github.ericmedvet.jnb.core;
 
+/// Exception thrown when a builder fails to build an object.
 public class BuilderException extends RuntimeException {
+
+  /// Constructs a new builder exception with the specified detail message.
+  ///
+  /// @param message the detail message
   public BuilderException(String message) {
     super(message);
   }
 
+  /// Constructs a new builder exception with the specified detail message and cause.
+  ///
+  /// @param message the detail message
+  /// @param cause   the cause
   public BuilderException(String message, Throwable cause) {
     super(message, cause);
   }

@@ -28,8 +28,19 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+/// An automatically built [DocumentedBuilder] that uses reflection to inspect a constructor or a
+/// static method and builds an object from a [ParamMap]. This record is not meant to be used
+/// directly. Its pseudo-constructor [#from(Parameter)] is invoked by
+/// [NamedBuilder#fromClass(Class)] and [NamedBuilder#fromUtilityClass(Class)].
+///
+/// @param name the name of the builder
+/// @param builtType the type of the object built by this builder
+/// @param params the list of parameters that this builder expects
+/// @param origin the executable (constructor or method) that this builder wraps
+/// @param builder the actual builder function
 public record AutoBuiltDocumentedBuilder<T>(
-    String name, java.lang.reflect.Type builtType, List<ParamInfo> params, Executable origin, Builder<T> builder
+    String name, java.lang.reflect.Type builtType, List<ParamInfo> params, Executable origin,
+    Builder<T> builder
 ) implements DocumentedBuilder<T> {
 
   private static Object buildDefaultValue(ParamMap.Type type, Class<?> clazz, Param pa) {
@@ -81,8 +92,16 @@ public record AutoBuiltDocumentedBuilder<T>(
   }
 
   @SuppressWarnings("unused")
-  private static <E extends Enum<E>> Object buildOrDefaultParam(ParamInfo pi, ParamMap m, NamedBuilder<Object> nb) {
-    @SuppressWarnings({"rawtypes", "unchecked"}) Object value = m.value(pi.name(), pi.type(), (Class) pi.enumClass());
+  private static <E extends Enum<E>> Object buildOrDefaultParam(
+      ParamInfo pi,
+      ParamMap m,
+      NamedBuilder<Object> nb
+  ) {
+    @SuppressWarnings({"rawtypes", "unchecked"}) Object value = m.value(
+        pi.name(),
+        pi.type(),
+        (Class) pi.enumClass()
+    );
     if (value != null) {
       return value;
     }
@@ -101,24 +120,54 @@ public record AutoBuiltDocumentedBuilder<T>(
       }
       return new Interpolator(pi.interpolationString()).interpolate(m);
     }
-    throw new IllegalArgumentException("Unvalued undefaulted parameter \"%s\"".formatted(pi.name()));
+    throw new IllegalArgumentException(
+        "Unvalued undefaulted parameter \"%s\"".formatted(pi.name())
+    );
   }
 
   @SuppressWarnings("unchecked")
-  private static Object buildParam(ParamInfo pi, ParamMap m, Parameter ap, NamedBuilder<Object> nb) {
+  private static Object buildParam(
+      ParamInfo pi,
+      ParamMap m,
+      Parameter ap,
+      NamedBuilder<Object> nb
+  ) {
     return switch (pi.type()) {
       case NAMED_PARAM_MAP -> processNPM((NamedParamMap) buildOrDefaultParam(pi, m, nb), ap, nb, 0);
-      case NAMED_PARAM_MAPS -> processNPMs((List<NamedParamMap>) buildOrDefaultParam(pi, m, nb), ap, nb);
+      case NAMED_PARAM_MAPS ->
+        processNPMs((List<NamedParamMap>) buildOrDefaultParam(pi, m, nb), ap, nb);
       default -> buildOrDefaultParam(pi, m, nb);
     };
   }
 
-  private static List<Object> processNPMs(List<NamedParamMap> npms, Parameter ap, NamedBuilder<Object> nb) {
+  private static List<Object> processNPMs(
+      List<NamedParamMap> npms,
+      Parameter ap,
+      NamedBuilder<Object> nb
+  ) {
     return IntStream.range(0, npms.size())
         .mapToObj(i -> processNPM(npms.get(i), ap, nb, i))
         .toList();
   }
 
+  /// Creates a list of [DocumentedBuilder] instances from a given [Executable] (constructor or
+  /// method) and an array of [Alias] annotations. It creates a more than one builder if there are
+  /// aliases; otherwise, it creates exactly one (or throws a `BuilderException`). The `executable`
+  /// method or constructor from which this method is expected to create the builders must be one of
+  /// the following:
+  /// - a `public` constructor
+  /// - a `public` `static` method
+  ///
+  /// The built [DocumentedBuilder] will have the name of the `executable` (in lower camel case if
+  /// it is a constructor), unless a different name is specified through a [BuilderMethod]
+  /// annotation.
+  ///
+  /// @param executable the constructor or method to build the builder from
+  /// @param aliases    an array of aliases for the builder
+  /// @return a list of documented builders
+  /// @throws BuilderException if `executable` is not a `public` constructor, nor a `public static`
+  ///                          method; or if there is the wrong number of annotated params; or if
+  ///                          the builder of aliases cannot be built
   public static List<DocumentedBuilder<Object>> from(Executable executable, Alias[] aliases) {
     Logger l = Logger.getLogger(AutoBuiltDocumentedBuilder.class.getName());
     // check annotations
@@ -126,10 +175,16 @@ public record AutoBuiltDocumentedBuilder<T>(
     boolean isCacheable = executable.getAnnotation(Cacheable.class) != null;
     // check public and static or constructor
     if (!Modifier.isPublic(executable.getModifiers())) {
-      return List.of();
+      throw new BuilderException(
+          "Cannot build builder for \"%s\": not public".formatted(executable.getName())
+      );
     }
     if (!Modifier.isStatic(executable.getModifiers()) && executable instanceof Method) {
-      return List.of();
+      throw new BuilderException(
+          "Cannot build builder for \"%s\": not a static method, nor a constructor".formatted(
+              executable.getName()
+          )
+      );
     }
     // get name
     String name;
@@ -232,7 +287,12 @@ public record AutoBuiltDocumentedBuilder<T>(
                       .map(p -> "%s[%s]".formatted(p.getName(), p.getType().getSimpleName()))
                       .collect(Collectors.joining(";")),
                   IntStream.range(0, paramInfos.size())
-                      .mapToObj(j -> "%s[%s]".formatted(paramInfos.get(j).name(), params[j].getClass().getSimpleName()))
+                      .mapToObj(
+                          j -> "%s[%s]".formatted(
+                              paramInfos.get(j).name(),
+                              params[j].getClass().getSimpleName()
+                          )
+                      )
                       .collect(Collectors.joining(";"))
               ),
               e
@@ -277,14 +337,16 @@ public record AutoBuiltDocumentedBuilder<T>(
     if (paramAnnotation == null) {
       return null;
     }
-    if (paramAnnotation.injection().equals(Param.Injection.MAP) && !parameter.getType().equals(ParamMap.class)) {
+    if (paramAnnotation.injection().equals(Param.Injection.MAP) && !parameter.getType()
+        .equals(ParamMap.class)) {
       return null;
     }
     if (paramAnnotation.injection().equals(Param.Injection.BUILDER) && !parameter.getType()
         .equals(NamedBuilder.class)) {
       return null;
     }
-    if (paramAnnotation.injection().equals(Param.Injection.INDEX) && !parameter.getType().equals(Integer.TYPE)) {
+    if (paramAnnotation.injection().equals(Param.Injection.INDEX) && !parameter.getType()
+        .equals(Integer.TYPE)) {
       return null;
     }
     String name = paramAnnotation.value();
@@ -429,7 +491,11 @@ public record AutoBuiltDocumentedBuilder<T>(
               ParamMap.Type.NAMED_PARAM_MAPS,
               null,
               name,
-              buildDefaultValue(ParamMap.Type.NAMED_PARAM_MAPS, NamedParamMap.class, paramAnnotation),
+              buildDefaultValue(
+                  ParamMap.Type.NAMED_PARAM_MAPS,
+                  NamedParamMap.class,
+                  paramAnnotation
+              ),
               null,
               paramAnnotation.injection(),
               parameter.getParameterizedType()
@@ -461,7 +527,12 @@ public record AutoBuiltDocumentedBuilder<T>(
     }
   }
 
-  private static Object processNPM(NamedParamMap npm, Parameter actualParameter, NamedBuilder<Object> nb, int index) {
+  private static Object processNPM(
+      NamedParamMap npm,
+      Parameter actualParameter,
+      NamedBuilder<Object> nb,
+      int index
+  ) {
     if (actualParameter.getType().equals(NamedParamMap.class)) {
       return npm;
     }
@@ -472,7 +543,21 @@ public record AutoBuiltDocumentedBuilder<T>(
     return s.substring(0, 1).toLowerCase() + s.substring(1);
   }
 
-  static NamedParamMap fromAlias(Alias alias, ParamMap map) {
+  /// Creates a [NamedParamMap] from an [Alias] annotation and a [ParamMap]. The returned
+  /// `NamedParamMap` will have the `name()` of the `Alias` and the names defined in the `value()`
+  /// of the `Alias`, which can possibly have values defined as constants (through
+  /// [StringParser#CONST_NAME_PREFIX]) and being pass-through parameters. The values of those
+  /// constants are taken from the `map`, i.e., they are resolved from it.
+  ///
+  /// For example, given a map with `name` -> `"Eric"`, `age` -> `46`, and `lang` -> `"Italian"`,
+  /// and an `Alias` named `headPerson`, a value `person(name = $name; age = $age; role = head)`,
+  /// and `name` and `age` as pass-through parameters, the resulting map will have the values `name`
+  /// -> `"Eric"`, `age` -> `46`, `role` -> `"head"`.
+  ///
+  /// @param alias the alias annotation
+  /// @param map   a parameter map to resolve pass-through parameters
+  /// @return a NamedParamMap representing the alias
+  public static NamedParamMap fromAlias(Alias alias, ParamMap map) {
     BiFunction<String, ParamMap.Type, String> quoter = (s, t) -> t.equals(ParamMap.Type.STRING) ? "\"%s\"".formatted(
         s
     ) : s;
@@ -494,11 +579,31 @@ public record AutoBuiltDocumentedBuilder<T>(
     return StringParser.parse(consts);
   }
 
+  /// Builds an object of type `T` from a `ParamMap`, a `NamedBuilder`, and an index. The `ParamMap`
+  /// is expected to contain the information needed to build the object, as name-value pairs. The
+  /// `NamedBuilder` is used to recursively build objects when the values in the `ParamMap` are of a
+  /// type different from [io.github.ericmedvet.jnb.core.ParamMap.Type#NAMED_PARAM_MAP] and from
+  /// [io.github.ericmedvet.jnb.core.ParamMap.Type#NAMED_PARAM_MAPS]. The `index` is available when
+  /// building sequences and is expected to be set accordingly by the caller. If the `map` contains
+  /// param names which are not among the params of this `DocumentedBuilder`, this builder logs the
+  /// existence of such *exceeding parameters*.
+  ///
+  /// @param map          the `ParamMap` containing the parameters for building the object
+  /// @param namedBuilder the `NamedBuilder` that can be used to recursively build values in the
+  ///                     `ParamMap`
+  /// @param index        the index of the object to build (different from 0 if the object is a part
+  ///                     of sequence)
+  /// @return the built object
+  /// @throws BuilderException if an error occurs during the building process
   @Override
   public T build(ParamMap map, NamedBuilder<?> namedBuilder, int index) throws BuilderException {
     return builder.build(map, namedBuilder, index);
   }
 
+  /// Returns a string representation of this builder, showing its parameters and the type it
+  /// builds.
+  ///
+  /// @return a string representation of this builder
   @Override
   public String toString() {
     return "(" + params().stream().map(ParamInfo::toString).collect(Collectors.joining("; ")) + ") -> " + builtType();

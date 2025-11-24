@@ -32,13 +32,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.SequencedMap;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.imageio.ImageIO;
@@ -194,6 +197,24 @@ public class Utils {
           e
       );
     }
+  }
+
+  public static <T, K, U> Collector<T, ?, SequencedMap<K, U>> toSequencedMap(
+      Function<? super T, ? extends K> keyMapper,
+      Function<? super T, ? extends U> valueMapper
+  ) {
+    return Collectors.toMap(
+        keyMapper,
+        valueMapper,
+        (u1, u2) -> u1,
+        LinkedHashMap::new
+    );
+  }
+
+  public static <T, U> Collector<T, ?, SequencedMap<T, U>> toSequencedMap(
+      Function<? super T, ? extends U> valueMapper
+  ) {
+    return toSequencedMap(Function.identity(), valueMapper);
   }
 
 }
