@@ -378,6 +378,16 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
+  public static <X, C> NamedFunction<X, C> inner(
+      @Param(value = "name", iS = "inner") String name,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Composed<C>> beforeF
+  ) {
+    Function<Composed<C>, C> f = Composed::inner;
+    return NamedFunction.from(f, name).compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
   public static <X> FormattedNamedFunction<X, String> interpolated(
       @Param(value = "name", iS = "{s}") String name,
       @Param("s") String s,
