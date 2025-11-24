@@ -1,11 +1,13 @@
 {
-	"name": "Java",
-	"image": "mcr.microsoft.com/devcontainers/java:1-21-bullseye",
+	"name": "Java Development w/ JDK 25",
+	"image": "mcr.microsoft.com/devcontainers/base:ubuntu",
 	"features": {
 		"ghcr.io/devcontainers/features/java:1": {
-			"version": "none",
-			"installMaven": "true",
-			"installGradle": "false"
+      "version": "25",
+      "jdkDistro": "openjdk",
+      "installMaven": "true",
+      "mavenVersion": "3.9.11",
+      "installGradle": "false"
 		},
 		"ghcr.io/devcontainers/features/git-lfs:1": {}
 	},
