@@ -3,6 +3,7 @@
 ![Java Version](https://img.shields.io/badge/Java-23%2B-blue)
 ![License](https://img.shields.io/github/license/ericmedvet/jnb)
 ![Maven Central Version](https://img.shields.io/maven-central/v/io.github.ericmedvet/jnb)
+[![Build Status](https://github.com/ericmedvet/jnb/actions/workflows/maven.yml/badge.svg)](https://github.com/ericmedvet/jnb/actions)
 
 
 **jnb** is a Java library for building instances of classes given textual descriptions formatted in a proper way.
