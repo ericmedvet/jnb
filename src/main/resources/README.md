@@ -1,5 +1,10 @@
 # jnb - Java Named Builder
 
+![Java Version](https://img.shields.io/badge/Java-${jdk.version}%2B-blue)
+![License](https://img.shields.io/github/license/ericmedvet/jnb)
+![Maven Central Version](https://img.shields.io/maven-central/v/io.github.ericmedvet/jnb)
+
+
 **jnb** is a Java library for building instances of classes given textual descriptions formatted in a proper way.
 
 More specifically, jnb provides a few interfaces and classes for doing the following key things:
