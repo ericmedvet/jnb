@@ -1,17 +1,17 @@
 {
 	"name": "Java Development w/ JDK 25",
-	"image": "mcr.microsoft.com/devcontainers/base:ubuntu",
-	"features": {
-		"ghcr.io/devcontainers/features/java:1": {
+	"image": "mcr.microsoft.com/devcontainers/java:1-21-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
       "version": "25",
-      "jdkDistro": "openjdk",
       "installMaven": "true",
       "mavenVersion": "3.9.11",
-      "installGradle": "false"
-		},
-		"ghcr.io/devcontainers/features/git-lfs:1": {}
-	},
-	"customizations": {
+      "installGradle": "false",
+      "jdkDistro": "ms"
+    },
+    "ghcr.io/devcontainers/features/git-lfs:1": {}
+  },
+  "customizations": {
 		"vscode": {
 			"extensions": [
 				"streetsidesoftware.code-spell-checker",
