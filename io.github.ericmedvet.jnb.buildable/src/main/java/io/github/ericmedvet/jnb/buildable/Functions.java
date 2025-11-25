@@ -21,6 +21,7 @@ package io.github.ericmedvet.jnb.buildable;
 
 import io.github.ericmedvet.jnb.core.*;
 import io.github.ericmedvet.jnb.datastructure.*;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
@@ -35,12 +36,12 @@ import java.util.stream.IntStream;
 
 @Discoverable(prefixTemplate = "function|f")
 public class Functions {
-
+  
   private static final Logger L = Logger.getLogger(Functions.class.getName());
-
+  
   private Functions() {
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T, K> NamedFunction<X, List<K>> all(
@@ -51,18 +52,18 @@ public class Functions {
   ) {
     Function<T, List<K>> f = t -> functions.stream().map(fun -> fun.apply(t)).toList();
     return FormattedNamedFunction.from(
-        f,
-        format,
-        "[%s]"
-            .formatted(
-                functions.stream()
-                    .map(NamedFunction::name)
-                    .collect(Collectors.joining(";"))
-            )
-    )
+            f,
+            format,
+            "[%s]"
+                .formatted(
+                    functions.stream()
+                        .map(NamedFunction::name)
+                        .collect(Collectors.joining(";"))
+                )
+        )
         .compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T> NamedFunction<X, T> any(
@@ -72,7 +73,7 @@ public class Functions {
     Function<Collection<T>, T> f = ts -> ts.stream().findAny().orElseThrow();
     return FormattedNamedFunction.from(f, format, "any").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, Y> NamedFunction<X, Y> as(
@@ -84,7 +85,7 @@ public class Functions {
     }
     return NamedFunction.from(beforeF, name);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> FormattedNamedFunction<X, Double> avg(
@@ -97,7 +98,7 @@ public class Functions {
         .orElseThrow();
     return FormattedNamedFunction.from(f, format, "avg").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> NamedFunction<X, String> classSimpleName(
@@ -106,7 +107,7 @@ public class Functions {
     Function<Object, String> f = o -> o.getClass().getSimpleName();
     return NamedFunction.from(f, "class").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> FormattedNamedFunction<X, Double> clip(
@@ -114,16 +115,16 @@ public class Functions {
       @Param("range") DoubleRange range,
       @Param(value = "format", dS = "%.1f") String format
   ) {
-
+    
     Function<Double, Double> f = range::clip;
     return FormattedNamedFunction.from(
-        f,
-        format,
-        ("clip[" + format + ";" + format + "]").formatted(range.min(), range.max())
-    )
+            f,
+            format,
+            ("clip[" + format + ";" + format + "]").formatted(range.min(), range.max())
+        )
         .compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, Z, Y> FormattedNamedFunction<X, Y> composition(
@@ -131,13 +132,13 @@ public class Functions {
       @Param(value = "then", dNPM = "f.identity()") Function<Z, Y> afterF
   ) {
     return FormattedNamedFunction.from(
-        afterF,
-        FormattedFunction.format(afterF),
-        NamedFunction.name(afterF)
-    )
+            afterF,
+            FormattedFunction.format(afterF),
+            NamedFunction.name(afterF)
+        )
         .compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T> NamedFunction<X, Set<T>> distinct(
@@ -147,7 +148,7 @@ public class Functions {
     Function<Collection<T>, Set<T>> f = HashSet::new;
     return FormattedNamedFunction.from(f, format, "distinct").compose(beforeF);
   }
-
+  
   @Alias(
       name = "distinctSortedByKey", passThroughParams = {@PassThroughParam(name = "sort", type = ParamMap.Type.NAMED_PARAM_MAP)}, value = "distinctByKey(representer = f.first(of = f.sortedBy(by = $sort)))")
   @SuppressWarnings("unused")
@@ -165,14 +166,14 @@ public class Functions {
         .map(representerF)
         .collect(Collectors.toSet());
     return FormattedNamedFunction.from(
-        f,
-        format,
-        "distinctByKey[k=%s;r=%s]"
-            .formatted(NamedFunction.name(keyF), NamedFunction.name(representerF))
-    )
+            f,
+            format,
+            "distinctByKey[k=%s;r=%s]"
+                .formatted(NamedFunction.name(keyF), NamedFunction.name(representerF))
+        )
         .compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T, R> NamedFunction<X, Collection<R>> each(
@@ -183,7 +184,7 @@ public class Functions {
     return NamedFunction.from(f, "each[%s]".formatted(NamedFunction.name(mapF)))
         .compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T, K> NamedFunction<X, List<K>> emptySplitter(
@@ -194,7 +195,7 @@ public class Functions {
     Function<T, List<K>> f = t -> List.of();
     return FormattedNamedFunction.from(f, format, name).compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T> NamedFunction<X, Collection<T>> filter(
@@ -206,7 +207,7 @@ public class Functions {
     return FormattedNamedFunction.from(f, format, "filter[%s]".formatted(condition))
         .compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T> FormattedNamedFunction<X, List<T>> flat(
@@ -218,7 +219,7 @@ public class Functions {
         .toList();
     return FormattedNamedFunction.from(f, format, "flat").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> NamedFunction<X, Object> fromBase64(
@@ -237,7 +238,7 @@ public class Functions {
     };
     return FormattedNamedFunction.from(f, format, "from.base64").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T> FormattedNamedFunction<X, Double> gridCompactness(
@@ -248,7 +249,7 @@ public class Functions {
     Function<Grid<T>, Double> f = g -> GridUtils.compactness(g, predicate::apply);
     return FormattedNamedFunction.from(f, format, "grid.compactness").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T> FormattedNamedFunction<X, Integer> gridCount(
@@ -259,7 +260,7 @@ public class Functions {
     Function<Grid<T>, Integer> f = g -> GridUtils.count(g, predicate::apply);
     return FormattedNamedFunction.from(f, format, "grid.count").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T> FormattedNamedFunction<X, Double> gridCoverage(
@@ -270,7 +271,7 @@ public class Functions {
     Function<Grid<T>, Double> f = g -> (double) GridUtils.count(g, predicate::apply) / (double) (g.w() * g.h());
     return FormattedNamedFunction.from(f, format, "grid.coverage").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T> FormattedNamedFunction<X, Double> gridElongation(
@@ -281,7 +282,7 @@ public class Functions {
     Function<Grid<T>, Double> f = g -> GridUtils.elongation(g, predicate::apply);
     return FormattedNamedFunction.from(f, format, "grid.elongation").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T> FormattedNamedFunction<X, Integer> gridFitH(
@@ -292,7 +293,7 @@ public class Functions {
     Function<Grid<T>, Integer> f = g -> GridUtils.fit(g, predicate::apply).h();
     return FormattedNamedFunction.from(f, format, "grid.fit.h").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T> FormattedNamedFunction<X, Integer> gridFitW(
@@ -303,7 +304,7 @@ public class Functions {
     Function<Grid<T>, Integer> f = g -> GridUtils.fit(g, predicate::apply).w();
     return FormattedNamedFunction.from(f, format, "grid.fit.w").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> FormattedNamedFunction<X, Integer> gridH(
@@ -313,7 +314,7 @@ public class Functions {
     Function<Grid<?>, Integer> f = Grid::h;
     return FormattedNamedFunction.from(f, format, "grid.h").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> FormattedNamedFunction<X, Integer> gridW(
@@ -323,7 +324,7 @@ public class Functions {
     Function<Grid<?>, Integer> f = Grid::w;
     return FormattedNamedFunction.from(f, format, "grid.w").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T, R> NamedFunction<X, R> iApply(
@@ -338,7 +339,7 @@ public class Functions {
         )
     );
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, A, B, C, D> NamedFunction<X, Function<A, D>> iComposition(
@@ -358,7 +359,7 @@ public class Functions {
         )
     );
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T, R> NamedFunction<X, Collection<R>> iEach(
@@ -368,14 +369,14 @@ public class Functions {
     Function<X, Collection<R>> f = x -> beforeF.apply(x).stream().map(iMapF.apply(x)).toList();
     return NamedFunction.from(f, "each[%s]".formatted(NamedFunction.name(iMapF)));
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> Function<X, X> identity() {
     Function<X, X> f = x -> x;
     return NamedFunction.from(f, NamedFunction.IDENTITY_NAME);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, C> NamedFunction<X, C> inner(
@@ -385,7 +386,7 @@ public class Functions {
     Function<Composed<C>, C> f = Composed::inner;
     return NamedFunction.from(f, name).compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> FormattedNamedFunction<X, String> interpolated(
@@ -397,7 +398,7 @@ public class Functions {
     Function<Object, String> f = o -> Interpolator.interpolate(s, o);
     return FormattedNamedFunction.from(f, format, name).compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   public static <X> FormattedNamedFunction<X, String> mappableKey(
       @Param(value = "name", iS = "{key}") String name,
@@ -408,7 +409,7 @@ public class Functions {
     Function<Mappable, String> f = m -> Interpolator.interpolate("{" + key + ":" + format + "}", m);
     return FormattedNamedFunction.from(f, "%s", name).compose(beforeF);
   }
-
+  
   @Cacheable
   public static <X, T> FormattedNamedFunction<X, T> mapValue(
       @Param("key") String key,
@@ -418,7 +419,7 @@ public class Functions {
     Function<Map<String, T>, T> f = m -> m.get(key);
     return FormattedNamedFunction.from(f, format, key).compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> FormattedNamedFunction<X, Double> mathConst(
@@ -427,7 +428,7 @@ public class Functions {
   ) {
     return FormattedNamedFunction.from(x -> v, format, format.formatted(v));
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, Y> FormattedNamedFunction<X, Double> mathOp(
@@ -440,17 +441,17 @@ public class Functions {
         args.stream().mapToDouble(aF -> aF.apply(y).doubleValue()).toArray()
     );
     return FormattedNamedFunction.from(
-        f,
-        format,
-        "%s[%s]"
-            .formatted(
-                op.toString().toLowerCase(),
-                args.stream().map(NamedFunction::name).collect(Collectors.joining(";"))
-            )
-    )
+            f,
+            format,
+            "%s[%s]"
+                .formatted(
+                    op.toString().toLowerCase(),
+                    args.stream().map(NamedFunction::name).collect(Collectors.joining(";"))
+                )
+        )
         .compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T, C extends Comparable<C>> FormattedNamedFunction<X, T> max(
@@ -470,7 +471,7 @@ public class Functions {
         )
     ).compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T, C extends Comparable<C>> FormattedNamedFunction<X, T> min(
@@ -490,7 +491,7 @@ public class Functions {
         )
     ).compose(beforeF);
   }
-
+  
   @Alias(name = "first", value = "nTh(n = 0)")
   @Alias(name = "last", value = "nTh(n = -1)")
   @SuppressWarnings("unused")
@@ -503,7 +504,7 @@ public class Functions {
     Function<List<T>, T> f = ts -> n >= 0 ? ts.get(n) : ts.get(ts.size() + n);
     return FormattedNamedFunction.from(f, format, "[%d]".formatted(n)).compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T> FormattedNamedFunction<X, T> nThMapValue(
@@ -514,7 +515,7 @@ public class Functions {
     Function<Map<String, T>, T> f = m -> m.values().stream().toList().get(n);
     return FormattedNamedFunction.from(f, format, "%d".formatted(n)).compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T> FormattedNamedFunction<X, List<T>> nkTh(
@@ -530,7 +531,7 @@ public class Functions {
     return FormattedNamedFunction.from(f, format, "[%di+%d]".formatted(n, k))
         .compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> FormattedNamedFunction<X, Boolean> nonNull(
@@ -540,7 +541,7 @@ public class Functions {
     Function<Object, Boolean> f = Objects::nonNull;
     return FormattedNamedFunction.from(f, format, "non.null").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, F, S> FormattedNamedFunction<X, F> pairFirst(
@@ -550,7 +551,7 @@ public class Functions {
     Function<Pair<F, S>, F> f = Pair::first;
     return FormattedNamedFunction.from(f, format, "first").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, F, S> FormattedNamedFunction<X, S> pairSecond(
@@ -560,7 +561,7 @@ public class Functions {
     Function<Pair<F, S>, S> f = Pair::second;
     return FormattedNamedFunction.from(f, format, "second").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, F, S> FormattedNamedFunction<X, Pair<F, S>> pairerFirst(
@@ -572,7 +573,7 @@ public class Functions {
     return FormattedNamedFunction.from(f, format, "pairWith[s=%s]".formatted(second))
         .compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, F, S> FormattedNamedFunction<X, Pair<F, S>> pairerSecond(
@@ -584,7 +585,7 @@ public class Functions {
     return FormattedNamedFunction.from(f, format, "pairWith[f=%s]".formatted(first))
         .compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   @Alias(name = "median", value = "percentile(p = 50)")
@@ -599,17 +600,17 @@ public class Functions {
         .toList()
         .get((int) Math.min(cs.size() - 1, Math.max(0, cs.size() * p / 100d)));
     return FormattedNamedFunction.from(
-        f,
-        format,
-        "percentile[%s%02.0f]".formatted(
-            NamedFunction.name(byFunction)
-                .equals(NamedFunction.IDENTITY_NAME) ? "" : (NamedFunction.name(byFunction) + ";"),
-            p
+            f,
+            format,
+            "percentile[%s%02.0f]".formatted(
+                NamedFunction.name(byFunction)
+                    .equals(NamedFunction.IDENTITY_NAME) ? "" : (NamedFunction.name(byFunction) + ";"),
+                p
+            )
         )
-    )
         .compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> FormattedNamedFunction<X, Double> quantized(
@@ -621,7 +622,19 @@ public class Functions {
     return FormattedNamedFunction.from(f, format, "q[%s]".formatted(format.formatted(q)))
         .compose(beforeF);
   }
-
+  
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X> FormattedNamedFunction<X, String> replaceAll(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, String> beforeF,
+      @Param(value = "regex", dS = "") String regex,
+      @Param(value = "replacement", dS = "") String replacement,
+      @Param(value = "format", dS = "%s") String format
+  ) {
+    Function<String, String> f = s -> s.replaceAll(regex, replacement);
+    return FormattedNamedFunction.from(f, format, "replaceAll").compose(beforeF);
+  }
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> FormattedNamedFunction<X, Double> sd(
@@ -639,11 +652,11 @@ public class Functions {
     };
     return FormattedNamedFunction.from(f, format, "sd").compose(beforeF);
   }
-
+  
   @Alias(
       name = "sizeIf", passThroughParams = {@PassThroughParam(name = "allF", value = "f.identity()", type = ParamMap.Type.NAMED_PARAM_MAP), @PassThroughParam(name = "mapF", value = "f.identity()", type = ParamMap.Type.NAMED_PARAM_MAP), @PassThroughParam(
-          name = "predicate", value = "predicate.always()", type = ParamMap.Type.NAMED_PARAM_MAP)
-      }, value = // spotless:off
+      name = "predicate", value = "predicate.always()", type = ParamMap.Type.NAMED_PARAM_MAP)
+  }, value = // spotless:off
       """
           size(of = f.filter(
             of = f.each(
@@ -672,7 +685,7 @@ public class Functions {
     Function<Collection<?>, Integer> f = Collection::size;
     return FormattedNamedFunction.from(f, format, "size").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T, K extends Comparable<K>> NamedFunction<X, List<T>> sortedBy(
@@ -686,7 +699,7 @@ public class Functions {
     return FormattedNamedFunction.from(f, format, "sortedBy[%s]".formatted(NamedFunction.name(byF)))
         .compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T> FormattedNamedFunction<X, List<T>> subList(
@@ -701,13 +714,13 @@ public class Functions {
         (int) Math.min(Math.max(0, relative ? (to * ts.size()) : to), ts.size())
     );
     return FormattedNamedFunction.from(
-        f,
-        format,
-        "sub[%s%f-%f]".formatted(relative ? "%" : "", from, to)
-    )
+            f,
+            format,
+            "sub[%s%f-%f]".formatted(relative ? "%" : "", from, to)
+        )
         .compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> FormattedNamedFunction<X, Double> sum(
@@ -719,7 +732,7 @@ public class Functions {
         .sum();
     return FormattedNamedFunction.from(f, format, "sum").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> FormattedNamedFunction<X, LocalDateTime> timestamp(
@@ -727,7 +740,7 @@ public class Functions {
   ) {
     return FormattedNamedFunction.from(x -> LocalDateTime.now(), format, "timestamp");
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> NamedFunction<X, String> toBase64(
@@ -748,7 +761,7 @@ public class Functions {
     };
     return FormattedNamedFunction.from(f, format, "to.base64").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> NamedFunction<X, String> toString(
@@ -758,7 +771,7 @@ public class Functions {
     Function<Object, String> f = Object::toString;
     return FormattedNamedFunction.from(f, format, "to.string").compose(beforeF);
   }
-
+  
   @SuppressWarnings("unused")
   @Cacheable
   public static <X> FormattedNamedFunction<X, Double> uniqueness(
@@ -768,6 +781,6 @@ public class Functions {
     Function<Collection<?>, Double> f = ts -> (double) ts.stream().distinct().count() / (double) ts.size();
     return FormattedNamedFunction.from(f, format, "uniqueness").compose(beforeF);
   }
-
-
+  
+  
 }
