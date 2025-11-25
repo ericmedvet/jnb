@@ -624,6 +624,19 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
+  public static <X> FormattedNamedFunction<X, String> replaceAll(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, String> beforeF,
+      @Param(value = "regex", dS = "") String regex,
+      @Param(value = "replacement", dS = "") String replacement,
+      @Param(value = "format", dS = "%s") String format,
+      @Param(value = "name", iS = "replace.all") String name
+  ) {
+    Function<String, String> f = s -> s.replaceAll(regex, replacement);
+    return FormattedNamedFunction.from(f, format, name).compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
   public static <X> FormattedNamedFunction<X, Double> sd(
       @Param(value = "of", dNPM = "f.identity()") Function<X, List<? extends Number>> beforeF,
       @Param(value = "format", dS = "%.1f") String format
