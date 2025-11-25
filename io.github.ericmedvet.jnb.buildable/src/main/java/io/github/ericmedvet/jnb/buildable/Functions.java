@@ -628,10 +628,11 @@ public class Functions {
       @Param(value = "of", dNPM = "f.identity()") Function<X, String> beforeF,
       @Param(value = "regex", dS = "") String regex,
       @Param(value = "replacement", dS = "") String replacement,
-      @Param(value = "format", dS = "%s") String format
+      @Param(value = "format", dS = "%s") String format,
+      @Param(value = "name", iS = "replace.all") String name
   ) {
     Function<String, String> f = s -> s.replaceAll(regex, replacement);
-    return FormattedNamedFunction.from(f, format, "replaceAll").compose(beforeF);
+    return FormattedNamedFunction.from(f, format, name).compose(beforeF);
   }
 
   @SuppressWarnings("unused")
