@@ -151,7 +151,7 @@ public class StringParser {
                       .collect(Collectors.joining("|"))
               ),
           null,
-          value.token().start(),
+          tConstName.start(),
           s,
           path
       );

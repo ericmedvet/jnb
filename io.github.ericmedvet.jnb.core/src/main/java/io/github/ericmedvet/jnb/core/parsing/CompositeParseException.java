@@ -45,6 +45,8 @@ public class CompositeParseException extends ParseException {
         .filter(e -> e.getIndex() == maxIndex)
         .flatMap(e -> expectedToken(e).stream())
         .collect(Collectors.toSet());
+    long nOfOtherExceptions = exceptions.stream().filter(e -> !(e instanceof WrongTokenException)).count();
+    // TODO if nOfOtherExceptions>0, return a composite exception summarizing everything
     if (!expectedTokens.isEmpty()) {
       return new WrongTokenException(maxIndex, s, path, expectedTokens.stream().toList());
     }
