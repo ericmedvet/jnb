@@ -62,7 +62,7 @@ public class Interpolator {
   /// placeholders for interpolation.
   ///
   /// @param format the template string, potentially containing placeholders like `{name}` or
-  ///                 `{name:template}`
+  ///               `{name:template}`
   public Interpolator(String format) {
     this.format = format;
     matcher = INTERPOLATOR.matcher(format);
@@ -125,16 +125,24 @@ public class Interpolator {
   /// thrown.
   ///
   /// @param format the template string, potentially containing placeholders like `{name}` or
-  ///                 `{name:template}`
-  /// @param map      the `ParamMap` containing the values for the interpolation
+  ///               `{name:template}`
+  /// @param map    the `ParamMap` containing the values for the interpolation
   /// @return the interpolated string
   public static String interpolate(String format, ParamMap map) {
     return new Interpolator(format).interpolate(map);
   }
 
-  // TODO write doc
-  public static String interpolate(String format, Object o) {
-    return switch (o) {
+  /// Interpolates the given `template` with the given `object`. If the object is a `ParamMap`, this
+  /// method calls [#interpolate(String, ParamMap)] after casting. If the object is a [Mappable],
+  /// this method extracts the `ParamMap` from it and calls [#interpolate(String, ParamMap)].
+  /// Otherwise, return the string `format` without interpolation.
+  ///
+  /// @param format the template string, potentially containing placeholders like `{name}` or
+  ///               `{name:template}`
+  /// @param object the object to use for interpolation
+  /// @return the interpolated string
+  public static String interpolate(String format, Object object) {
+    return switch (object) {
       case ParamMap paramMap -> interpolate(format, paramMap);
       case Mappable mappable -> interpolate(format, mappable.map());
       case null, default -> format;
