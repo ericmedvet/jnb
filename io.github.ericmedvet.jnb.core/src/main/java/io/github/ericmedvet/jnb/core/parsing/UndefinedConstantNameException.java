@@ -33,7 +33,7 @@ public class UndefinedConstantNameException extends ParseException {
       String notFoundName,
       List<String> knownNames
   ) {
-    super("Const name %s not in known list %s".formatted(notFoundName, knownNames), null, index, string, path);
+    super("unknown const name `%s`".formatted(notFoundName), null, index, string, path);
     this.notFoundName = notFoundName;
     this.knownNames = knownNames;
   }

@@ -25,30 +25,17 @@ import java.util.Objects;
 public class ParseException extends Exception {
 
   protected static final int CONTEXT_SIZE = 10;
-  protected final int index;
-  protected final String string;
-  protected final Path path;
-  protected final String rawMessage;
+  private final int index;
+  private final String string;
+  private final Path path;
+  private final String rawMessage;
 
-  public ParseException(String message, Throwable cause, int index, String string, Path path) {
-    super(
-        "%s @%s %sin `%s`"
-            .formatted(
-                message,
-                StringPosition.from(string, index),
-                Objects.nonNull(path) ? "of %s ".formatted(path) : "",
-                linearize(string, index - CONTEXT_SIZE, index + CONTEXT_SIZE)
-            ),
-        cause
-    );
-    this.rawMessage = message;
+  public ParseException(String rawMessage, Throwable cause, int index, String string, Path path) {
+    super(cause);
+    this.rawMessage = rawMessage;
     this.index = index;
     this.string = string;
     this.path = path;
-  }
-
-  public ParseException(ParseException pe) {
-    this(pe.rawMessage, pe.getCause(), pe.index, pe.string, pe.path);
   }
 
   protected static String linearize(String string, int start, int end) {
@@ -67,5 +54,19 @@ public class ParseException extends Exception {
 
   public Path getPath() {
     return path;
+  }
+
+  public String getRawMessage() {
+    return rawMessage;
+  }
+
+  @Override
+  public String getMessage() {
+    return "%s @%s %sin `%s`".formatted(
+        getRawMessage(),
+        StringPosition.from(getString(), getIndex()),
+        Objects.nonNull(getPath()) ? "of %s ".formatted(getPath()) : "",
+        linearize(getString(), getIndex() - CONTEXT_SIZE, getIndex() + CONTEXT_SIZE)
+    );
   }
 }
