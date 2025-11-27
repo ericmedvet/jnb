@@ -30,7 +30,7 @@ import java.util.Set;
 /// with the latter, the actual runtime Java type of the returned value is the one associated with
 /// the provided `Type`. Typically, instances of this interface may be obtained by parsing a string,
 /// through the [io.github.ericmedvet.jnb.core.parsing.StringParser#parse(String)] map, or by
-/// obtaining modified views of an existing `ParamMap`, e.g., through [#with(String, Type, Object)]
+/// obtaining modified views of an existing `ParamMap`, e.g., through [#with(String, Object)]
 /// and [#without(String...)] methods.
 ///
 /// This interface also provides additional static methods to produce human-friendly representations
@@ -99,10 +99,14 @@ public interface ParamMap {
   /// @return the names of the parameters of this map
   Set<String> names();
 
+  // TODO write doc
   SequencedSet<Type> types(String name);
 
+  // TODO write doc
   ParamMap parent();
 
+  // TODO write doc
+  // TODO move to MapNamedParamMap
   void propagateParent(ParamMap paramMap);
 
   /// Returns the value of the parameter stored in this map with the provided `name` and `type`, if
@@ -130,7 +134,7 @@ public interface ParamMap {
     Map<String, Object> values = new HashMap<>();
     other.names().forEach(n -> values.put(n, other.value(n)));
     names().forEach(n -> values.put(n, value(n)));
-    return new MapNamedParamMap("", values);
+    return new MapNamedParamMap("", values, parent());
   }
 
   /// Returns a new `ParamMap` with all the parameters of this map and those of the provided `other`
@@ -163,8 +167,8 @@ public interface ParamMap {
 
   /// Returns the value of the parameter stored in this map with the provided `name`, if any. If
   /// more than one types are compatible with the parameter value with this type (e.g., a natural
-  /// number called `n ` being compatible with both [Type#INT] and [Type#DOUBLE]), then the type
-  /// which comes first in the order dictated by [Type] constants is chosen. Internally calls
+  /// number called `n` being compatible with both [Type#INT] and [Type#DOUBLE]), then the type
+  /// which comes first in the order given by [#types(String)] is chosen. Internally calls
   /// [#value(String, Type)].
   ///
   /// @param name the name of the parameter to get the value of
@@ -198,6 +202,6 @@ public interface ParamMap {
     for (String name : names) {
       values.remove(name);
     }
-    return new MapNamedParamMap("", values);
+    return new MapNamedParamMap("", values, parent());
   }
 }
