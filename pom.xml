@@ -50,7 +50,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jdk.version>23</jdk.version>
     <maven.version>3.9.11</maven.version>
-    <revision>1.5.1.doc-SNAPSHOT</revision>
+    <revision>1.5.2.doc-SNAPSHOT</revision>
   </properties>
 
   <dependencies/>

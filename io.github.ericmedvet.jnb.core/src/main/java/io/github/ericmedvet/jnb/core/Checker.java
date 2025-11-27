@@ -23,6 +23,7 @@ import io.github.ericmedvet.jnb.core.parsing.StringParser;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.stream.Collectors;
 
 public class Checker {
@@ -33,7 +34,7 @@ public class Checker {
     }
     try (BufferedReader br = new BufferedReader(new FileReader(args[0]))) {
       String s = br.lines().collect(Collectors.joining("\n"));
-      NamedParamMap npm = StringParser.parse(s);
+      NamedParamMap npm = StringParser.parse(s, Path.of(args[0]));
       System.out.println(MapNamedParamMap.prettyToString(npm));
     }
   }
