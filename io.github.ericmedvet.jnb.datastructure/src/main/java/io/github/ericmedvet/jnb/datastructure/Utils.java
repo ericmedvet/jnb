@@ -33,7 +33,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.WeakHashMap;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -48,6 +50,11 @@ public class Utils {
   private static final Logger L = Logger.getLogger(Utils.class.getName());
 
   private Utils() {
+  }
+
+  public static <T, R> Function<T, R> cached(Function<T, R> f) {
+    Map<T, R> cache = new WeakHashMap<>();
+    return t -> cache.computeIfAbsent(t, f);
   }
 
   public static <K> List<K> concat(List<List<? extends K>> lists) {
@@ -195,5 +202,4 @@ public class Utils {
       );
     }
   }
-
 }

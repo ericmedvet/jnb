@@ -100,6 +100,20 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
+  public static <T, R> NamedFunction<T, R> cached(
+      @Param(value = "of", dNPM = "f.identity()") Function<T, R> f
+  ) {
+    if (f instanceof FormattedNamedFunction<T, R> fnf) {
+      return FormattedNamedFunction.from(Utils.cached(fnf), fnf.format(), fnf.name());
+    }
+    if (f instanceof NamedFunction<T, R> nf) {
+      return NamedFunction.from(Utils.cached(nf), nf.name());
+    }
+    return NamedFunction.from(Utils.cached(f));
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
   public static <X> NamedFunction<X, String> classSimpleName(
       @Param(value = "of", dNPM = "f.identity()") Function<X, Object> beforeF
   ) {
@@ -398,6 +412,16 @@ public class Functions {
     return FormattedNamedFunction.from(f, format, name).compose(beforeF);
   }
 
+  @Cacheable
+  public static <X, T> FormattedNamedFunction<X, T> mapValue(
+      @Param("key") String key,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Map<String, T>> beforeF,
+      @Param(value = "format", dS = "%s") String format
+  ) {
+    Function<Map<String, T>, T> f = m -> m.get(key);
+    return FormattedNamedFunction.from(f, format, key).compose(beforeF);
+  }
+
   @SuppressWarnings("unused")
   public static <X> FormattedNamedFunction<X, String> mappableKey(
       @Param(value = "name", iS = "{key}") String name,
@@ -407,16 +431,6 @@ public class Functions {
   ) {
     Function<Mappable, String> f = m -> Interpolator.interpolate("{" + key + ":" + format + "}", m);
     return FormattedNamedFunction.from(f, "%s", name).compose(beforeF);
-  }
-
-  @Cacheable
-  public static <X, T> FormattedNamedFunction<X, T> mapValue(
-      @Param("key") String key,
-      @Param(value = "of", dNPM = "f.identity()") Function<X, Map<String, T>> beforeF,
-      @Param(value = "format", dS = "%s") String format
-  ) {
-    Function<Map<String, T>, T> f = m -> m.get(key);
-    return FormattedNamedFunction.from(f, format, key).compose(beforeF);
   }
 
   @SuppressWarnings("unused")
