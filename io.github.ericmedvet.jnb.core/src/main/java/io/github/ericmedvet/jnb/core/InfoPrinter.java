@@ -66,6 +66,16 @@ public class InfoPrinter {
     this(PACKAGE_HEADING_LEVEL, BUILDER_HEADING_LEVEL, true, false);
   }
 
+  private static String defaultValueString(ParamCompatibility compatibility) {
+    if (compatibility.paramInfo.defaultValue() != null) {
+      return "`%s`".formatted(compatibility.paramInfo().defaultValue());
+    }
+    if (compatibility.paramInfo.interpolationString() != null) {
+      return "interpolate `%s`".formatted(compatibility.paramInfo().interpolationString());
+    }
+    return "";
+  }
+
   private static List<ParamTriplet> easyParamPairs(List<DocumentedBuilder.ParamInfo> builder) {
     return builder.stream()
         .filter(pi -> pi.defaultValue() == null)
@@ -86,8 +96,52 @@ public class InfoPrinter {
         .toList();
   }
 
+  private static String executableName(Executable e) {
+    String className = e.getDeclaringClass().getName();
+    String name = e.getName();
+    if (name.equals(className)) {
+      return name;
+    }
+    return className + "." + name;
+  }
+
   private static String heading(int level) {
     return String.join("", Collections.nCopies(level, "#"));
+  }
+
+  public static void main(String[] args) {
+    Configuration configuration = new Configuration();
+    JCommander jc = JCommander.newBuilder().addObject(configuration).build();
+    jc.setProgramName(InfoPrinter.class.getName());
+    try {
+      jc.parse(args);
+    } catch (ParameterException e) {
+      e.usage();
+      L.severe(String.format("Cannot read command line options: %s", e));
+      System.exit(-1);
+    } catch (RuntimeException e) {
+      L.severe(e.getClass().getSimpleName() + ": " + e.getMessage());
+      System.exit(-1);
+    }
+    // check help
+    if (configuration.help) {
+      jc.usage();
+      return;
+    }
+    if (configuration.showBuilders) {
+      System.out.println(NamedBuilder.prettyToString(NamedBuilder.fromDiscovery(), true));
+      return;
+    }
+    if (!configuration.buildersFile.isEmpty()) {
+      try (PrintStream ps = new PrintStream(configuration.buildersFile)) {
+        new InfoPrinter().print(NamedBuilder.fromDiscovery(), ps);
+        return;
+      } catch (FileNotFoundException e) {
+        L.severe("Cannot save help file description: %s".formatted(e));
+        System.exit(-1);
+      }
+    }
+    System.out.println("No commands provided.");
   }
 
   private static List<List<ParamTriplet>> paramTriplets(
@@ -132,25 +186,6 @@ public class InfoPrinter {
       }
     }
     return paramPairs;
-  }
-
-  private static String defaultValueString(ParamCompatibility compatibility) {
-    if (compatibility.paramInfo.defaultValue() != null) {
-      return "`%s`".formatted(compatibility.paramInfo().defaultValue());
-    }
-    if (compatibility.paramInfo.interpolationString() != null) {
-      return "interpolate `%s`".formatted(compatibility.paramInfo().interpolationString());
-    }
-    return "";
-  }
-
-  private static String executableName(Executable e) {
-    String className = e.getDeclaringClass().getName();
-    String name = e.getName();
-    if (name.equals(className)) {
-      return name;
-    }
-    return className + "." + name;
   }
 
   @SuppressWarnings("unused")
@@ -437,6 +472,20 @@ public class InfoPrinter {
     }
   }
 
+  public static class Configuration {
+    @Parameter(
+        names = {"--showBuilders", "-b"}, description = "Show a description of available builders.")
+    public boolean showBuilders = false;
+
+    @Parameter(
+        names = {"--buildersToFile", "-m"}, description = "Save to file a description (in Markdown format) of available builders.")
+    public String buildersFile = "";
+
+    @Parameter(
+        names = {"--help", "-h"}, description = "Show this help.", help = true)
+    public boolean help;
+  }
+
   record Name(String packageName, String simpleName) implements Comparable<Name> {
     public Name(String fullName) {
       this(packageName(fullName), simpleName(fullName));
@@ -480,53 +529,4 @@ public class InfoPrinter {
   record ParamCompatibility(DocumentedBuilder.ParamInfo paramInfo, List<BuilderInfo> builderInfos) {}
 
   record ParamTriplet(String name, String value, BuilderInfo builderInfo) {}
-
-  public static class Configuration {
-    @Parameter(
-        names = {"--showBuilders", "-b"}, description = "Show a description of available builders.")
-    public boolean showBuilders = false;
-
-    @Parameter(
-        names = {"--buildersToFile", "-m"}, description = "Save to file a description (in Markdown format) of available builders.")
-    public String buildersFile = "";
-
-    @Parameter(
-        names = {"--help", "-h"}, description = "Show this help.", help = true)
-    public boolean help;
-  }
-
-  public static void main(String[] args) {
-    Configuration configuration = new Configuration();
-    JCommander jc = JCommander.newBuilder().addObject(configuration).build();
-    jc.setProgramName(InfoPrinter.class.getName());
-    try {
-      jc.parse(args);
-    } catch (ParameterException e) {
-      e.usage();
-      L.severe(String.format("Cannot read command line options: %s", e));
-      System.exit(-1);
-    } catch (RuntimeException e) {
-      L.severe(e.getClass().getSimpleName() + ": " + e.getMessage());
-      System.exit(-1);
-    }
-    // check help
-    if (configuration.help) {
-      jc.usage();
-      return;
-    }
-    if (configuration.showBuilders) {
-      System.out.println(NamedBuilder.prettyToString(NamedBuilder.fromDiscovery(), true));
-      return;
-    }
-    if (!configuration.buildersFile.isEmpty()) {
-      try (PrintStream ps = new PrintStream(configuration.buildersFile)) {
-        new InfoPrinter().print(NamedBuilder.fromDiscovery(), ps);
-        return;
-      } catch (FileNotFoundException e) {
-        L.severe("Cannot save help file description: %s".formatted(e));
-        System.exit(-1);
-      }
-    }
-    System.out.println("No commands provided.");
-  }
 }

@@ -26,6 +26,7 @@ import io.github.classgraph.ScanResult;
 import io.github.ericmedvet.jnb.core.ParamMap.Type;
 import io.github.ericmedvet.jnb.core.parsing.StringParser;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
@@ -261,7 +262,8 @@ public class NamedBuilder<X> {
   @SuppressWarnings("unused")
   public static NamedBuilder<Object> fromUtilityClass(Class<?> clazz) {
     return new NamedBuilder<>(
-        Arrays.stream(clazz.getMethods())
+        Arrays.stream(clazz.getDeclaredMethods())
+            .filter(m -> Modifier.isPublic(m.getModifiers()) && Modifier.isStatic(m.getModifiers()))
             .map(m -> AutoBuiltDocumentedBuilder.from(m, m.getAnnotationsByType(Alias.class)))
             .flatMap(List::stream)
             .collect(Collectors.toMap(DocumentedBuilder::name, b -> b))
@@ -450,8 +452,8 @@ public class NamedBuilder<X> {
   }
 
   /// Fills the provided `NamedParamMap` with default values where parameters are missing, based on
-  /// the builder, if any, associated with the map name in this `NamedBuilder`. Note that default values are present in
-  /// builders of type [DocumentedBuilder], not necessarily in any builder.
+  /// the builder, if any, associated with the map name in this `NamedBuilder`. Note that default
+  /// values are present in builders of type [DocumentedBuilder], not necessarily in any builder.
   ///
   /// @param map the `NamedParamMap` to fill with defaults
   /// @return a new `NamedParamMap` with default values applied

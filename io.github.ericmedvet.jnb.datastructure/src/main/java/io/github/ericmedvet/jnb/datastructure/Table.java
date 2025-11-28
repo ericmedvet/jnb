@@ -29,16 +29,15 @@ import java.util.stream.Stream;
 
 /// An object that stores elements of type `T` in a modifiable table like structure where cells are
 /// indexed through pairs of coordinates `R`,`C`. `R` is the type of row indexes, `C` is the type of
-/// column indexes.
-/// Rows and columns have a well-defined encounter order.
+/// column indexes. Rows and columns have a well-defined encounter order.
 ///
-/// This interface provides methods for modifying the content of the cells ([#set(Object,
-/// Object, Object)]) or the content and the structure ([#clear()], [#addRow(Series)],
-/// [#addColumn(Series)], [#removeRow(Object)], [#removeColumn(Object)]). It also provides
-/// methods for obtaining views of (parts) of the table.
+/// This interface provides methods for modifying the content of the cells ([#set(Object, Object,
+/// Object)]) or the content and the structure ([#clear()], [#addRow(Series)], [#addColumn(Series)],
+/// [#removeRow(Object)], [#removeColumn(Object)]). It also provides methods for obtaining views of
+/// (parts) of the table.
 ///
-/// For creating an unmodifiable table from data, one can use the `from` methods: [#from(SequencedMap)],
-/// [#fromRows(List)], and [#fromColumns(List)].
+/// For creating an unmodifiable table from data, one can use the `from` methods:
+/// [#from(SequencedMap)], [#fromRows(List)], and [#fromColumns(List)].
 ///
 /// @param <R> the type of row indexes
 /// @param <C> the type of column indexes
@@ -425,7 +424,9 @@ public interface Table<R, C, T> {
                         Collectors.toMap(
                             cis::get,
                             i -> aggregator.apply(
-                                IntStream.range(i - n, i).mapToObj(j -> get(ri, cis.get(j))).toList()
+                                IntStream.range(i - n, i)
+                                    .mapToObj(j -> get(ri, cis.get(j)))
+                                    .toList()
                             ),
                             Table::first,
                             LinkedHashMap::new
@@ -456,7 +457,9 @@ public interface Table<R, C, T> {
                         Collectors.toMap(
                             ris::get,
                             i -> aggregator.apply(
-                                IntStream.range(i - n, i).mapToObj(j -> get(ris.get(j), ci)).toList()
+                                IntStream.range(i - n, i)
+                                    .mapToObj(j -> get(ris.get(j), ci))
+                                    .toList()
                             ),
                             Table::first,
                             LinkedHashMap::new
@@ -946,6 +949,33 @@ public interface Table<R, C, T> {
     return rowIndexes().stream()
         .flatMap(ri -> colIndexes().stream().map(ci -> get(ri, ci)))
         .toList();
+  }
+
+  // TODO write doc
+  default <R1, C1> Table<R1, C1, T> wider(
+      Function<R, R1> classifier,
+      C colIndex,
+      Function<R, C1> spreader
+  ) {
+    return from(
+        rowIndexes().stream()
+            .collect(Collectors.groupingBy(classifier))
+            .entrySet()
+            .stream()
+            .collect(
+                Utils.toSequencedMap(
+                    Map.Entry::getKey,
+                    e -> e.getValue()
+                        .stream()
+                        .collect(
+                            Utils.toSequencedMap(
+                                spreader,
+                                r -> get(r, colIndex)
+                            )
+                        )
+                )
+            )
+    );
   }
 
   /// Returns a values-only view of this table which has one column at `newColIndex` containing the
