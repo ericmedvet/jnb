@@ -413,16 +413,6 @@ public class Functions {
   }
 
   @SuppressWarnings("unused")
-  public static <X> FormattedNamedFunction<X, String> mappableKey(
-      @Param(value = "name", iS = "{key}") String name,
-      @Param("key") String key,
-      @Param(value = "of", dNPM = "f.identity()") Function<X, Mappable> beforeF,
-      @Param(value = "format", dS = "%s") String format
-  ) {
-    Function<Mappable, String> f = m -> Interpolator.interpolate("{" + key + ":" + format + "}", m);
-    return FormattedNamedFunction.from(f, "%s", name).compose(beforeF);
-  }
-
   @Cacheable
   public static <X, T> FormattedNamedFunction<X, T> mapValue(
       @Param("key") String key,
@@ -431,6 +421,18 @@ public class Functions {
   ) {
     Function<Map<String, T>, T> f = m -> m.get(key);
     return FormattedNamedFunction.from(f, format, key).compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X> FormattedNamedFunction<X, String> mappableKey(
+      @Param(value = "name", iS = "{key}") String name,
+      @Param("key") String key,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Mappable> beforeF,
+      @Param(value = "format", dS = "%s") String format
+  ) {
+    Function<Mappable, String> f = m -> Interpolator.interpolate("{" + key + ":" + format + "}", m);
+    return FormattedNamedFunction.from(f, "%s", name).compose(beforeF);
   }
 
   @SuppressWarnings("unused")
