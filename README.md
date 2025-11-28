@@ -74,7 +74,7 @@ Add this to your `pom.xml`:
 <dependency>
     <groupId>io.github.ericmedvet</groupId>
     <artifactId>jnb.core</artifactId>
-    <version>1.5.2.doc-SNAPSHOT</version>
+    <version>1.5.2-SNAPSHOT</version>
 </dependency>
 ```
 
