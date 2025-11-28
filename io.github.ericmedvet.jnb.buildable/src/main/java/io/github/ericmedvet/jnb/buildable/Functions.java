@@ -100,6 +100,20 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
+  public static <T, R> NamedFunction<T, R> cached(
+      @Param(value = "of", dNPM = "f.identity()") Function<T, R> f
+  ) {
+    if (f instanceof FormattedNamedFunction<T, R> fnf) {
+      return FormattedNamedFunction.from(Utils.cached(fnf), fnf.format(), fnf.name());
+    }
+    if (f instanceof NamedFunction<T, R> nf) {
+      return NamedFunction.from(Utils.cached(nf), nf.name());
+    }
+    return NamedFunction.from(Utils.cached(f));
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
   public static <X> NamedFunction<X, String> classSimpleName(
       @Param(value = "of", dNPM = "f.identity()") Function<X, Object> beforeF
   ) {
@@ -781,4 +795,6 @@ public class Functions {
     Function<Collection<?>, Double> f = ts -> (double) ts.stream().distinct().count() / (double) ts.size();
     return FormattedNamedFunction.from(f, format, "uniqueness").compose(beforeF);
   }
+
+
 }
