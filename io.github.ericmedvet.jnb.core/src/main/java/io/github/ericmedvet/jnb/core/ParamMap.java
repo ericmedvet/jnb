@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.SequencedSet;
 import java.util.Set;
 
+// TODO mention the parent() here in the intro
 /// An object mapping parameter names (strings) to parameter (typed) values. Values are type by
 /// means of [Type], whose constants are associated with Java types. Parameter values can be
 /// retrieved by name (with [#value(String)]) or by name and [Type] (with [#value(String, Type)]):
@@ -104,10 +105,6 @@ public interface ParamMap {
 
   // TODO write doc
   ParamMap parent();
-
-  // TODO write doc
-  // TODO move to MapNamedParamMap
-  void propagateParent(ParamMap paramMap);
 
   /// Returns the value of the parameter stored in this map with the provided `name` and `type`, if
   /// any. The actual runtime Java type of the returned value is the one specified by `type`. If

@@ -481,16 +481,15 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     return parent;
   }
 
-  @Override
   public void propagateParent(ParamMap paramMap) {
     parent = paramMap;
     for (Object value : values.values()) {
-      if (value instanceof ParamMap childParamMap) {
+      if (value instanceof MapNamedParamMap childParamMap) {
         childParamMap.propagateParent(this);
       }
       if (value instanceof List<?> list) {
         for (Object lValue : list) {
-          if (lValue instanceof ParamMap childParamMap) {
+          if (lValue instanceof MapNamedParamMap childParamMap) {
             childParamMap.propagateParent(this);
           }
         }
