@@ -35,7 +35,10 @@ public record DoubleRange(double min, double max) implements Serializable {
   /// The interval $\[-1,1\]$.
   public static final DoubleRange SYMMETRIC_UNIT = new DoubleRange(-1, 1);
   /// The unbound interval $\[-\infty,\infty\]$.
-  public static final DoubleRange UNBOUNDED = new DoubleRange(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
+  public static final DoubleRange UNBOUNDED = new DoubleRange(
+      Double.NEGATIVE_INFINITY,
+      Double.POSITIVE_INFINITY
+  );
 
   /// Default constructor.
   ///
@@ -50,9 +53,9 @@ public record DoubleRange(double min, double max) implements Serializable {
     }
   }
 
-  /// Builds an interval which has the highest lower bound across all the input intervals and the lowest upper
-  /// bound across all the input intervals.
-  /// The built interval is the intersection of all the input intervals, if not empty.
+  /// Builds an interval which has the highest lower bound across all the input intervals and the
+  /// lowest upper bound across all the input intervals. The built interval is the intersection of
+  /// all the input intervals, if not empty.
   ///
   /// @param ranges the input intervals
   /// @return the intersection of all the input intervals
@@ -61,9 +64,9 @@ public record DoubleRange(double min, double max) implements Serializable {
     return ranges.stream().reduce(DoubleRange::intersectionWith).orElseThrow();
   }
 
-  /// Builds an interval which has the lowest lower bound across all the input intervals and the highest upper
-  /// bound across all the input intervals.
-  /// The returned interval is the smallest interval that contains all the input intervals.
+  /// Builds an interval which has the lowest lower bound across all the input intervals and the
+  /// highest upper bound across all the input intervals. The returned interval is the smallest
+  /// interval that contains all the input intervals.
   ///
   /// @param ranges the input intervals
   /// @return the smallest interval that contains all the input intervals
@@ -81,8 +84,8 @@ public record DoubleRange(double min, double max) implements Serializable {
     return (min + max) / 2d;
   }
 
-  /// Clips (i.e., clamps) the given `value` into this interval.
-  /// Returns `value` if `value` >= `min` and `value` <= `max`, else `min` if `value` < `min`, else `max`.
+  /// Clips (i.e., clamps) the given `value` into this interval. Returns `value` if `value` >= `min`
+  /// and `value` <= `max`, else `min` if `value` < `min`, else `max`.
   ///
   /// @param value the input value
   /// @return the clipped value
@@ -98,8 +101,8 @@ public record DoubleRange(double min, double max) implements Serializable {
     return min <= value && value <= max;
   }
 
-  /// Checks if the given `other` interval is contained in this interval.
-  /// This holds if both `other` bounds are contained in this interval.
+  /// Checks if the given `other` interval is contained in this interval. This holds if both `other`
+  /// bounds are contained in this interval.
   ///
   /// @param other the other interval
   /// @return true if `other` is contained in this, false otherwise
@@ -116,8 +119,8 @@ public record DoubleRange(double min, double max) implements Serializable {
     return new DoubleRange(min + offset, max + offset);
   }
 
-  /// Denormalizes, by shifting and rescaling, the given normalized `value` to this interval.
-  /// If this interval is $\[a,b\]$ and `value` is $v \in \[0,1\]$, then returns $a+v(b-a)$.
+  /// Denormalizes, by shifting and rescaling, the given normalized `value` to this interval. If
+  /// this interval is $\[a,b\]$ and `value` is $v \in \[0,1\]$, then returns $a+v(b-a)$.
   ///
   /// @param value the normalized, i.e., in $\[0,1\]$ value
   /// @return the denormalized value
@@ -125,27 +128,30 @@ public record DoubleRange(double min, double max) implements Serializable {
     return clip(value * extent() + min());
   }
 
-  /// Returns a new interval which is extended by a factor `r` with respect to this interval but with the same center.
-  /// If this interval is $\[a,b\]$ and `r` is $r$, then returns $\[\frac{a+b}{2}-\frac{r}{2}(b-a),\frac{a+b}{2}+\frac{r}{2}(b-a)\]$.
+  /// Returns a new interval which is extended by a factor `r` with respect to this interval but
+  /// with the same center. If this interval is $\[a,b\]$ and `r` is $r$, then returns
+  /// $\[\frac{a+b}{2}-\frac{r}{2}(b-a),\frac{a+b}{2}+\frac{r}{2}(b-a)\]$.
   ///
-  /// @param r the extent rescaling factor
+  /// @param r the extent rescaling factor (must be positive)
   /// @return the extended interval
   public DoubleRange extend(double r) {
+    if (r < 0) {
+      throw new IllegalArgumentException("Wrong r: %d found, positive expected".formatted(r));
+    }
     return new DoubleRange(center() - extent() / 2d * r, center() + extent() / 2d * r);
   }
 
-  /// Returns the extent of this interval.
-  /// If this interval is $\[a,b\]$, then returns $b-a$.
+  /// Returns the extent of this interval. If this interval is $\[a,b\]$, then returns $b-a$.
   ///
   /// @return the extent
   public double extent() {
     return max - min;
   }
 
-  /// Returns an interval which has the highest lower bound of this and the `other` interval and the lowest upper
-  /// bound of this and the `other` interval.
-  /// The returned interval is the intersection of this and the `other` interval, if not empty.
-  /// If this interval is $\[a_1,b_2\]$ and `other` is $\[a_2,b_2\]$, then returns $\[\max(a_1,a_2),\min(b_1,b_2)\]$.
+  /// Returns an interval which has the highest lower bound of this and the `other` interval and the
+  /// lowest upper bound of this and the `other` interval. The returned interval is the intersection
+  /// of this and the `other` interval, if not empty. If this interval is $\[a_1,b_2\]$ and `other`
+  /// is $\[a_2,b_2\]$, then returns $\[\max(a_1,a_2),\min(b_1,b_2)\]$.
   ///
   /// @param other the other interval
   /// @return the intersection of this and `other`
@@ -157,8 +163,8 @@ public record DoubleRange(double min, double max) implements Serializable {
     return new DoubleRange(Math.max(min, other.min), Math.min(max, other.max));
   }
 
-  /// Normalizes, by shifting and rescaling, the given `value` to this interval.
-  /// If this interval is $\[a,b\]$ and `value` is $v \in \[a,b\]$, then returns $\frac{v-a}{b-a}$.
+  /// Normalizes, by shifting and rescaling, the given `value` to this interval. If this interval is
+  /// $\[a,b\]$ and `value` is $v \in \[a,b\]$, then returns $\frac{v-a}{b-a}$.
   ///
   /// @param value the value in this interval to be normalized
   /// @return the normalized value, i.e., a number in $\[0,1\]$
@@ -178,9 +184,9 @@ public record DoubleRange(double min, double max) implements Serializable {
   }
 
   /// Returns the `DoubleStream` of the most widespread `n` equispaced values in this interval.
-  /// Builds the `DoubleStream` through [DoubleStream#iterate(double, DoublePredicate, DoubleUnaryOperator)] applying
-  ///  an increment given by the extent of this interval divided by `n` and starting from the lower bound of this
-  /// interval.
+  /// Builds the `DoubleStream` through [DoubleStream#iterate(double, DoublePredicate,
+  /// DoubleUnaryOperator)] applying an increment given by the extent of this interval divided by
+  /// `n` and starting from the lower bound of this interval.
   ///
   /// @param n the number of points
   /// @return a stream of `n` equispaced points in this interval
@@ -189,10 +195,10 @@ public record DoubleRange(double min, double max) implements Serializable {
     return DoubleStream.iterate(min, v -> v <= max, v -> v + step);
   }
 
-  /// Returns an interval which has the lowest lower bound of this and the `other` interval and the highest upper
-  /// bound of this and the `other` interval.
-  /// The returned interval is the smallest interval that contains both this and the `other` interval.
-  /// If this interval is $\[a_1,b_2\]$ and `other` is $\[a_2,b_2\]$, then returns $\[\min(a_1,a_2),\max(b_1,b_2)\]$.
+  /// Returns an interval which has the lowest lower bound of this and the `other` interval and the
+  /// highest upper bound of this and the `other` interval. The returned interval is the smallest
+  /// interval that contains both this and the `other` interval. If this interval is $\[a_1,b_2\]$
+  /// and `other` is $\[a_2,b_2\]$, then returns $\[\min(a_1,a_2),\max(b_1,b_2)\]$.
   ///
   /// @param other the other interval
   /// @return the smallest interval containing this and `other`
