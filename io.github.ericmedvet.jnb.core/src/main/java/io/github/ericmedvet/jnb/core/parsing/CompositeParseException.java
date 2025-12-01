@@ -32,7 +32,8 @@ public class CompositeParseException extends ParseException {
   private final List<ParseException> exceptions;
 
   public CompositeParseException(Collection<ParseException> exceptions) {
-    super(null, null, 0, null, null); // TODO improve this with postponed super() of JDK 25
+    List<ParseException> lasts = lasts(exceptions);
+    super("", null, lasts.getFirst().getIndex(), lasts.getFirst().getString(), lasts.getFirst().getPath());
     this.exceptions = lasts(exceptions);
   }
 
