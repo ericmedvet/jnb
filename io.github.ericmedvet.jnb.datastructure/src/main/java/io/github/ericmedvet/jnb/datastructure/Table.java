@@ -31,10 +31,10 @@ import java.util.stream.Stream;
 /// indexed through pairs of coordinates `R`,`C`. `R` is the type of row indexes, `C` is the type of
 /// column indexes. Rows and columns have a well-defined encounter order.
 ///
-/// This interface provides methods for modifying the content of the cells
-/// ([#set(Object, Object, Object)] or the content and the structure
-/// ([#clear()], [#addRow(Series)], [#addColumn(Series)], [#removeRow(Object)], [#removeColumn(Object)]).
-/// It also provides methods for obtaining views of (parts) of the table.
+/// This interface provides methods for modifying the content of the cells ([#set(R, C, T)] or the
+/// content and the structure ([#clear()], [#addRow(Series)], [#addColumn(Series)],
+/// [#removeRow(R)], [#removeColumn(C)]). It also provides methods for obtaining views of
+/// (parts) of the table.
 ///
 /// For creating an unmodifiable table from data, one can use the `from` methods:
 /// [#from(SequencedMap)], [#fromRows(List)], and [#fromColumns(List)].
