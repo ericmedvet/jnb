@@ -136,7 +136,7 @@ public record DoubleRange(double min, double max) implements Serializable {
   /// @return the extended interval
   public DoubleRange extend(double r) {
     if (r < 0) {
-      throw new IllegalArgumentException("Wrong r: %d found, positive expected".formatted(r));
+      throw new IllegalArgumentException("Wrong r: %f found, positive expected".formatted(r));
     }
     return new DoubleRange(center() - extent() / 2d * r, center() + extent() / 2d * r);
   }

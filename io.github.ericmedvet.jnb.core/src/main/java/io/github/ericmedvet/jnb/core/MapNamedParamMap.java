@@ -104,7 +104,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
   }
 
   private static String indent(int w) {
-    return IntStream.range(0, w).mapToObj(i -> " ").collect(Collectors.joining());
+    return IntStream.range(0, w).mapToObj(_ -> " ").collect(Collectors.joining());
   }
 
   private static boolean isBoolean(Object o) {
