@@ -93,16 +93,14 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
   }
 
   private static String getOrInterpolate(Object value, ParamMap paramMap) {
-    return switch (value) {
-      case InterpolableString interpolableString -> {
-        try {
-          yield interpolableString.interpolate(paramMap);
-        } catch (RuntimeException e) {
-          yield "ERR:" + interpolableString;
-        }
+    if (value instanceof InterpolableString interpolableString) {
+      try {
+        return interpolableString.interpolate(paramMap);
+      } catch (RuntimeException e) {
+        return "ERR:" + interpolableString;
       }
-      default -> value.toString();
-    };
+    }
+    return value.toString();
   }
 
   private static String indent(int w) {
@@ -331,13 +329,13 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     return switch (object) {
       case Double d ->
         isInt(d) ? set(Type.INT, Type.DOUBLE, Type.STRING) : set(Type.DOUBLE, Type.STRING);
-      case Integer i -> set(Type.INT, Type.DOUBLE, Type.STRING);
+      case Integer _ -> set(Type.INT, Type.DOUBLE, Type.STRING);
       case String s ->
         isBoolean(s) ? set(Type.BOOLEAN, Type.STRING, Type.ENUM) : set(Type.STRING, Type.ENUM);
-      case InterpolableString is -> set(Type.STRING);
-      case Enum<?> e -> set(Type.STRING, Type.ENUM);
-      case Boolean b -> set(Type.BOOLEAN, Type.STRING);
-      case NamedParamMap npm -> set(Type.NAMED_PARAM_MAP, Type.STRING);
+      case InterpolableString _ -> set(Type.STRING);
+      case Enum<?>_ -> set(Type.STRING, Type.ENUM);
+      case Boolean _ -> set(Type.BOOLEAN, Type.STRING);
+      case NamedParamMap _ -> set(Type.NAMED_PARAM_MAP, Type.STRING);
       case List<?> list -> {
         if (list.isEmpty()) {
           yield set(
@@ -351,8 +349,8 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
         }
         Object first = list.getFirst();
         yield switch (first) {
-          case Double d -> {
-            if (list.stream().allMatch(MapNamedParamMap::isInt)) {
+          case Double _ -> {
+            if ( list.stream().allMatch(MapNamedParamMap::isInt)) {
               yield set(Type.INTS, Type.DOUBLES, Type.STRINGS);
             }
             if (list.stream().allMatch(o -> o instanceof Double)) {
@@ -360,15 +358,15 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
             }
             yield set(Type.DOUBLES, Type.STRINGS);
           }
-          case Integer i -> {
-            if (list.stream().allMatch(o -> o instanceof Integer)) {
+          case Integer _ -> {
+            if ( list.stream().allMatch(o -> o instanceof Integer)) {
               yield set(Type.INTS, Type.DOUBLES, Type.STRINGS);
             }
             yield set(Type.INTS, Type.DOUBLES, Type.STRINGS);
           }
-          case InterpolableString is -> set(Type.STRINGS, Type.BOOLEANS, Type.ENUMS);
-          case String s -> {
-            if (list.stream().allMatch(MapNamedParamMap::isBoolean)) {
+          case InterpolableString _ -> set(Type.STRINGS, Type.BOOLEANS, Type.ENUMS);
+          case String _ -> {
+            if ( list.stream().allMatch(MapNamedParamMap::isBoolean)) {
               yield set(Type.STRINGS, Type.BOOLEANS, Type.ENUMS);
             }
             if (list.stream()
@@ -377,22 +375,22 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
             }
             yield set();
           }
-          case Enum<?> e -> {
-            if (list.stream()
+          case Enum<?>_ -> {
+            if ( list.stream()
                 .allMatch(o -> o instanceof String || o instanceof Enum<?>)) {
               yield set(Type.STRINGS, Type.ENUMS);
             }
             yield set();
           }
-          case Boolean b -> {
-            if (list.stream()
+          case Boolean _ -> {
+            if ( list.stream()
                 .allMatch(o -> o instanceof Boolean || isBoolean(o))) {
               yield set(Type.BOOLEANS, Type.STRINGS);
             }
             yield set();
           }
-          case NamedParamMap npm -> {
-            if (list.stream().allMatch(o -> o instanceof NamedParamMap)) {
+          case NamedParamMap _ -> {
+            if ( list.stream().allMatch(o -> o instanceof NamedParamMap)) {
               yield set(Type.NAMED_PARAM_MAPS, Type.STRINGS);
             }
             yield set();
