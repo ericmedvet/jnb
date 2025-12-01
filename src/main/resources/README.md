@@ -178,7 +178,7 @@ Note that the first array has to be prefixed with `+` too.
 
 An example of combined use of `*` and `+` is:
 ```
-+ (size = [m; s; xxs]) * [hoodie(color = red)] + [hoodie(color = blue; size = m)]
+(size = [m; s; xxs]) * [hoodie(color = red)] + [hoodie(color = blue; size = m)]
 ```
 that corresponds to:
 ```
