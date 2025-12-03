@@ -51,5 +51,6 @@ Currently, the only content being published is the API docs, built with javadoc 
 </plugin>
 ```
 
-Note that this results in having the *multiversion* docs on the web site.
-For example, the one for the version `1.5.0-SNAPSHOT` is reachable at [ericmedvet.github.io/jnb/1.5.0-SNAPSHOT/apidocs/](https://ericmedvet.github.io/jnb/1.5.0-SNAPSHOT/apidocs/).
+Note that this *should* results in having the *multiversion* docs on the web site.
+However, this goal is currently not achieved.
+<!-- For example, the one for the version `1.5.0-SNAPSHOT` is reachable at [ericmedvet.github.io/jnb/1.5.0-SNAPSHOT/apidocs/](https://ericmedvet.github.io/jnb/1.5.0-SNAPSHOT/apidocs/). -->
