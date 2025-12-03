@@ -213,7 +213,7 @@ public class Utils {
     return Collectors.toMap(
         keyMapper,
         valueMapper,
-        (u1, u2) -> u1,
+        (u1, _) -> u1,
         LinkedHashMap::new
     );
   }

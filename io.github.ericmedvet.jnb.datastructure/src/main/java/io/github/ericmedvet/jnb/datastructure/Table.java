@@ -20,6 +20,7 @@
 package io.github.ericmedvet.jnb.datastructure;
 
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -32,9 +33,8 @@ import java.util.stream.Stream;
 /// column indexes. Rows and columns have a well-defined encounter order.
 ///
 /// This interface provides methods for modifying the content of the cells ([#set(R, C, T)] or the
-/// content and the structure ([#clear()], [#addRow(Series)], [#addColumn(Series)],
-/// [#removeRow(R)], [#removeColumn(C)]). It also provides methods for obtaining views of
-/// (parts) of the table.
+/// content and the structure ([#clear()], [#addRow(Series)], [#addColumn(Series)], [#removeRow(R)],
+/// [#removeColumn(C)]). It also provides methods for obtaining views of (parts) of the table.
 ///
 /// For creating an unmodifiable table from data, one can use the `from` methods:
 /// [#from(SequencedMap)], [#fromRows(List)], and [#fromColumns(List)].
@@ -917,7 +917,7 @@ public interface Table<R, C, T> {
     );
   }
 
-  /// Returns a new unmodifiable where rows are sorted according to the provided `comparator`
+  /// Returns a new unmodifiable table where rows are sorted according to the provided `comparator`
   /// applied to values of the column at `colIndex`.
   ///
   /// @param comparator the comparator for ordering values
@@ -951,31 +951,41 @@ public interface Table<R, C, T> {
         .toList();
   }
 
-  // TODO write doc
+  /// Returns a new unmodifiable table by grouping rows usinng the `classifier` and selectiong
+  /// values using the `spreader`. The new table will have one row for each group and one column for
+  /// each outcome of the spreader applied to row indexes in the group. The cell value will contain
+  /// the value in this table (at the moment of invocation) at the row given by the column and the
+  /// column given by `colIndex`.
+  ///
+  /// @param classifier the function to partition rows
+  /// @param colIndex   the column index of this table to take data from
+  /// @param spreader   the row index (this table) to column index (other table) transformer
+  /// @param <R1>       the type of the new table row indexes
+  /// @param <C1>       the type of the new table column indexes
+  /// @return the new unmodifiable table
   default <R1, C1> Table<R1, C1, T> wider(
       Function<R, R1> classifier,
       C colIndex,
       Function<R, C1> spreader
   ) {
-    return from(
-        rowIndexes().stream()
-            .collect(Collectors.groupingBy(classifier))
-            .entrySet()
-            .stream()
-            .collect(
-                Utils.toSequencedMap(
-                    Map.Entry::getKey,
-                    e -> e.getValue()
-                        .stream()
-                        .collect(
-                            Utils.toSequencedMap(
-                                spreader,
-                                r -> get(r, colIndex)
-                            )
+    SequencedMap<R1, SequencedMap<C1, T>> map = rowIndexes().stream()
+        .collect(Collectors.groupingBy(classifier))
+        .entrySet()
+        .stream()
+        .collect(
+            Utils.toSequencedMap(
+                Entry::getKey,
+                e -> e.getValue()
+                    .stream()
+                    .collect(
+                        Utils.toSequencedMap(
+                            spreader,
+                            r -> get(r, colIndex)
                         )
-                )
+                    )
             )
-    );
+        );
+    return Unmodifiable.from(from(map));
   }
 
   /// Returns a values-only view of this table which has one column at `newColIndex` containing the
@@ -1010,6 +1020,21 @@ public interface Table<R, C, T> {
   /// @param <C> the type of column indexes
   /// @param <T> the type of values in the cells
   interface Unmodifiable<R, C, T> extends Table<R, C, T> {
+
+    /// Creates a new unmodifiable table which is a view of the provided `table`.
+    ///
+    /// @param table the source table
+    /// @param <R>   the type of row indexes
+    /// @param <C>   the type of column indexes
+    /// @param <T>   the type of values in the cells
+    /// @return the new unmodifiable table being a view of the provided source table
+    static <R, C, T> Unmodifiable<R, C, T> from(Table<R, C, T> table) {
+      return of(
+          table.rowIndexes(),
+          table.colIndexes(),
+          table::get
+      );
+    }
 
     /// Creates a new unmodifiable table based on the provided `rowIndexes`, `colIndexes`, and
     /// `retriever`. The `retriever` is used for retrieve table values; the returned table does not
@@ -1046,6 +1071,11 @@ public interface Table<R, C, T> {
         @Override
         public SequencedSet<R> rowIndexes() {
           return rowIndexes;
+        }
+
+        @Override
+        public String toString() {
+          return "UTable[%dx%d]".formatted(nOfRows(), nOfColumns());
         }
       };
     }
@@ -1096,6 +1126,7 @@ public interface Table<R, C, T> {
     default void set(R rowIndex, C colIndex, T t) {
       throw new UnsupportedOperationException("This is a read only table");
     }
+
   }
 
   /// A series of values of cells, representing either a row or a column. If used to represent a
