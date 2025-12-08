@@ -19,8 +19,12 @@
  */
 package io.github.ericmedvet.jnb.datastructure;
 
+/// An object that can be represented as an array of bytes.
 public interface Binarizable {
 
+  /// Returns the byte array representation of this object.
+  ///
+  /// @return a byte array
   byte[] data();
 
 }
