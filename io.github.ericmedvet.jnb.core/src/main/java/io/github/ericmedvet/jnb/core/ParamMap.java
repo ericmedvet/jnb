@@ -40,97 +40,6 @@ import java.util.Set;
 /// of [ParamMap] objects.
 public interface ParamMap {
 
-  /// The type of values that can be stored in a `ParamMap`. Besides the `enum` name, each `Type`
-  /// has a short string representation obtainable with [#rendered()], useful for documenting and
-  /// debugging builders in a `NamedBuilder`. Each constant is associated with a Java type, which is
-  /// the actual one returned (if possible) by [#value(String, Type)].
-  enum Type {
-    /// Natural numbers, associated with `Integer`; the type is rendered as `i`.
-    INT("i"),
-    /// Real numbers, associated with `Double`; the type is rendered as `d`.
-    DOUBLE("d"),
-    /// Strings, associated with `String`; the type is rendered as `s`.
-    STRING("s"),
-    /// Boolean values, associated with `Boolean`; the type is rendered as `b`.
-    BOOLEAN("b"),
-    /// Enumerations, associated with an `enum`; the type is rendered as `e`. Values of this type
-    /// are constants of a specific `enum` and have to be retrieved through [#value(String, Type,
-    /// Class)].
-    ENUM("e"),
-    /// Named maps of named parameters, associated with [NamedParamMap]; the type is rendered as
-    /// `npm`.
-    NAMED_PARAM_MAP("npm"),
-    /// Lists of natural numbers, associated with `List<Integer>`; the type is rendered as `i[]`.
-    INTS("i[]"),
-    /// Lists of real numbers, associated with `List<Double>`; the type is rendered as `d[]`.
-    DOUBLES("d[]"),
-    /// Lists of strings, associated with `List<String>`; the type is rendered as `s[]`.
-    STRINGS("s[]"),
-    /// Lists of Boolean values, associated with `List<Boolean>`; the type is rendered as `b[]`.
-    BOOLEANS("b[]"),
-    /// Lists of enumerations, associated with `List<E>`, where `E` is a specific `enum`; the type
-    /// is rendered as `e[]`.
-    ///
-    /// @see Type#ENUM
-    ENUMS("e[]"),
-    /// Lists of named maps of named parameters, associated with `List<NamedParamMap>`; the type is
-    /// rendered as `npm[]`.
-    NAMED_PARAM_MAPS("npm[]");
-
-    private final String rendered;
-
-    Type(String rendered) {
-      this.rendered = rendered;
-    }
-
-    /// Returns a short string representation of this type.
-    ///
-    /// @return a short string representation of this type
-    public String rendered() {
-      return rendered;
-    }
-
-    @Override
-    public String toString() {
-      return rendered;
-    }
-  }
-
-  /// Returns the set of all the names (in no specified order) of the parameters stored in this
-  /// map.
-  ///
-  /// @return the names of the parameters of this map
-  Set<String> names();
-
-  /// Returns the set of types the value at the provided `name` can be obtained of.
-  ///
-  /// @param name the name of the parameter to get the valid types of
-  /// @return a set of valid types for the provided name; empty if the map does not contain a value
-  /// for the provided name
-  SequencedSet<Type> types(String name);
-
-
-  /// Returns the parent map of this map, if any. Typically, the parent map is the map containing this
-  /// map as a value.
-  ///
-  /// @return the parent map of this map, or `null` if this map has no parent
-  ParamMap parent();
-
-  /// Returns the value of the parameter stored in this map with the provided `name` and `type`, if
-  /// any. The actual runtime Java type of the returned value is the one specified by `type`. If
-  /// `type` is [Type#ENUM] or [Type#ENUMS], `enumClass` has to be specified, otherwise `enumClass`
-  /// is ignored.
-  ///
-  /// If the map contains a parameter with the provided `name` but with a different type than
-  /// `type`, this method will return `null`.
-  ///
-  /// @param name      the name of the parameter to get the value of
-  /// @param type      the type of the parameter
-  /// @param enumClass the (optional) class of the enumerated param value
-  /// @param <E>       the type of the (optional) enumeration
-  /// @return the value of the parameter with name `name` and type `type`, or `null` otherwise
-  <E extends Enum<E>> Object value(String name, Type type, Class<E> enumClass);
-
   /// Returns a new `ParamMap` with all the parameters of this map and those of the provided `other`
   /// map. Hence, the set of names returned by `names()` is the union of the two sets. When
   /// retrieving a value, this map has the precedence over the `other` map.
@@ -156,6 +65,40 @@ public interface ParamMap {
     other.names().forEach(n -> values.put(n, other.value(n)));
     return new MapNamedParamMap("", values);
   }
+
+  /// Returns the set of all the names (in no specified order) of the parameters stored in this
+  /// map.
+  ///
+  /// @return the names of the parameters of this map
+  Set<String> names();
+
+  /// Returns the parent map of this map, if any. Typically, the parent map is the map containing this
+  /// map as a value.
+  ///
+  /// @return the parent map of this map, or `null` if this map has no parent
+  ParamMap parent();
+
+  /// Returns the set of types the value at the provided `name` can be obtained of.
+  ///
+  /// @param name the name of the parameter to get the valid types of
+  /// @return a set of valid types for the provided name; empty if the map does not contain a value
+  /// for the provided name
+  SequencedSet<Type> types(String name);
+
+  /// Returns the value of the parameter stored in this map with the provided `name` and `type`, if
+  /// any. The actual runtime Java type of the returned value is the one specified by `type`. If
+  /// `type` is [Type#ENUM] or [Type#ENUMS], `enumClass` has to be specified, otherwise `enumClass`
+  /// is ignored.
+  ///
+  /// If the map contains a parameter with the provided `name` but with a different type than
+  /// `type`, this method will return `null`.
+  ///
+  /// @param name      the name of the parameter to get the value of
+  /// @param type      the type of the parameter
+  /// @param enumClass the (optional) class of the enumerated param value
+  /// @param <E>       the type of the (optional) enumeration
+  /// @return the value of the parameter with name `name` and type `type`, or `null` otherwise
+  <E extends Enum<E>> Object value(String name, Type type, Class<E> enumClass);
 
   /// Returns the value of the parameter stored in this map with the provided `name` and `type`, if
   /// any. Works for all types different from [Type#ENUM] and [Type#ENUMS]. Internally calls
@@ -213,5 +156,61 @@ public interface ParamMap {
       values.remove(name);
     }
     return new MapNamedParamMap("", values, parent());
+  }
+
+  /// The type of values that can be stored in a `ParamMap`. Besides the `enum` name, each `Type`
+  /// has a short string representation obtainable with [#rendered()], useful for documenting and
+  /// debugging builders in a `NamedBuilder`. Each constant is associated with a Java type, which is
+  /// the actual one returned (if possible) by [#value(String, Type)].
+  enum Type {
+    /// Natural numbers, associated with `Integer`; the type is rendered as `i`.
+    INT("i"),
+    /// Real numbers, associated with `Double`; the type is rendered as `d`.
+    DOUBLE("d"),
+    /// Strings, associated with `String`; the type is rendered as `s`.
+    STRING("s"),
+    /// Boolean values, associated with `Boolean`; the type is rendered as `b`.
+    BOOLEAN("b"),
+    /// Enumerations, associated with an `enum`; the type is rendered as `e`. Values of this type
+    /// are constants of a specific `enum` and have to be retrieved through [#value(String, Type,
+    /// Class)].
+    ENUM("e"),
+    /// Named maps of named parameters, associated with [NamedParamMap]; the type is rendered as
+    /// `npm`.
+    NAMED_PARAM_MAP("npm"),
+    /// Lists of natural numbers, associated with `List<Integer>`; the type is rendered as `i[]`.
+    INTS("i[]"),
+    /// Lists of real numbers, associated with `List<Double>`; the type is rendered as `d[]`.
+    DOUBLES("d[]"),
+    /// Lists of strings, associated with `List<String>`; the type is rendered as `s[]`.
+    STRINGS("s[]"),
+    /// Lists of Boolean values, associated with `List<Boolean>`; the type is rendered as `b[]`.
+    BOOLEANS("b[]"),
+    /// Lists of enumerations, associated with `List<E>`, where `E` is a specific `enum`; the type
+    /// is rendered as `e[]`.
+    ///
+    /// @see Type#ENUM
+    ENUMS("e[]"),
+    /// Lists of named maps of named parameters, associated with `List<NamedParamMap>`; the type is
+    /// rendered as `npm[]`.
+    NAMED_PARAM_MAPS("npm[]");
+
+    private final String rendered;
+
+    Type(String rendered) {
+      this.rendered = rendered;
+    }
+
+    /// Returns a short string representation of this type.
+    ///
+    /// @return a short string representation of this type
+    public String rendered() {
+      return rendered;
+    }
+
+    @Override
+    public String toString() {
+      return rendered;
+    }
   }
 }
