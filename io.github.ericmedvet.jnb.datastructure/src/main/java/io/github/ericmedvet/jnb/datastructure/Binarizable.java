@@ -24,7 +24,7 @@ public interface Binarizable {
 
   /// Returns the byte array representation of this object.
   ///
-  /// @return a byte array
+  /// @return the byte array representation of this object
   byte[] data();
 
 }
