@@ -110,7 +110,7 @@ public class StringUtils {
   ///
   /// @param current the current value
   /// @param last    the last value
-  /// @return a character representing the variation (↗, ↘, =, or space)
+  /// @return a character representing the variation
   public static char variation(Object current, Object last) {
     if (current == null || last == null) {
       return ' ';
