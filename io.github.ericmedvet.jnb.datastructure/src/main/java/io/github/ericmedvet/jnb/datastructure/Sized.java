@@ -19,7 +19,11 @@
  */
 package io.github.ericmedvet.jnb.datastructure;
 
+/// An object with a quantifiable size.
 public interface Sized {
 
+  /// Returns the size of this object.
+  ///
+  /// @return the size of this object
   int size();
 }
