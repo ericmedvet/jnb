@@ -21,31 +21,58 @@ package io.github.ericmedvet.jnb.datastructure;
 
 import java.util.Optional;
 
+/// An object which internally has another object of type `C`. Typically used to model the fact that
+/// an instance of a given type is based on another type `C`.
+///
+/// @param <C> the type of the inner object
 public interface Composed<C> {
-  C inner();
 
-  static <K> Optional<K> deepest(Object o, Class<K> kClass) {
-    if (o instanceof Composed<?> c) {
+  /// Recursively searches for the deepest object of a specific class within a composed object
+  /// structure. If the object is a `Composed` object, the search continues recursively into its
+  /// inner object. Otherwise, if the object is of the provided class, returns it.
+  ///
+  /// @param object the object to search within
+  /// @param kClass the class of the object to find
+  /// @param <K>    the type of the object to find
+  /// @return an `Optional` containing the deepest object of type `K` if found, otherwise an empty
+  /// `Optional`
+  static <K> Optional<K> deepest(Object object, Class<K> kClass) {
+    // If the current object is composed, delegate to its deepest method
+    if (object instanceof Composed<?> c) {
       return c.deepest(kClass);
     }
-    if (kClass.isAssignableFrom(o.getClass())) {
+    if (kClass.isAssignableFrom(object.getClass())) {
       //noinspection unchecked
-      return Optional.of((K) o);
+      return Optional.of((K) object);
     }
     return Optional.empty();
   }
 
-  static <K> Optional<K> shallowest(Object o, Class<K> kClass) {
-    if (kClass.isAssignableFrom(o.getClass())) {
+  /// Recursively searches for the shallowest object of a specific class within a composed object
+  /// structure. If the object itself is of the specified class, it is returned. Otherwise, if the
+  /// object is a `Composed` object, the search continues recursively into its inner object. The
+  /// "shallowest" means the first one encountered from the outside in.
+  ///
+  /// @param object the object to search within
+  /// @param kClass the class of the object to find
+  /// @param <K>    the type of the object to find
+  /// @return an `Optional` containing the shallowest object of type `K` if found, otherwise an
+  /// empty `Optional`
+  static <K> Optional<K> shallowest(Object object, Class<K> kClass) {
+    if (kClass.isAssignableFrom(object.getClass())) {
       //noinspection unchecked
-      return Optional.of((K) o);
+      return Optional.of((K) object);
     }
-    if (o instanceof Composed<?> c) {
+    if (object instanceof Composed<?> c) {
       return c.shallowest(kClass);
     }
     return Optional.empty();
   }
 
+  /// Returns the deepest non-`Composed` object within this composed object structure. Works as
+  /// [#deepest(Class)] called with `Object` as class.
+  ///
+  /// @return the deepest object
   default Object deepest() {
     if (inner() instanceof Composed<?> composed) {
       return composed.deepest();
@@ -53,6 +80,14 @@ public interface Composed<C> {
     return inner();
   }
 
+  /// Recursively searches for the deepest object of a specific class within this composed object
+  /// structure. If the inner object is a `Composed` object, the search continues recursively into
+  /// its inner object. Otherwise, if it is of the provided class, returns it.
+  ///
+  /// @param kClass the class of the object to find
+  /// @param <K>    the type of the object to find
+  /// @return an `Optional` containing the deepest object of type `K` if found, otherwise an empty
+  /// `Optional`
   default <K> Optional<K> deepest(Class<K> kClass) {
     if (inner() instanceof Composed<?> composed) {
       Optional<K> inside = composed.deepest(kClass);
@@ -71,6 +106,20 @@ public interface Composed<C> {
     return Optional.empty();
   }
 
+  /// Returns the inner object of this composed object.
+  ///
+  /// @return the inner object
+  C inner();
+
+  /// Recursively searches for the shallowest object of a specific class within this composed object
+  /// structure. If this object itself is of the specified class, it is returned. Otherwise, the
+  /// search continues recursively into this inner object. The "shallowest" means the first one
+  /// encountered from the outside in.
+  ///
+  /// @param kClass the class of the object to find
+  /// @param <K>    the type of the object to find
+  /// @return an `Optional` containing the shallowest object of type `K` if found, otherwise an
+  /// empty `Optional`
   default <K> Optional<K> shallowest(Class<K> kClass) {
     if (kClass.isAssignableFrom(getClass())) {
       //noinspection unchecked
