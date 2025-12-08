@@ -19,9 +19,17 @@
  */
 package io.github.ericmedvet.jnb.datastructure;
 
+/// Provides a basic implementation of the `Composed` interface. It holds an inner object of type
+/// `C` and provides a way to access it.
+///
+/// @param <C> the type of the inner object
 public abstract class AbstractComposed<C> implements Composed<C> {
+
   private final C inner;
 
+  /// Constructs an abstract composed with the provided `inner` object.
+  ///
+  /// @param inner the inner object
   public AbstractComposed(C inner) {
     this.inner = inner;
   }
