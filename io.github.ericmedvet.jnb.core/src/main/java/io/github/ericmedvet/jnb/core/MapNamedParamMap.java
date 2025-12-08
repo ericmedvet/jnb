@@ -33,8 +33,24 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
   private final Map<String, SequencedSet<Type>> types;
   private ParamMap parent;
 
-  // TODO write doc
+  /// Constructs a named map from the provided `paramMap`, with the provided `name` and no parent.
+  /// If the provided map is a `MapNamedParamMap`, the build map will be a view of the provided map.
+  /// Otherwise, it will be a copy of the map with same parameters (names and values).
+  ///
+  /// @param name     the name of the new map
+  /// @param paramMap the map containing the parameters to be set as the content for the new map
   public MapNamedParamMap(String name, ParamMap paramMap) {
+    this(name, paramMap, null);
+  }
+
+  /// Constructs a named map from the provided `paramMap`, with the provided `name` and `parent`. If
+  /// the provided map is a `MapNamedParamMap`, the build map will be a view of the provided map.
+  /// Otherwise, it will be a copy of the map with same parameters (names and values).
+  ///
+  /// @param name     the name of the new map
+  /// @param paramMap the map containing the parameters to be set as the content for the new map
+  /// @param parent   the possibly `null` parent of the new map
+  public MapNamedParamMap(String name, ParamMap paramMap, ParamMap parent) {
     this(
         name,
         (paramMap instanceof MapNamedParamMap) ? ((MapNamedParamMap) paramMap).values : paramMap.names()
@@ -44,12 +60,13 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
                     n -> n,
                     paramMap::value
                 )
-            )
+            ),
+        parent
     );
   }
 
-  /// Constructs a named map given a name and a map of parameters which also includes parameter
-  /// types.
+  /// Constructs a named map given a `name` and a map of parameters (with names and values). The
+  /// built map has no parent.
   ///
   /// @param name   the name of the map
   /// @param values a map containing the parameter values keyed by their typed names
@@ -57,7 +74,12 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     this(name, values, null);
   }
 
-  // TODO write doc
+  /// Constructs a named map given a `name`, a map of parameters (with names and values), and a
+  /// `parent`.
+  ///
+  /// @param name   the name of the map
+  /// @param values a map containing the parameter values keyed by their typed names
+  /// @param parent the possibly `null` parent of the new map
   public MapNamedParamMap(String name, Map<String, Object> values, ParamMap parent) {
     this.name = name;
     this.values = Collections.unmodifiableSortedMap(new TreeMap<>(values));
@@ -309,7 +331,14 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     if (map.names().isEmpty() || content.length() + currentLineLength(stringBuilder.toString()) < maxLineLength) {
       stringBuilder.append(content);
     } else {
-      mapContentToMultilineString(stringBuilder, maxLineLength, indentOffset, indentSize, indentToken, map);
+      mapContentToMultilineString(
+          stringBuilder,
+          maxLineLength,
+          indentOffset,
+          indentSize,
+          indentToken,
+          map
+      );
     }
     stringBuilder.append(TokenType.CLOSED_CONTENT.rendered());
   }
@@ -435,6 +464,13 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
     return new MapNamedParamMap(getName(), newValues, parent);
   }
 
+  private boolean booleanValue(Object o) {
+    if (o instanceof Boolean b) {
+      return b;
+    }
+    return Boolean.parseBoolean(o.toString());
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -547,13 +583,6 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
       case STRINGS ->
         ((List<?>) values.get(name)).stream().map(o -> getOrInterpolate(o, this)).toList();
     };
-  }
-
-  private boolean booleanValue(Object o) {
-    if (o instanceof Boolean b) {
-      return b;
-    }
-    return Boolean.parseBoolean(o.toString());
   }
 
   @Override
