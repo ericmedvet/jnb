@@ -24,15 +24,17 @@ import java.util.Map;
 import java.util.SequencedSet;
 import java.util.Set;
 
-// TODO mention the parent() here in the intro
 /// An object mapping parameter names (strings) to parameter (typed) values. Values are type by
 /// means of [Type], whose constants are associated with Java types. Parameter values can be
 /// retrieved by name (with [#value(String)]) or by name and [Type] (with [#value(String, Type)]):
 /// with the latter, the actual runtime Java type of the returned value is the one associated with
 /// the provided `Type`. Typically, instances of this interface may be obtained by parsing a string,
 /// through the [io.github.ericmedvet.jnb.core.parsing.StringParser#parse(String)] map, or by
-/// obtaining modified views of an existing `ParamMap`, e.g., through [#with(String, Object)]
-/// and [#without(String...)] methods.
+/// obtaining modified views of an existing `ParamMap`, e.g., through [#with(String, Object)] and
+/// [#without(String...)] methods.
+///
+/// A `ParamMap` can have another `ParamMap` as parent. Typically, this is set to the map containing
+/// this map as a value.
 ///
 /// This interface also provides additional static methods to produce human-friendly representations
 /// of [ParamMap] objects.
@@ -51,8 +53,8 @@ public interface ParamMap {
     STRING("s"),
     /// Boolean values, associated with `Boolean`; the type is rendered as `b`.
     BOOLEAN("b"),
-    /// Enumerations, associated with an `enum`; the type is rendered as `e`. Values of this type are
-    /// constants of a specific `enum` and have to be retrieved through [#value(String, Type,
+    /// Enumerations, associated with an `enum`; the type is rendered as `e`. Values of this type
+    /// are constants of a specific `enum` and have to be retrieved through [#value(String, Type,
     /// Class)].
     ENUM("e"),
     /// Named maps of named parameters, associated with [NamedParamMap]; the type is rendered as
@@ -100,10 +102,18 @@ public interface ParamMap {
   /// @return the names of the parameters of this map
   Set<String> names();
 
-  // TODO write doc
+  /// Returns the set of types the value at the provided `name` can be obtained of.
+  ///
+  /// @param name the name of the parameter to get the valid types of
+  /// @return a set of valid types for the provided name; empty if the map does not contain a value
+  /// for the provided name
   SequencedSet<Type> types(String name);
 
-  // TODO write doc
+
+  /// Returns the parent map of this map, if any. Typically, the parent map is the map containing this
+  /// map as a value.
+  ///
+  /// @return the parent map of this map, or `null` if this map has no parent
   ParamMap parent();
 
   /// Returns the value of the parameter stored in this map with the provided `name` and `type`, if
@@ -157,7 +167,9 @@ public interface ParamMap {
   /// @throws IllegalArgumentException if `type` is or [Type#ENUM] or [Type#ENUMS]
   default Object value(String name, Type type) {
     if (type.equals(Type.ENUM) || type.equals(Type.ENUMS)) {
-      throw new IllegalArgumentException("Cannot obtain enum(s) type for \"%s\" without enum class".formatted(name));
+      throw new IllegalArgumentException(
+          "Cannot obtain enum(s) type for \"%s\" without enum class".formatted(name)
+      );
     }
     return value(name, type, null);
   }
@@ -178,7 +190,8 @@ public interface ParamMap {
   }
 
   /// Returns a new `ParamMap` with all the parameters of this map and another parameter as
-  /// provided. If this map already contains a value for the provided name, the new one is returned by the build map.
+  /// provided. If this map already contains a value for the provided name, the new one is returned
+  /// by the build map.
   ///
   /// @param newName  the name of the new parameter
   /// @param newValue the value of the new parameter
@@ -192,7 +205,7 @@ public interface ParamMap {
   ///
   /// @param names the names of parameters to be excluded from the new map
   /// @return a new `ParamMap` with all the parameters of this map which have not a name included in
-  ///  the provided `names`
+  /// the provided `names`
   default ParamMap without(String... names) {
     Map<String, Object> values = new HashMap<>();
     names().forEach(n -> values.put(n, value(n)));
