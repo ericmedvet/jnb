@@ -22,7 +22,6 @@ package io.github.ericmedvet.jnb.buildable;
 import java.util.Arrays;
 import java.util.function.ToDoubleFunction;
 
-/** @author "Eric Medvet" on 2024/07/26 for jnb */
 public enum MathOp implements ToDoubleFunction<double[]> {
   ADD(vs -> Arrays.stream(vs).sum()), SUBTRACT(vs -> switch (vs.length) {
     case 1 -> -vs[0];

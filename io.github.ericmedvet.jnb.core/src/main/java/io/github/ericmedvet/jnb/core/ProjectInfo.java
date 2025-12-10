@@ -19,7 +19,6 @@
  */
 package io.github.ericmedvet.jnb.core;
 
-/** @author "Eric Medvet" on 2023/10/18 for jnb */
 public record ProjectInfo(String name, Version version, String buildDate) {
   public record Version(String major, String minor, String patch) {
     @Override

@@ -729,9 +729,7 @@ public interface Table<R, C, T> {
   /// transformed to strings through the provided formatted functions. Those functions are expected
   /// not to return multi-line strings. One convenient way to provide the formatters is through
   /// method reference to the [String#formatted(Object...)] method, e.g.:
-  /// ```java
-  /// Table<Integer, String, Double> table = /* ... */
-  /// System.out.println(table.prettyToString(
+  /// ```java  /// System.out.println(table.prettyToString(
   ///   "%d"::formatted,
   ///   "%s"::formatted,
   ///   "%.3"::formatted
