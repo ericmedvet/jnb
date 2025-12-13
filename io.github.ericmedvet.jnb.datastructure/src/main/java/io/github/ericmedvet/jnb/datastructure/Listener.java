@@ -41,7 +41,7 @@ public interface Listener<E> {
   }
 
   static <E> Listener<E> deaf() {
-    return from("deaf", e -> {}, () -> {});
+    return from("deaf", _ -> {}, () -> {});
   }
 
   static <E> Listener<E> from(String name, Consumer<E> consumer, Runnable doneRunnable) {
@@ -80,7 +80,6 @@ public interface Listener<E> {
   }
 
   default Listener<E> deferred(Executor executor) {
-    final Logger L = Logger.getLogger(Listener.class.getName());
     return from(
         "%s[deferered]".formatted(this),
         e -> executor.execute(
@@ -120,7 +119,7 @@ public interface Listener<E> {
   }
 
   default Listener<E> onLast() {
-    return Accumulator.from("%s[last]".formatted(this), () -> null, (e, oldE) -> e, (E e1) -> {
+    return Accumulator.from("%s[last]".formatted(this), () -> null, (e, _) -> e, (E e1) -> {
       listen(e1);
       done();
     });

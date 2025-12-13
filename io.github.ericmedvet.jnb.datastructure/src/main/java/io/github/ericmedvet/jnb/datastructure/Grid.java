@@ -57,7 +57,7 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   record Entry<V>(Key key, V value) implements Serializable {
     @Override
     public String toString() {
-      return key.toString() + "->" + value;
+      return key + "->" + value;
     }
   }
 

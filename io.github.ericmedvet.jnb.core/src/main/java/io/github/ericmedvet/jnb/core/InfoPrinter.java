@@ -234,7 +234,7 @@ public class InfoPrinter {
             nOfAttempts,
             N_OF_COMPATIBILITY_ATTEMPTS,
             buildableBuilders.size(),
-            aliasesMap.values().size() - buildableBuilders.size()
+            aliasesMap.size() - buildableBuilders.size()
         );
         for (BuilderInfo bi : aliasesMap.values()) {
           if (bi.workingUsages().isEmpty()) {

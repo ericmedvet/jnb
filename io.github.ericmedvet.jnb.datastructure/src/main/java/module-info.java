@@ -27,6 +27,7 @@ module io.github.ericmedvet.jnb.datastructure {
   requires org.apache.commons.csv;
   requires java.desktop;
   requires io.github.ericmedvet.jnb.core;
+  requires org.jspecify;
 
   exports io.github.ericmedvet.jnb.datastructure;
 }

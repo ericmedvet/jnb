@@ -21,4 +21,7 @@
 /// [io.github.ericmedvet.jnb.datastructure.Grid], [io.github.ericmedvet.jnb.datastructure.Table]) and useful
 /// concepts (e.g., [io.github.ericmedvet.jnb.datastructure.NamedFunction],
 /// [io.github.ericmedvet.jnb.datastructure.Parametrized]).
+@NullMarked
 package io.github.ericmedvet.jnb.datastructure;
+
+import org.jspecify.annotations.NullMarked;

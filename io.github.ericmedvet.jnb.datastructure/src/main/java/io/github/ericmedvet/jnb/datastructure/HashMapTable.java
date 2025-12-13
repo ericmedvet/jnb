@@ -101,7 +101,7 @@ public class HashMapTable<R, C, T> implements Table<R, C, T> {
 
   /// Returns a string representation of this table, which shows only the number of rows and columns.
   /// For a more informative, yet human-friendly string representation, see
-  ///  [Table#prettyToString(Function, Function, Function)].
+  ///  [Table#prettyToString(Function , Function, Function)].
   ///
   /// @return a string representation of this table
   @Override

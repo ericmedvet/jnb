@@ -227,7 +227,7 @@ public class Utils {
   }
 
   /// Saves an object to a file. The type of saving depends on the object type. A `BufferedImage` is
-  /// saved as a PNG image through [ImageIO#write(RenderedImage, String, File)]. A `String` is saved
+  /// saved as a PNG image through [ImageIO#write(RenderedImage , String, File)]. A `String` is saved
   /// as text. A `Binarizable` object is saved as raw binary data (obtained through
   /// [Binarizable#data()]). A `byte[]` is saved as raw binary data. A `NamedParamMap` is saved as a
   /// text, pretty-printed through [MapNamedParamMap#prettyToString()].

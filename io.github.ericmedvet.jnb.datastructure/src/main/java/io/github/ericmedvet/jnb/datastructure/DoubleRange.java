@@ -184,7 +184,7 @@ public record DoubleRange(double min, double max) implements Serializable {
   }
 
   /// Returns the `DoubleStream` of the most widespread `n` equispaced values in this interval.
-  /// Builds the `DoubleStream` through [DoubleStream#iterate(double, DoublePredicate,
+  /// Builds the `DoubleStream` through [DoubleStream#iterate(double, DoublePredicate ,
   /// DoubleUnaryOperator)] applying an increment given by the extent of this interval divided by
   /// `n` and starting from the lower bound of this interval.
   ///

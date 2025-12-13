@@ -38,6 +38,7 @@ import java.util.regex.Pattern;
 /// [java.io.PrintStream#printf(String, Object...)].
 /// More precisely, `name` must match the pattern <code>{@value MAP_KEYS_REGEX}</code> and `format` must match
 /// <code>{@value FORMAT_REGEX}</code>.
+@SuppressWarnings("JavadocReference")
 public class Interpolator {
 
   private static final Logger L = Logger.getLogger(Interpolator.class.getName());

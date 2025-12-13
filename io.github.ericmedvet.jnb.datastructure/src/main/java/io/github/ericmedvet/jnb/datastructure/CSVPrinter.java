@@ -76,19 +76,13 @@ public class CSVPrinter<E, K> implements ListenerFactory<E, K> {
               .map(f -> {
                 try {
                   Object v = f.apply(e);
-                  if (v instanceof Double d) {
-                    return doubleFormat.formatted(d);
-                  }
-                  if (v instanceof Float d) {
-                    return doubleFormat.formatted(d);
-                  }
-                  if (v instanceof Integer n) {
-                    return intFormat.formatted(n);
-                  }
-                  if (v instanceof Long n) {
-                    return intFormat.formatted(n);
-                  }
-                  return v;
+                  return switch (v) {
+                    case Double d -> doubleFormat.formatted(d);
+                    case Float d -> doubleFormat.formatted(d);
+                    case Integer n -> intFormat.formatted(n);
+                    case Long n -> intFormat.formatted(n);
+                    default -> v;
+                  };
                 } catch (Exception ex) {
                   return errorString;
                 }
