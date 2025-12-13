@@ -62,7 +62,7 @@ public interface FormattedNamedFunction<T, R> extends NamedFunction<T, R>, Forma
   }
 
   /// Builds a named and formatted function given a function, possibly with the default name and format.
-  /// If the input function `f` is a `FormattedNamedFunction`, , simply returns `f`; otherwise, calls
+  /// If the input function `f` is a `FormattedNamedFunction`, simply returns `f`; otherwise, calls
   ///  [FormattedNamedFunction#from(Function, String, String)] retaining the name (if `f` is a `NamedFunction`) or
   /// the format (if `f` is a `FormattedFunction`).
   ///

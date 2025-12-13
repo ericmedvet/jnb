@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
+import org.jspecify.annotations.Nullable;
 
 /// This class provides `static` utility methods for operating on grids, i.e., objects of type `Grid`.
 public class GridUtils {
@@ -47,7 +48,7 @@ public class GridUtils {
   /// @param predicate the predicate to test values
   /// @param <T>       the type of cell values
   /// @return the coordinate of the center of gravity
-  public static <T> Grid.Key center(Grid<T> grid, Predicate<T> predicate) {
+  public static <T> Grid.Key center(Grid<T> grid, Predicate<@Nullable T> predicate) {
     return new Grid.Key(
         (int) Math.round(
             grid.entries()
@@ -79,7 +80,7 @@ public class GridUtils {
   /// @param predicate the predicate to test values
   /// @param <T>       the type of cell values
   /// @return the compactness of the Boolean grid obtained by testing `grid` values against `predicate`
-  public static <T> double compactness(Grid<T> grid, Predicate<T> predicate) {
+  public static <T> double compactness(Grid<T> grid, Predicate<@Nullable T> predicate) {
     // approximate convex hull
     Grid<Boolean> convexHull = grid.map(predicate::test);
     boolean none = false;
@@ -87,7 +88,7 @@ public class GridUtils {
     while (!none) {
       none = true;
       for (Grid.Entry<Boolean> entry : convexHull) {
-        if (convexHull.get(entry.key().x(), entry.key().y())) {
+        if (Boolean.TRUE.equals(convexHull.get(entry.key().x(), entry.key().y()))) {
           continue;
         }
         int currentX = entry.key().x();
@@ -97,24 +98,34 @@ public class GridUtils {
         for (int i : new int[]{1, -1}) {
           int neighborX = currentX;
           int neighborY = currentY + i;
-          if (0 <= neighborY && neighborY < convexHull.h() && convexHull.get(neighborX, neighborY)) {
+          if (0 <= neighborY && neighborY < convexHull.h() && Boolean.TRUE.equals(
+              convexHull.get(neighborX, neighborY)
+          )) {
             adjacentCount += 1;
           }
           neighborX = currentX + i;
           neighborY = currentY;
-          if (0 <= neighborX && neighborX < convexHull.w() && convexHull.get(neighborX, neighborY)) {
+          if (0 <= neighborX && neighborX < convexHull.w() && Boolean.TRUE.equals(
+              convexHull.get(neighborX, neighborY)
+          )) {
             adjacentCount += 1;
           }
           neighborX = currentX + i;
           neighborY = currentY + i;
-          if (0 <= neighborX && 0 <= neighborY && neighborX < convexHull.w() && neighborY < convexHull.h() && convexHull
-              .get(neighborX, neighborY)) {
+          if (0 <= neighborX && 0 <= neighborY && neighborX < convexHull.w() && neighborY < convexHull
+              .h() && Boolean.TRUE.equals(
+                  convexHull
+                      .get(neighborX, neighborY)
+              )) {
             adjacentCount += 1;
           }
           neighborX = currentX + i;
           neighborY = currentY - i;
-          if (0 <= neighborX && 0 <= neighborY && neighborX < convexHull.w() && neighborY < convexHull.h() && convexHull
-              .get(neighborX, neighborY)) {
+          if (0 <= neighborX && 0 <= neighborY && neighborX < convexHull.w() && neighborY < convexHull
+              .h() && Boolean.TRUE.equals(
+                  convexHull
+                      .get(neighborX, neighborY)
+              )) {
             adjacentCount += 1;
           }
         }
@@ -175,7 +186,7 @@ public class GridUtils {
   /// @param <T>       the type of cell values
   /// @return the elongation of the Boolean grid obtained by testing `grid` values against `predicate`
   /// @throws IllegalArgumentException if the grid has no values matching the predicate or if `n` is not positive
-  public static <T> double elongation(Grid<T> grid, Predicate<T> predicate, int n) {
+  public static <T> double elongation(Grid<T> grid, Predicate<@Nullable T> predicate, int n) {
     if (grid.values().stream().noneMatch(predicate)) {
       throw new IllegalArgumentException("Grid is empty");
     } else if (n <= 0) {
@@ -246,7 +257,7 @@ public class GridUtils {
   /// @param predicate the predicate to test values
   /// @param <T>       the type of cell values
   /// @return the new grid which fits the provided grid values
-  public static <T> Grid<T> fit(Grid<T> grid, Predicate<T> predicate) {
+  public static <T> Grid<T> fit(Grid<T> grid, Predicate<@Nullable T> predicate) {
     int minX = grid.entries()
         .stream()
         .filter(e -> predicate.test(e.value()))
@@ -357,7 +368,7 @@ public class GridUtils {
         .map(Map.Entry::getKey)
         .orElse(null);
     // filter map
-    return grid.map((k, t) -> (iGrid.get(k) != null && iGrid.get(k).equals(maxIndex)) ? grid.get(k) : emptyT);
+    return grid.map((k, _) -> (iGrid.get(k) != null && Objects.equals(iGrid.get(k), maxIndex)) ? grid.get(k) : emptyT);
   }
 
   private static <T> Grid<Integer> partitionGrid(Grid<T> kGrid, Predicate<T> p) {
@@ -378,7 +389,14 @@ public class GridUtils {
     return iGrid;
   }
 
-  private static <T> void partitionGrid(int x, int y, int i, Grid<T> kGrid, Grid<Integer> iGrid, Predicate<T> p) {
+  private static <T> void partitionGrid(
+      int x,
+      int y,
+      int i,
+      Grid<T> kGrid,
+      Grid<Integer> iGrid,
+      Predicate<@Nullable T> p
+  ) {
     boolean hereFilled = p.test(kGrid.get(x, y));
     // already done
     if (iGrid.get(x, y) != null) {

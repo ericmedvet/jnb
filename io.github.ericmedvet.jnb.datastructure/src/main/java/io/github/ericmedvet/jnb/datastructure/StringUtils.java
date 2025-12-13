@@ -23,17 +23,21 @@ import java.time.LocalDateTime;
 import java.util.IllegalFormatException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 
 /// This class provides `static` utility methods for operating with strings or producing strings.
 public class StringUtils {
 
   /// The char to be shown for representing a positive variation (increasing value), set to
   /// {@value VARIATION_UP}.
+  @SuppressWarnings("JavadocDeclaration")
   public static final char VARIATION_UP = '↗';
   /// The char to be shown for representing a negative variation (decreasing value), set to
   /// {@value VARIATION_DOWN}.
+  @SuppressWarnings("JavadocDeclaration")
   public static final char VARIATION_DOWN = '↘';
   /// The char to be shown for representing no variation, set to {@value VARIATION_SAME}.
+  @SuppressWarnings("JavadocDeclaration")
   public static final char VARIATION_SAME = '=';
   private static final String COLLAPSER_REGEX = "[.→\\[\\]]+";
   private static final String COLLAPSED_PIECE_REGEX = "\\w";
@@ -111,7 +115,7 @@ public class StringUtils {
   /// @param current the current value
   /// @param last    the last value
   /// @return a character representing the variation
-  public static char variation(Object current, Object last) {
+  public static char variation(@Nullable Object current, @Nullable Object last) {
     if (current == null || last == null) {
       return ' ';
     }

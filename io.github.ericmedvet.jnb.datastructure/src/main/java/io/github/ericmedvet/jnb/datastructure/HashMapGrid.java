@@ -24,6 +24,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /// An implementation of [Grid] which internally stores the elements with an [HashMap] where keys are grid coordinates.
 ///
@@ -41,13 +42,13 @@ public class HashMapGrid<T> extends AbstractGrid<T> implements Serializable {
   }
 
   @Override
-  public T get(Key key) {
+  public @Nullable T get(Key key) {
     checkValidity(key);
     return map.get(key);
   }
 
   @Override
-  public void set(Key key, T t) {
+  public void set(Key key, @Nullable T t) {
     checkValidity(key);
     if (t != null) {
       map.put(key, t);

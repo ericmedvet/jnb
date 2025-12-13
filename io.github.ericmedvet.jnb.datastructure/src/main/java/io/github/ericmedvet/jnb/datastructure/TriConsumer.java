@@ -19,12 +19,15 @@
  */
 package io.github.ericmedvet.jnb.datastructure;
 
+import org.jspecify.annotations.NullUnmarked;
+
 /// An operation that accepts three input arguments and returns no result.
 /// Unlike most other functional interfaces, `TriConsumer` is expected to operate via side-effects.
 ///
 /// @param <I1> the type of the first input argument
 /// @param <I2> the type of the second input argument
 /// @param <I3> the type of the third input argument
+@NullUnmarked
 @FunctionalInterface
 public interface TriConsumer<I1, I2, I3> {
   /// Performs this operation on the given arguments.

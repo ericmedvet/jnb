@@ -47,6 +47,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.imageio.ImageIO;
+import org.jspecify.annotations.Nullable;
 
 /// This class provides various `static` utility methods.
 public class Utils {
@@ -300,7 +301,7 @@ public class Utils {
   /// @return a `Collector` that accumulates elements into a `SequencedMap`
   public static <T, K, U> Collector<T, ?, SequencedMap<K, U>> toSequencedMap(
       Function<? super T, ? extends K> keyMapper,
-      Function<? super T, ? extends U> valueMapper
+      Function<? super T, ? extends @Nullable U> valueMapper
   ) {
     return Collectors.toMap(
         keyMapper,
@@ -319,7 +320,7 @@ public class Utils {
   /// @param <U>         the type of the values in the map
   /// @return a `Collector` that accumulates elements into a `SequencedMap`
   public static <T, U> Collector<T, ?, SequencedMap<T, U>> toSequencedMap(
-      Function<? super T, ? extends U> valueMapper
+      Function<? super T, ? extends @Nullable U> valueMapper
   ) {
     return toSequencedMap(Function.identity(), valueMapper);
   }
