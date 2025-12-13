@@ -27,7 +27,7 @@ import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-/// This class contains `static` methods for creating named versions of various functional interfaces.
+/// This class provides `static` methods for creating named versions of various functional interfaces.
 ///
 /// This class provides static methods to wrap various functional interfaces (like `Consumer`,
 /// `Function`, `Predicate`, etc.) with an anonymous class that overrides the `toString()` method to

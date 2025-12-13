@@ -30,7 +30,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-/// This class consists of `static` utility methods for operating on grids, i.e., objects of type `Grid`.
+/// This class provides `static` utility methods for operating on grids, i.e., objects of type `Grid`.
 public class GridUtils {
 
   private static final int ELONGATION_STEPS = 20;
