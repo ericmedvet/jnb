@@ -24,7 +24,7 @@ import java.util.IllegalFormatException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/// This class consist of `static` utility methods for operating with strings or producing strings.
+/// This class provides `static` utility methods for operating with strings or producing strings.
 public class StringUtils {
 
   /// The char to be shown for representing a positive variation (increasing value), set to

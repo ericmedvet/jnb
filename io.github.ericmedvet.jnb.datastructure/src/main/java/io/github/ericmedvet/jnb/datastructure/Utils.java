@@ -48,7 +48,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.imageio.ImageIO;
 
-/// This class consist of various `static` utility methods.
+/// This class provides various `static` utility methods.
 public class Utils {
 
   private static final Logger L = Logger.getLogger(Utils.class.getName());
