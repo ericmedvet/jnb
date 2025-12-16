@@ -470,17 +470,19 @@ public interface Table<R, C, T> {
     return Table.fromColumns(columns);
   }
 
-  /// Returns an unmodifiable view of the column at `colIndex` of this
-  /// table, or an empty map if no such column exists.
+  /// Returns an unmodifiable view of the column at `colIndex` of this table, or an empty map if no
+  /// such column exists.
   ///
   /// @param colIndex the index of the column
   /// @return a map with the values in the cells of the column indexed by row indexes
-  default SequencedMap<R, @Nullable T> column(C colIndex) {
+  default SequencedMap<R, T> column(C colIndex) {
     if (!colIndexes().contains(colIndex)) {
       return Collections.unmodifiableSequencedMap(new LinkedHashMap<>());
     }
+    //noinspection NullableProblems
     return Collections.unmodifiableSequencedMap(
         rowIndexes().stream()
+            .filter(ri -> Objects.nonNull(get(ri, colIndex)))
             .collect(Utils.toSequencedMap(ri -> get(ri, colIndex)))
     );
   }
@@ -491,13 +493,14 @@ public interface Table<R, C, T> {
   /// @param colIndex the index of the column
   /// @return the values in the column
   default List<@Nullable T> columnValues(C colIndex) {
-    return column(colIndex).values().stream().toList();
+    SequencedMap<R, T> column = column(colIndex);
+    return rowIndexes().stream().map(column::get).toList();
   }
 
   /// Returns an unmodifiable view of the columns of this table.
   ///
   /// @return the columns of this table
-  default List<SequencedMap<R, @Nullable T>> columns() {
+  default List<SequencedMap<R, T>> columns() {
     return colIndexes().stream().map(this::column).toList();
   }
 
@@ -642,7 +645,9 @@ public interface Table<R, C, T> {
   /// @param mapper the function to map row indexes to new row indexes
   /// @param <R1>   the type of the new table row indexes
   /// @return the new unmodifiable table
-  default <R1> Table<R1, C, T> mapRowIndexes(BiFunction<R, SequencedMap<C, @Nullable T>, R1> mapper) {
+  default <R1> Table<R1, C, T> mapRowIndexes(
+      BiFunction<R, SequencedMap<C, @Nullable T>, R1> mapper
+  ) {
     return fromRows(
         rowIndexes().stream()
             .map(ri -> new Series<>(mapper.apply(ri, row(ri)), row(ri)))
@@ -815,15 +820,15 @@ public interface Table<R, C, T> {
   ///
   /// @param rowIndex the index of the column
   /// @return a map with the values in the cells of the row indexed by column indexes
-  default SequencedMap<C, @Nullable T> row(R rowIndex) {
+  default SequencedMap<C, T> row(R rowIndex) {
     if (!rowIndexes().contains(rowIndex)) {
       return Collections.unmodifiableSequencedMap(new LinkedHashMap<>());
     }
+    //noinspection NullableProblems
     return Collections.unmodifiableSequencedMap(
         colIndexes().stream()
-            .collect(
-                Utils.toSequencedMap(ci -> get(rowIndex, ci))
-            )
+            .filter(ci -> Objects.nonNull(get(rowIndex, ci)))
+            .collect(Utils.toSequencedMap(ci -> get(rowIndex, ci)))
     );
   }
 
@@ -838,13 +843,14 @@ public interface Table<R, C, T> {
   /// @param rowIndex the index of the row
   /// @return the values in the row
   default List<@Nullable T> rowValues(R rowIndex) {
-    return row(rowIndex).values().stream().toList();
+    SequencedMap<C, T> row = row(rowIndex);
+    return colIndexes().stream().map(row::get).toList();
   }
 
   /// Returns an unmodifiable view of the rows of this table.
   ///
   /// @return the rows of this table
-  default List<SequencedMap<C, @Nullable T>> rows() {
+  default List<SequencedMap<C, T>> rows() {
     return rowIndexes().stream().map(this::row).toList();
   }
 
@@ -1117,7 +1123,8 @@ public interface Table<R, C, T> {
   /// @param <P>          the type of the primary (row/column) index
   /// @param <S>          the type of the secondary (column/row) index
   /// @param <T>          the type of values in the cells
-  record Series<P, S, T>(P primaryIndex, SequencedMap<S, @Nullable T> values) {
+  record Series<P, S, T>(P primaryIndex, SequencedMap<S, T> values) {
 
   }
+
 }
