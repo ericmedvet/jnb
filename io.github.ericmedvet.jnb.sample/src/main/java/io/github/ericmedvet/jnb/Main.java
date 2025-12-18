@@ -48,6 +48,25 @@ public class Main {
           )
           """; // spotless:on
 
+  public record A(
+      @Param(value = "name", iS = "b[{value}]") String name,
+      @Param("value") String value
+  ) {}
+
+  public record B(
+      @Param(value = "name", iS = "a[{a.name}]") String name,
+      @Param("a") A a
+  ) {}
+
+  private static void doNameStuff() {
+    NamedBuilder<?> nb = NamedBuilder.empty()
+        .and(NamedBuilder.fromClass(A.class))
+        .and(NamedBuilder.fromClass(B.class));
+    System.out.println(nb);
+    System.out.println(StringParser.parse("b(a=a(value=v))"));
+    System.out.println(nb.build("b(a=a(value=v))"));
+  }
+
   private static void doInterpolationStuff() {
     ParamMap pm = new MapNamedParamMap(
         "office",
@@ -240,11 +259,12 @@ public class Main {
     System.exit(0);
   }
 
-  public static void main(String[] args) {
+  static void main(String[] args) {
     //doInterpolationStuff();
-    doParsingStuff();
+    //doParsingStuff();
     //doDiscoveryStuff();
     //doManipulationStuff();
+    doNameStuff();
   }
 
   private static void doManipulationStuff() {

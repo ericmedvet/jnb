@@ -427,7 +427,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
           default -> set();
         };
       }
-      default -> set();
+      case null, default -> set();
     };
   }
 
