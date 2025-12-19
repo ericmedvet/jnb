@@ -23,13 +23,14 @@ package io.github.ericmedvet.jnb.datastructure;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /// A partly abstract implementation of [Grid]. It provides the concrete implementation of a few
 /// methods, but does not specify how data is stored. Internally, this implementation stores the
 /// keys (coordinates) of the grid.
 ///
 /// @param <T> the type of cell values
-public abstract class AbstractGrid<T> implements Grid<T> {
+public abstract class AbstractGrid<T extends @Nullable Object> implements Grid<T> {
 
   private final int w;
   private final int h;

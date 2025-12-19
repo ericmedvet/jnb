@@ -27,7 +27,7 @@ import org.jspecify.annotations.Nullable;
 /// An implementation of [Grid] which internally stores the elements with an array.
 ///
 /// @param <T> the type of cell values
-public class ArrayGrid<T> extends AbstractGrid<T> implements Serializable {
+public class ArrayGrid<T extends @Nullable Object> extends AbstractGrid<T> implements Serializable {
 
   private final @Nullable Object[] ts;
 
@@ -41,14 +41,14 @@ public class ArrayGrid<T> extends AbstractGrid<T> implements Serializable {
   }
 
   @Override
-  public @Nullable T get(Key key) {
+  public T get(Key key) {
     checkValidity(key);
     //noinspection unchecked
     return (T) ts[(key.y() * w()) + key.x()];
   }
 
   @Override
-  public void set(Key key, @Nullable T t) {
+  public void set(Key key, T t) {
     checkValidity(key);
     ts[(key.y() * w()) + key.x()] = t;
   }

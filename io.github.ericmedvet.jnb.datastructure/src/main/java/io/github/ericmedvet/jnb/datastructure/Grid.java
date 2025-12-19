@@ -42,7 +42,7 @@ import org.jspecify.annotations.Nullable;
 /// Several read-only views of the grid can be obtained through, e.g., [Grid#rows()], [Grid#columns()].
 ///
 /// @param <T> the type of cell values
-public interface Grid<T> extends Iterable<Grid.Entry<T>> {
+public interface Grid<T extends @Nullable Object> extends Iterable<Grid.Entry<T>> {
   /// A char used for `true` or non-empty when producing compact string representations of a grid (of Boolean values).
   char FULL_CELL_B_CHAR = '█';
   /// A char used for `false` or empty when producing compact string representations of a grid (of Boolean values).
@@ -55,7 +55,7 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   /// @param key   the coordinate of the entry
   /// @param value the value of the entry
   /// @param <V>   the type of the value
-  record Entry<V>(Key key, @Nullable V value) implements Serializable {
+  record Entry<V extends @Nullable Object>(Key key, V value) implements Serializable {
     @Override
     public String toString() {
       return key + "->" + value;
@@ -99,7 +99,7 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   /// @param key the coordinate at which the value is looked for
   /// @return the value at the specified coordinate
   /// @throws IllegalArgumentException if the key is not valid according to [Grid#isValid(Key)]
-  @Nullable T get(Key key);
+  T get(Key key);
 
   /// Returns the height of the grid, i.e., the smallest non-valid positive y-coordinate.
   /// A key is not valid if its y-coordinate is negative or greater or equal to this returned value.
@@ -112,7 +112,7 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   /// @param key the coordinate at which the value is to be set
   /// @param t   the value to set
   /// @throws IllegalArgumentException if the key is not valid according to [Grid#isValid(Key)]
-  void set(Key key, @Nullable T t);
+  void set(Key key, T t);
 
   /// Returns the width of the grid, i.e., the smallest non-valid positive x-coordinate.
   /// A key is not valid if its x-coordinate is negative or greater or equal to this returned value.
@@ -157,7 +157,7 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   /// @param t   the element to be inserted at each cell of the grid
   /// @param <T> the type of cell values
   /// @return the created grid
-  static <T> Grid<T> create(int w, int h, @Nullable T t) {
+  static <T extends @Nullable Object> Grid<T> create(int w, int h, T t) {
     return create(w, h, (_, _) -> t);
   }
 
@@ -170,7 +170,7 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   /// @param fillerFunction a function to obtain values given coordinates
   /// @param <T>            the type of cell values
   /// @return the created grid
-  static <T> Grid<T> create(int w, int h, Function<Key, @Nullable T> fillerFunction) {
+  static <T extends @Nullable Object> Grid<T> create(int w, int h, Function<Key, T> fillerFunction) {
     Grid<T> grid = new ArrayGrid<>(w, h);
     grid.keys().forEach(k -> grid.set(k, fillerFunction.apply(k)));
     return grid;
@@ -207,7 +207,7 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   /// @param fillerFunction a function to obtain values given coordinates
   /// @param <T>            the type of cell values
   /// @return the created grid
-  static <T> Grid<T> create(int w, int h, BiFunction<Integer, Integer, @Nullable T> fillerFunction) {
+  static <T extends @Nullable Object> Grid<T> create(int w, int h, BiFunction<Integer, Integer, T> fillerFunction) {
     return create(w, h, k -> fillerFunction.apply(k.x(), k.y()));
   }
 
@@ -217,7 +217,7 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   /// @param h   the height of the new grid
   /// @param <T> the type of cell values
   /// @return the created grid
-  static <T> Grid<T> create(int w, int h) {
+  static <T extends @Nullable Object> Grid<T> create(int w, int h) {
     return create(w, h, (T) null);
   }
 
@@ -253,7 +253,7 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   /// @param separator the separator of row chunks
   /// @param <T>       the type of cell values
   /// @return the compact string representation of the grid
-  static <T> String toString(Grid<T> grid, Predicate<@Nullable T> p, String separator) {
+  static <T> String toString(Grid<T> grid, Predicate<T> p, String separator) {
     return toString(grid, (Entry<T> e) -> p.test(e.value()) ? FULL_CELL_B_CHAR : EMPTY_CELL_B_CHAR, separator);
   }
 
@@ -265,11 +265,11 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   /// @param function the function to obtain char representations of cell values
   /// @param <T>      the type of cell values
   /// @return the compact string representation of the grid
-  static <T> String toString(Grid<T> grid, Function<@Nullable T, Character> function) {
+  static <T> String toString(Grid<T> grid, Function<T, Character> function) {
     return toString(grid, (Entry<T> e) -> function.apply(e.value()), "\n");
   }
 
-  /// Returns a compact string representation of a grid given a function to obtain char representations of cell
+  /// Returns a compact string representation of a grid given a function to obtain non-null char representations of cell
   /// values and a separator of rows.
   /// The returned string has $h$ chunks of $w$ chars each, associated with rows and separated by `separator`.
   ///
@@ -278,12 +278,11 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   /// @param separator the separator of row chunks
   /// @param <T>       the type of cell values
   /// @return the compact string representation of the grid
-  static <T> String toString(Grid<T> grid, Function<Entry<T>, @Nullable Character> function, String separator) {
+  static <T> String toString(Grid<T> grid, Function<Entry<T>, Character> function, String separator) {
     StringBuilder sb = new StringBuilder();
     for (int y = 0; y < grid.h(); y++) {
       for (int x = 0; x < grid.w(); x++) {
-        Character c = function.apply(new Entry<>(new Key(x, y), grid.get(x, y)));
-        sb.append(c != null ? c : EMPTY_CELL_C_CHAR);
+        sb.append(function.apply(new Entry<>(new Key(x, y), grid.get(x, y))));
       }
       if (y < grid.h() - 1) {
         sb.append(separator);
@@ -296,7 +295,7 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   /// In the outer `List` each element is a column; in the inner `List`, each element is a cell value.
   ///
   /// @return the immutable view by columns of this grid
-  default List<List<@Nullable T>> columns() {
+  default List<List<T>> columns() {
     return IntStream.range(0, w())
         .mapToObj(x -> IntStream.range(0, h()).mapToObj(y -> get(x, y)).toList())
         .toList();
@@ -324,7 +323,7 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   /// @param y the y-coordinate at which the value is looked for
   /// @return the value at the specified coordinate
   /// @throws IllegalArgumentException if the key is not valid according to [Grid#isValid(Key)]
-  default @Nullable T get(int x, int y) {
+  default T get(int x, int y) {
     return get(new Key(x, y));
   }
 
@@ -372,7 +371,7 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   /// @param function the function to map this grid values to the new grid values
   /// @param <S>      the type of cell values for the new grid
   /// @return the created grid
-  default <S> Grid<S> map(Function<@Nullable T, @Nullable S> function) {
+  default <S extends @Nullable Object> Grid<S> map(Function<T, S> function) {
     return map((_, t) -> function.apply(t));
   }
 
@@ -382,7 +381,7 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   /// @param function the function to map this grid coordinates and values to the new grid values
   /// @param <S>      the type of cell values for the new grid
   /// @return the created grid
-  default <S> Grid<S> map(BiFunction<Key, @Nullable T, @Nullable S> function) {
+  default <S extends @Nullable Object> Grid<S> map(BiFunction<Key, T, S> function) {
     return entries().stream()
         .map(e -> new Entry<>(e.key(), function.apply(e.key(), e.value())))
         .collect(collector());
@@ -392,7 +391,7 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   /// In the outer `List` each element is a row; in the inner `List`, each element is a cell value.
   ///
   /// @return the immutable view by rows of this grid
-  default List<List<@Nullable T>> rows() {
+  default List<List<T>> rows() {
     return IntStream.range(0, h())
         .mapToObj(y -> IntStream.range(0, w()).mapToObj(x -> get(x, y)).toList())
         .toList();
@@ -422,7 +421,7 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   ///
   /// @param p the predicate for discriminating true and false cells
   /// @return a bi-dimensional array of Booleans
-  default boolean[][] toArray(Predicate<@Nullable T> p) {
+  default boolean[][] toArray(Predicate<T> p) {
     boolean[][] b = new boolean[w()][h()];
     for (Entry<T> entry : this) {
       b[entry.key().x()][entry.key().y()] = p.test(entry.value);
@@ -434,7 +433,7 @@ public interface Grid<T> extends Iterable<Grid.Entry<T>> {
   /// The returned list of entries is ordered as dictated by [Grid#keys()].
   ///
   /// @return the immutable view by values of this grid
-  default List<@Nullable T> values() {
+  default List<T> values() {
     return keys().stream().map(this::get).toList();
   }
 }

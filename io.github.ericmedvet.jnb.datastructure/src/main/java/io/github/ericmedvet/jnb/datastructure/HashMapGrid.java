@@ -29,7 +29,7 @@ import org.jspecify.annotations.Nullable;
 /// An implementation of [Grid] which internally stores the elements with an [HashMap] where keys are grid coordinates.
 ///
 /// @param <T> the type of cell values
-public class HashMapGrid<T> extends AbstractGrid<T> implements Serializable {
+public class HashMapGrid<T extends @Nullable Object> extends AbstractGrid<T> implements Serializable {
   private final Map<Grid.Key, T> map;
 
   /// Builds an empty grid with the provided width and height.
@@ -42,13 +42,13 @@ public class HashMapGrid<T> extends AbstractGrid<T> implements Serializable {
   }
 
   @Override
-  public @Nullable T get(Key key) {
+  public T get(Key key) {
     checkValidity(key);
     return map.get(key);
   }
 
   @Override
-  public void set(Key key, @Nullable T t) {
+  public void set(Key key, T t) {
     checkValidity(key);
     if (t != null) {
       map.put(key, t);
