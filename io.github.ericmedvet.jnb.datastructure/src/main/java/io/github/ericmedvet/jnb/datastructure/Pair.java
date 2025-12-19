@@ -20,6 +20,7 @@
 package io.github.ericmedvet.jnb.datastructure;
 
 import java.io.Serializable;
+import org.jspecify.annotations.Nullable;
 
 /// A pair of two elements of (in general) different types.
 ///
@@ -27,4 +28,4 @@ import java.io.Serializable;
 /// @param second the second element of the pair
 /// @param <F> the type of the first element
 /// @param <S> the type of the second element
-public record Pair<F, S>(F first, S second) implements Serializable {}
+public record Pair<F extends @Nullable Object, S extends @Nullable Object>(F first, S second) implements Serializable {}
