@@ -189,6 +189,38 @@ public class Functions {
 
   @SuppressWarnings("unused")
   @Cacheable
+  public static <X, T extends Enum<T>> FormattedNamedFunction<X, String> eGridString(
+      @Param(value = "name", dS = "grid.string") String name,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Grid<T>> beforeF,
+      @Param("representations") List<String> representation,
+      @Param(value = "separator", dS = ";") String separator,
+      @Param(value = "format", dS = "%s") String format
+  ) {
+    Function<Grid<T>, String> f = g -> g.values()
+        .stream()
+        .map(t -> {
+          Class<?> tClass = t.getClass();
+          Object[] enumConstants = tClass.getEnumConstants();
+          int index = -1;
+          for (int i = 0; i < enumConstants.length; i = i + 1) {
+            if (enumConstants[i].equals(t)) {
+              index = i;
+              break;
+            }
+          }
+          if (index == -1) {
+            throw new IllegalArgumentException(
+                "%s is not a valid value of %s".formatted(t, tClass)
+            );
+          }
+          return representation.get(index);
+        })
+        .collect(Collectors.joining(separator));
+    return FormattedNamedFunction.from(f, format, name).compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
   public static <X, T, R> NamedFunction<X, Collection<R>> each(
       @Param("mapF") Function<T, R> mapF,
       @Param(value = "of", dNPM = "f.identity()") Function<X, Collection<T>> beforeF
@@ -231,6 +263,20 @@ public class Functions {
         .flatMap(Collection::stream)
         .toList();
     return FormattedNamedFunction.from(f, format, "flat").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X, T> FormattedNamedFunction<X, String> format(
+      @Param(value = "name", iS = "{functions}") String name,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, T> beforeF,
+      @Param("functions") List<Function<T, ?>> functions,
+      @Param("format") String format
+  ) {
+    Function<T, String> f = t -> format.formatted(
+        functions.stream().map(fun -> fun.apply(t)).toArray()
+    );
+    return FormattedNamedFunction.from(f, "%s", name).compose(beforeF);
   }
 
   @SuppressWarnings("unused")
@@ -326,6 +372,22 @@ public class Functions {
   ) {
     Function<Grid<?>, Integer> f = Grid::h;
     return FormattedNamedFunction.from(f, format, "grid.h").compose(beforeF);
+  }
+
+  @SuppressWarnings("unused")
+  @Cacheable
+  public static <X, T> FormattedNamedFunction<X, String> gridString(
+      @Param(value = "name", dS = "grid.string") String name,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Grid<T>> beforeF,
+      @Param(value = "elementF", dS = "f.identity()") Function<T, String> elementF,
+      @Param(value = "separator", dS = ";") String separator,
+      @Param(value = "format", dS = "%s") String format
+  ) {
+    Function<Grid<T>, String> f = g -> g.values()
+        .stream()
+        .map(elementF)
+        .collect(Collectors.joining(separator));
+    return FormattedNamedFunction.from(f, format, name).compose(beforeF);
   }
 
   @SuppressWarnings("unused")
