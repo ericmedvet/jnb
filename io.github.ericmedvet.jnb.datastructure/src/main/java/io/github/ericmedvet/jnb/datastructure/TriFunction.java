@@ -20,6 +20,7 @@
 package io.github.ericmedvet.jnb.datastructure;
 
 import org.jspecify.annotations.NullUnmarked;
+import org.jspecify.annotations.Nullable;
 
 /// A function that accepts two arguments and produces a result.
 ///
@@ -29,7 +30,7 @@ import org.jspecify.annotations.NullUnmarked;
 /// @param <O> the type of the result of the
 @NullUnmarked
 @FunctionalInterface
-public interface TriFunction<I1, I2, I3, O> {
+public interface TriFunction<I1 extends @Nullable Object, I2 extends @Nullable Object, I3 extends @Nullable Object, O extends @Nullable Object> {
   /// Applies the function to the given arguments.
   ///
   /// @param i1 the first function argument

@@ -20,6 +20,7 @@
 package io.github.ericmedvet.jnb.datastructure;
 
 import org.jspecify.annotations.NullUnmarked;
+import org.jspecify.annotations.Nullable;
 
 /// An operation that accepts three input arguments and returns no result.
 /// Unlike most other functional interfaces, `TriConsumer` is expected to operate via side-effects.
@@ -29,7 +30,7 @@ import org.jspecify.annotations.NullUnmarked;
 /// @param <I3> the type of the third input argument
 @NullUnmarked
 @FunctionalInterface
-public interface TriConsumer<I1, I2, I3> {
+public interface TriConsumer<I1 extends @Nullable Object, I2 extends @Nullable Object, I3 extends @Nullable Object> {
   /// Performs this operation on the given arguments.
   ///
   /// @param i1 the first argument
