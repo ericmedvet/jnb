@@ -24,13 +24,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.SequencedSet;
+import org.jspecify.annotations.Nullable;
 
 /// A table that internally stores its values in an [HashMap].
 ///
 /// @param <R> the type of row indexes
 /// @param <C> the type of column indexes
 /// @param <T> the type of values in the cells
-public class HashMapTable<R, C, T> implements Table<R, C, T> {
+public class HashMapTable<R, C, T extends @Nullable Object> implements Table<R, C, T> {
 
   private final Map<Key<R, C>, T> map;
   private final SequencedSet<R> rowIndexes;

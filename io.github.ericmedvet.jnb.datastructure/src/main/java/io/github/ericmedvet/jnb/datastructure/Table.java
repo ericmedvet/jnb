@@ -27,6 +27,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 /// An object that stores elements of type `T` in a modifiable table like structure where cells are
@@ -43,7 +44,7 @@ import org.jspecify.annotations.Nullable;
 /// @param <R> the type of row indexes
 /// @param <C> the type of column indexes
 /// @param <T> the type of values in the cells
-public interface Table<R, C, T> {
+public interface Table<R, C, T extends @Nullable Object> {
 
   private static <T> T first(T t1, T t2) {
     return t1;
@@ -57,7 +58,7 @@ public interface Table<R, C, T> {
   /// @param <C> the type of column indexes
   /// @param <T> the type of values in the cells
   /// @return the new unmodifiable table
-  static <R, C, T> Table<R, C, T> from(SequencedMap<R, ? extends SequencedMap<C, T>> map) {
+  static <R, C, T extends @Nullable Object> Table<R, C, T> from(SequencedMap<R, ? extends SequencedMap<C, T>> map) {
     SequencedSet<R> rowIndexes = Collections.unmodifiableSequencedSet(
         new LinkedHashSet<>(map.keySet())
     );
@@ -85,8 +86,8 @@ public interface Table<R, C, T> {
   /// @param <C>     the type of column indexes
   /// @param <T>     the type of values in the cells
   /// @return the new unmodifiable table
-  static <R, C, T> Table<R, C, T> fromColumns(List<Series<C, R, T>> columns) {
-    SequencedMap<R, SequencedMap<C, @Nullable T>> map = new LinkedHashMap<>();
+  static <R, C, T extends @Nullable Object> Table<R, C, T> fromColumns(List<Series<C, R, T>> columns) {
+    SequencedMap<R, SequencedMap<C, T>> map = new LinkedHashMap<>();
     columns.forEach(
         col -> col.values
             .forEach(
@@ -104,8 +105,8 @@ public interface Table<R, C, T> {
   /// @param <C>  the type of column indexes
   /// @param <T>  the type of values in the cells
   /// @return the new unmodifiable table
-  static <R, C, T> Table<R, C, T> fromRows(List<Series<R, C, T>> rows) {
-    SequencedMap<R, SequencedMap<C, @Nullable T>> map = rows.stream()
+  static <R, C, T extends @Nullable Object> Table<R, C, T> fromRows(List<Series<R, C, T>> rows) {
+    SequencedMap<R, SequencedMap<C, T>> map = rows.stream()
         .collect(
             Utils.toSequencedMap(
                 r -> r.primaryIndex,
@@ -411,7 +412,7 @@ public interface Table<R, C, T> {
   /// @param n          the size of slice, i.e., the number of adjacent columns to collapse
   /// @param aggregator the function for collapsing values in a single value
   /// @return the new unmodifiable table
-  default Table<R, C, T> collapseSlidingCols(int n, Function<List<@Nullable T>, T> aggregator) {
+  default Table<R, C, T> collapseSlidingCols(int n, Function<List<T>, @NonNull T> aggregator) {
     List<C> cis = colIndexes().stream().toList();
     List<Series<R, C, T>> rows = rowIndexes().stream()
         .map(
@@ -444,7 +445,7 @@ public interface Table<R, C, T> {
   /// @param n          the size of slice, i.e., the number of adjacent rows to collapse
   /// @param aggregator the function for collapsing values in a single value
   /// @return the new unmodifiable table
-  default Table<R, C, T> collapseSlidingRows(int n, Function<List<@Nullable T>, T> aggregator) {
+  default Table<R, C, T> collapseSlidingRows(int n, Function<List<T>, @NonNull T> aggregator) {
     List<R> ris = rowIndexes().stream().toList();
     List<Series<C, R, T>> columns = colIndexes().stream()
         .map(
@@ -479,7 +480,6 @@ public interface Table<R, C, T> {
     if (!colIndexes().contains(colIndex)) {
       return Collections.unmodifiableSequencedMap(new LinkedHashMap<>());
     }
-    //noinspection NullableProblems
     return Collections.unmodifiableSequencedMap(
         rowIndexes().stream()
             .filter(ri -> Objects.nonNull(get(ri, colIndex)))
@@ -492,7 +492,7 @@ public interface Table<R, C, T> {
   ///
   /// @param colIndex the index of the column
   /// @return the values in the column
-  default List<@Nullable T> columnValues(C colIndex) {
+  default List<T> columnValues(C colIndex) {
     SequencedMap<R, T> column = column(colIndex);
     return rowIndexes().stream().map(column::get).toList();
   }
@@ -512,9 +512,9 @@ public interface Table<R, C, T> {
   /// @param <C1>     the type of the new table column indexes
   /// @param <T1>     the type of the new table values
   /// @return the new unmodifiable table
-  default <C1, T1> Table<R, C1, T1> expandColumn(
+  default <C1, T1 extends @Nullable Object> Table<R, C1, T1> expandColumn(
       C colIndex,
-      BiFunction<R, @Nullable T, SequencedMap<C1, T1>> expander
+      BiFunction<R, T, SequencedMap<C1, T1>> expander
   ) {
     return fromRows(
         rowIndexes().stream()
@@ -530,7 +530,9 @@ public interface Table<R, C, T> {
   /// @param <C1>     the type of the new table column indexes
   /// @param <T1>     the type of the new table values
   /// @return the new unmodifiable table
-  default <C1, T1> Table<R, C1, T1> expandRowIndex(Function<R, SequencedMap<C1, T1>> expander) {
+  default <C1, T1 extends @Nullable Object> Table<R, C1, T1> expandRowIndex(
+      Function<R, SequencedMap<C1, T1>> expander
+  ) {
     return fromRows(
         rowIndexes().stream()
             .map(ri -> new Series<>(ri, expander.apply(ri)))
@@ -557,7 +559,7 @@ public interface Table<R, C, T> {
   ///
   /// @param predicate the predicate to filter rows
   /// @return the new unmodifiable table
-  default Table<R, C, T> filterColumnsByRowValue(R rowIndex, Predicate<@Nullable T> predicate) {
+  default Table<R, C, T> filterColumnsByRowValue(R rowIndex, Predicate<T> predicate) {
     return filterColumnsByValues(c -> predicate.test(c.get(rowIndex)));
   }
 
@@ -566,7 +568,7 @@ public interface Table<R, C, T> {
   ///
   /// @param predicate the predicate to filter rows
   /// @return the new unmodifiable table
-  default Table<R, C, T> filterColumnsByValues(Predicate<SequencedMap<R, @Nullable T>> predicate) {
+  default Table<R, C, T> filterColumnsByValues(Predicate<SequencedMap<R, T>> predicate) {
     return filterColumns(c -> predicate.test(c.values));
   }
 
@@ -589,7 +591,7 @@ public interface Table<R, C, T> {
   ///
   /// @param predicate the predicate to filter rows
   /// @return the new unmodifiable table
-  default Table<R, C, T> filterRowsByColumnValue(C colIndex, Predicate<@Nullable T> predicate) {
+  default Table<R, C, T> filterRowsByColumnValue(C colIndex, Predicate<T> predicate) {
     return filterRowsByValues(r -> predicate.test(r.get(colIndex)));
   }
 
@@ -598,7 +600,7 @@ public interface Table<R, C, T> {
   ///
   /// @param predicate the predicate to filter rows
   /// @return the new unmodifiable table
-  default Table<R, C, T> filterRowsByValues(Predicate<SequencedMap<C, @Nullable T>> predicate) {
+  default Table<R, C, T> filterRowsByValues(Predicate<SequencedMap<C, T>> predicate) {
     return filterRows(row -> predicate.test(row.values));
   }
 
@@ -675,8 +677,8 @@ public interface Table<R, C, T> {
   /// @param mapper the function to map cells to new cell values
   /// @param <T1>   the type of the new table values
   /// @return the new unmodifiable table
-  default <T1> Table<R, C, T1> mapValues(TriFunction<R, C, @Nullable T, @Nullable T1> mapper) {
-    Map<Pair<R, C>, @Nullable T1> map = new HashMap<>();
+  default <T1 extends @Nullable Object> Table<R, C, T1> mapValues(TriFunction<R, C, T, T1> mapper) {
+    Map<Pair<R, C>, T1> map = new HashMap<>();
     return Unmodifiable.of(
         rowIndexes(),
         colIndexes(),
@@ -736,7 +738,7 @@ public interface Table<R, C, T> {
   default String prettyToString(
       Function<R, String> rowIndexFormatter,
       Function<C, String> colIndexFormatter,
-      Function<@Nullable T, String> valueFormatter
+      Function<T, String> valueFormatter
   ) {
     if (nOfColumns() == 0) {
       return "";
@@ -824,7 +826,6 @@ public interface Table<R, C, T> {
     if (!rowIndexes().contains(rowIndex)) {
       return Collections.unmodifiableSequencedMap(new LinkedHashMap<>());
     }
-    //noinspection NullableProblems
     return Collections.unmodifiableSequencedMap(
         colIndexes().stream()
             .filter(ci -> Objects.nonNull(get(rowIndex, ci)))
@@ -842,7 +843,7 @@ public interface Table<R, C, T> {
   ///
   /// @param rowIndex the index of the row
   /// @return the values in the row
-  default List<@Nullable T> rowValues(R rowIndex) {
+  default List<T> rowValues(R rowIndex) {
     SequencedMap<C, T> row = row(rowIndex);
     return colIndexes().stream().map(row::get).toList();
   }
@@ -860,7 +861,7 @@ public interface Table<R, C, T> {
   ///
   /// @param rowIndex the index of the row of the cell
   /// @param colIndex the index of the column of the cell
-  void set(R rowIndex, C colIndex, @Nullable T t);
+  void set(R rowIndex, C colIndex, T t);
 
   /// Set the value at the cell given by the provided column sequential index `x` and row sequential
   /// index `y`, if any. Throws an exception if `x`,`y` is not valid, i.e., if the table has fewer
@@ -869,7 +870,7 @@ public interface Table<R, C, T> {
   /// @param x the column sequential index
   /// @param y the row sequential index
   /// @throws IndexOutOfBoundsException if `x`,`y` is not valid
-  default void set(int x, int y, @Nullable T t) {
+  default void set(int x, int y, T t) {
     if (x >= colIndexes().size() || x < 0 || y >= rowIndexes().size() || y < 0) {
       throw new IndexOutOfBoundsException(
           String.format(
@@ -909,7 +910,7 @@ public interface Table<R, C, T> {
   /// @param comparator the comparator for ordering values
   /// @return the values-only view of this table
   default Unmodifiable<R, C, T> sortedByValue(C colIndex, Comparator<T> comparator) {
-    Map<R, Map<C, @Nullable T>> map = rowIndexes().stream()
+    Map<R, Map<C, T>> map = rowIndexes().stream()
         .collect(
             Collectors.toMap(
                 ri -> ri,
@@ -931,7 +932,7 @@ public interface Table<R, C, T> {
   /// first to the last row.
   ///
   /// @return all the values of this table
-  default List<@Nullable T> values() {
+  default List<T> values() {
     return rowIndexes().stream()
         .flatMap(ri -> colIndexes().stream().map(ci -> get(ri, ci)))
         .toList();
@@ -1005,7 +1006,7 @@ public interface Table<R, C, T> {
   /// @param <R> the type of row indexes
   /// @param <C> the type of column indexes
   /// @param <T> the type of values in the cells
-  interface Unmodifiable<R, C, T> extends Table<R, C, T> {
+  interface Unmodifiable<R, C, T extends @Nullable Object> extends Table<R, C, T> {
 
     /// Creates a new unmodifiable table which is a view of the provided `table`.
     ///
@@ -1014,7 +1015,7 @@ public interface Table<R, C, T> {
     /// @param <C>   the type of column indexes
     /// @param <T>   the type of values in the cells
     /// @return the new unmodifiable table being a view of the provided source table
-    static <R, C, T> Unmodifiable<R, C, T> from(Table<R, C, T> table) {
+    static <R, C, T extends @Nullable Object> Unmodifiable<R, C, T> from(Table<R, C, T> table) {
       return of(
           table.rowIndexes(),
           table.colIndexes(),
@@ -1035,10 +1036,10 @@ public interface Table<R, C, T> {
     /// @param <C>        the type of column indexes
     /// @param <T>        the type of values in the cells
     /// @return the new unmodifiable table
-    static <R, C, T> Unmodifiable<R, C, T> of(
+    static <R, C, T extends @Nullable Object> Unmodifiable<R, C, T> of(
         SequencedSet<R> rowIndexes,
         SequencedSet<C> colIndexes,
-        BiFunction<R, C, @Nullable T> retriever
+        BiFunction<R, C, T> retriever
     ) {
       return new Unmodifiable<>() {
         @Override
@@ -1123,7 +1124,7 @@ public interface Table<R, C, T> {
   /// @param <P>          the type of the primary (row/column) index
   /// @param <S>          the type of the secondary (column/row) index
   /// @param <T>          the type of values in the cells
-  record Series<P, S, T>(P primaryIndex, SequencedMap<S, T> values) {
+  record Series<P, S, T extends @Nullable Object>(P primaryIndex, SequencedMap<S, T> values) {
 
   }
 
