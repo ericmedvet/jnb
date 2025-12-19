@@ -20,6 +20,7 @@
 package io.github.ericmedvet.jnb.datastructure;
 
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 
 /// A function with a name which can format its output according to a format.
 /// This function works like [Function], but provides a name in the form of a [String] and a format in the form of a
@@ -27,7 +28,7 @@ import java.util.function.Function;
 ///
 /// @param <T> the type of the input of the function
 /// @param <R> the type of the output of the function
-public interface FormattedNamedFunction<T, R> extends NamedFunction<T, R>, FormattedFunction<T, R> {
+public interface FormattedNamedFunction<T extends @Nullable Object, R extends @Nullable Object> extends NamedFunction<T, R>, FormattedFunction<T, R> {
 
   /// Builds a formatted and named function given a function, a name, and a format.
   ///
@@ -37,7 +38,11 @@ public interface FormattedNamedFunction<T, R> extends NamedFunction<T, R>, Forma
   /// @param <T>    the type of the input of the function
   /// @param <R>    the type of the output of the function
   /// @return the formatted and named function
-  static <T, R> FormattedNamedFunction<T, R> from(Function<T, R> f, String format, String name) {
+  static <T extends @Nullable Object, R extends @Nullable Object> FormattedNamedFunction<T, R> from(
+      Function<T, R> f,
+      String format,
+      String name
+  ) {
     return new FormattedNamedFunction<>() {
       @Override
       public R apply(T t) {
@@ -70,7 +75,7 @@ public interface FormattedNamedFunction<T, R> extends NamedFunction<T, R>, Forma
   /// @param <T> the type of the input of the function
   /// @param <R> the type of the output of the function
   /// @return the formatted and named function
-  static <T, R> FormattedNamedFunction<T, R> from(Function<T, R> f) {
+  static <T extends @Nullable Object, R extends @Nullable Object> FormattedNamedFunction<T, R> from(Function<T, R> f) {
     if (f instanceof FormattedNamedFunction<T, R> fnf) {
       return fnf;
     }
@@ -85,7 +90,7 @@ public interface FormattedNamedFunction<T, R> extends NamedFunction<T, R>, Forma
   /// @param <V>    the type of input of the `before` function, and of the composed function
   /// @return the composed formatted and named function
   @Override
-  default <V> FormattedNamedFunction<V, R> compose(Function<? super V, ? extends T> before) {
+  default <V extends @Nullable Object> FormattedNamedFunction<V, R> compose(Function<? super V, ? extends T> before) {
     return from(
         v -> apply(before.apply(v)),
         format(),
@@ -104,7 +109,7 @@ public interface FormattedNamedFunction<T, R> extends NamedFunction<T, R>, Forma
   /// @param <V>   the type of output of the `after` function, and of the composed function
   /// @return the composed formatted and named function
   @Override
-  default <V> FormattedNamedFunction<T, V> andThen(Function<? super R, ? extends V> after) {
+  default <V extends @Nullable Object> FormattedNamedFunction<T, V> andThen(Function<? super R, ? extends V> after) {
     return from(
         t -> after.apply(apply(t)),
         FormattedFunction.format(after),

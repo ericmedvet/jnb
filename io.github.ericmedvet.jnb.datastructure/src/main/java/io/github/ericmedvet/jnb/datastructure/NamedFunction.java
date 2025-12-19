@@ -22,13 +22,14 @@ package io.github.ericmedvet.jnb.datastructure;
 import java.util.Arrays;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 /// A function with a name.
 /// This function works like [Function], but provides a name in the form of a [String].
 ///
 /// @param <T> the type of the input of the function
 /// @param <R> the type of the output of the function
-public interface NamedFunction<T, R> extends Function<T, R> {
+public interface NamedFunction<T extends @Nullable Object, R extends @Nullable Object> extends Function<T, R> {
 
   /// The default name to use when a name is not provided.
   String UNNAMED_NAME = "unnamed";
@@ -61,7 +62,10 @@ public interface NamedFunction<T, R> extends Function<T, R> {
   /// @param <T>  the type of the input of the function
   /// @param <R>  the type of the output of the function
   /// @return the named function
-  static <T, R> NamedFunction<T, R> from(Function<T, R> f, String name) {
+  static <T extends @Nullable Object, R extends @Nullable Object> NamedFunction<T, R> from(
+      Function<T, R> f,
+      String name
+  ) {
     return new NamedFunction<>() {
       @Override
       public R apply(T t) {
@@ -87,7 +91,7 @@ public interface NamedFunction<T, R> extends Function<T, R> {
   /// @param <T> the type of the input of the function
   /// @param <R> the type of the output of the function
   /// @return the named function
-  static <T, R> NamedFunction<T, R> from(Function<T, R> f) {
+  static <T extends @Nullable Object, R extends @Nullable Object> NamedFunction<T, R> from(Function<T, R> f) {
     if (f instanceof NamedFunction<T, R> nf) {
       return nf;
     }
@@ -100,7 +104,7 @@ public interface NamedFunction<T, R> extends Function<T, R> {
   ///
   /// @param f the function
   /// @return the name of the function
-  static String name(Function<?, ?> f) {
+  static String name(Function<? extends @Nullable Object, ? extends @Nullable Object> f) {
     if (f instanceof NamedFunction<?, ?> nf) {
       return nf.name();
     }
@@ -116,7 +120,7 @@ public interface NamedFunction<T, R> extends Function<T, R> {
   /// @param <V>    the type of input of the `before` function, and of the composed function
   /// @return the composed named function
   @Override
-  default <V> NamedFunction<V, R> compose(Function<? super V, ? extends T> before) {
+  default <V extends @Nullable Object> NamedFunction<V, R> compose(Function<? super V, ? extends T> before) {
     return from(v -> apply(before.apply(v)), composeNames(name(before), name()));
   }
 
@@ -129,7 +133,7 @@ public interface NamedFunction<T, R> extends Function<T, R> {
   /// @param <V>   the type of output of the `after` function, and of the composed function
   /// @return the composed named function
   @Override
-  default <V> NamedFunction<T, V> andThen(Function<? super R, ? extends V> after) {
+  default <V extends @Nullable Object> NamedFunction<T, V> andThen(Function<? super R, ? extends V> after) {
     if (after instanceof FormattedFunction<? super R, ? extends V> afterFF) {
       return FormattedNamedFunction.from(
           t -> after.apply(apply(t)),

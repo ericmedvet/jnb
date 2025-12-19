@@ -21,6 +21,7 @@ package io.github.ericmedvet.jnb.datastructure;
 
 import java.util.Collection;
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 
 /// A function which can format its output according to a format.
 /// This function works like [Function], but provides a format in the form of a [String] that follows the format
@@ -28,7 +29,7 @@ import java.util.function.Function;
 ///
 /// @param <T> the type of the input of the function
 /// @param <R> the type of the output of the function
-public interface FormattedFunction<T, R> extends Function<T, R> {
+public interface FormattedFunction<T extends @Nullable Object, R extends @Nullable Object> extends Function<T, R> {
 
   /// The default format to use when a format is not provided.
   String UNFORMATTED_FORMAT = "%s";
@@ -45,7 +46,7 @@ public interface FormattedFunction<T, R> extends Function<T, R> {
   ///
   /// @param f the function
   /// @return the format of the function
-  static String format(Function<?, ?> f) {
+  static String format(Function<? extends @Nullable Object, ? extends @Nullable Object> f) {
     if (f instanceof FormattedFunction<?, ?> ff) {
       return ff.format();
     }
@@ -59,7 +60,10 @@ public interface FormattedFunction<T, R> extends Function<T, R> {
   /// @param <T>    the type of the input of the function
   /// @param <R>    the type of the output of the function
   /// @return the formatted function
-  static <T, R> FormattedFunction<T, R> from(Function<T, R> f, String format) {
+  static <T extends @Nullable Object, R extends @Nullable Object> FormattedFunction<T, R> from(
+      Function<T, R> f,
+      String format
+  ) {
     return new FormattedFunction<>() {
       @Override
       public R apply(T t) {
@@ -87,7 +91,7 @@ public interface FormattedFunction<T, R> extends Function<T, R> {
   /// @param <T> the type of the input of the function
   /// @param <R> the type of the output of the function
   /// @return the named function
-  static <T, R> FormattedFunction<T, R> from(Function<T, R> f) {
+  static <T extends @Nullable Object, R extends @Nullable Object> FormattedFunction<T, R> from(Function<T, R> f) {
     if (f instanceof FormattedFunction<T, R> ff) {
       return ff;
     }
@@ -111,7 +115,7 @@ public interface FormattedFunction<T, R> extends Function<T, R> {
   /// @param <V>    the type of input of the `before` function, and of the composed function
   /// @return the composed formatted function
   @Override
-  default <V> FormattedFunction<V, R> compose(Function<? super V, ? extends T> before) {
+  default <V extends @Nullable Object> FormattedFunction<V, R> compose(Function<? super V, ? extends T> before) {
     if (before instanceof NamedFunction<? super V, ? extends T> beforeNF) {
       return FormattedNamedFunction.from(
           v -> apply(before.apply(v)),
@@ -131,7 +135,7 @@ public interface FormattedFunction<T, R> extends Function<T, R> {
   /// @param <V>   the type of output of the `after` function, and of the composed function
   /// @return the composed formatted function
   @Override
-  default <V> FormattedFunction<T, V> andThen(Function<? super R, ? extends V> after) {
+  default <V extends @Nullable Object> FormattedFunction<T, V> andThen(Function<? super R, ? extends V> after) {
     if (after instanceof NamedFunction<? super R, ? extends V> afterNF) {
       return FormattedNamedFunction.from(
           t -> after.apply(apply(t)),
