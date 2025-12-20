@@ -368,13 +368,31 @@ public class Functions {
       @Param(value = "elementF", dS = "f.identity()") Function<T, String> elementF,
       @Param(value = "separator", dS = ";") String separator,
       @Param(value = "format", dS = "%s") String format,
-      @Param(value = "nullString", dS = "") String nullString
+      @Param(value = "nullString", dS = "") String nullString,
+      @Param("byRows") boolean byRows,
+      @Param("yMirror") boolean yMirror,
+      @Param("xMirror") boolean xMirror
   ) {
-    Function<Grid<T>, String> f = g -> g.values()
-        .stream()
-        .map(elementF)
-        .map(s -> Objects.isNull(s) ? nullString : s)
-        .collect(Collectors.joining(separator));
+    Function<Grid<T>, String> f = g -> {
+      List<T> ts = new ArrayList<>();
+      if (byRows) {
+        for (int y = 0; y < g.h(); y = y + 1) {
+          for (int x = 0; x < g.w(); x = x + 1) {
+            ts.add(g.get(xMirror ? (g.w() - x - 1) : x, yMirror ? (g.h() - y - 1) : y));
+          }
+        }
+      } else {
+        for (int x = 0; x < g.w(); x = x + 1) {
+          for (int y = 0; y < g.h(); y = y + 1) {
+            ts.add(g.get(xMirror ? (g.w() - x - 1) : x, yMirror ? (g.h() - y - 1) : y));
+          }
+        }
+      }
+      return ts.stream()
+          .map(elementF)
+          .map(s -> Objects.isNull(s) ? nullString : s)
+          .collect(Collectors.joining(separator));
+    };
     return FormattedNamedFunction.from(f, format, name).compose(beforeF);
   }
 
