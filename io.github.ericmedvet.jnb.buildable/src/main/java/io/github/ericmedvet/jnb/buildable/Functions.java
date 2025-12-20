@@ -253,6 +253,16 @@ public class Functions {
         .compose(beforeF);
   }
 
+  @Cacheable
+  public static <X, T> FormattedNamedFunction<X, Grid<T>> fittedGrid(
+      @Param(value = "name", dS = "fitted.grid") String name,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Grid<T>> beforeF,
+      @Param(value = "predicate", dNPM = "f.nonNull()") Function<T, Boolean> predicate
+  ) {
+    Function<Grid<T>, Grid<T>> f = g -> GridUtils.fit(g, predicate::apply);
+    return FormattedNamedFunction.from(f, name, "grid.h").compose(beforeF);
+  }
+
   @SuppressWarnings("unused")
   @Cacheable
   public static <X, T> FormattedNamedFunction<X, List<T>> flat(
