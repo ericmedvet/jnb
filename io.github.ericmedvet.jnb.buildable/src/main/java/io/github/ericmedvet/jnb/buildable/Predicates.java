@@ -44,7 +44,6 @@ public class Predicates {
     }
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <X> Predicate<X> all(@Param("conditions") List<Predicate<X>> conditions) {
     return named(
@@ -53,13 +52,11 @@ public class Predicates {
     );
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static Predicate<?> always() {
     return named(t -> true, "always");
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <X> Predicate<X> any(@Param("conditions") List<Predicate<X>> conditions) {
     return named(
@@ -68,7 +65,6 @@ public class Predicates {
     );
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <X> Predicate<X> divisibleBy(
       @Param(value = "f", dNPM = "f.identity()") Function<X, ? extends Number> function,
@@ -84,7 +80,6 @@ public class Predicates {
     );
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <X, T> Predicate<X> eq(
       @Param(value = "f", dNPM = "f.identity()") Function<X, T> function,
@@ -93,7 +88,6 @@ public class Predicates {
     return named(x -> function.apply(x).equals(v), "%s==%s".formatted(NamedFunction.name(function), v));
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <X> Predicate<X> eqD(
       @Param(value = "f", dNPM = "f.identity()") Function<X, Double> function,
@@ -102,7 +96,6 @@ public class Predicates {
     return named(x -> function.apply(x).equals(v), "%s==%s".formatted(NamedFunction.name(function), v));
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <X> Predicate<X> eqI(
       @Param(value = "f", dNPM = "f.identity()") Function<X, Integer> function,
@@ -111,7 +104,6 @@ public class Predicates {
     return named(x -> function.apply(x).equals(v), "%s==%s".formatted(NamedFunction.name(function), v));
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <X> Predicate<X> eqS(
       @Param(value = "f", dNPM = "f.identity()") Function<X, String> function,
@@ -120,7 +112,6 @@ public class Predicates {
     return named(x -> function.apply(x).equals(v), "%s==%s".formatted(NamedFunction.name(function), v));
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <X> Predicate<X> gt(
       @Param(value = "f", dNPM = "f.identity()") Function<X, ? extends Number> function,
@@ -136,7 +127,6 @@ public class Predicates {
     );
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <X> Predicate<X> gtEq(
       @Param(value = "f", dNPM = "f.identity()") Function<X, ? extends Number> function,
@@ -152,7 +142,6 @@ public class Predicates {
     );
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <X> Predicate<X> inD(
       @Param(value = "f", dNPM = "f.identity()") Function<X, Double> function,
@@ -173,7 +162,6 @@ public class Predicates {
     );
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <X> Predicate<X> inI(
       @Param(value = "f", dNPM = "f.identity()") Function<X, Integer> function,
@@ -194,7 +182,6 @@ public class Predicates {
     );
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <X> Predicate<X> inL(
       @Param(value = "f", dNPM = "f.identity()") Function<X, Long> function,
@@ -215,7 +202,6 @@ public class Predicates {
     );
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <X> Predicate<X> inS(
       @Param(value = "f", dNPM = "f.identity()") Function<X, String> function,
@@ -236,7 +222,6 @@ public class Predicates {
     );
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <X> Predicate<X> lt(
       @Param(value = "f", dNPM = "f.identity()") Function<X, ? extends Number> function,
@@ -252,7 +237,6 @@ public class Predicates {
     );
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <X> Predicate<X> ltEq(
       @Param(value = "f", dNPM = "f.identity()") Function<X, ? extends Number> function,
@@ -268,7 +252,6 @@ public class Predicates {
     );
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <X> Predicate<X> matches(
       @Param(value = "f", dNPM = "f.identity()") Function<X, String> function,
@@ -299,7 +282,6 @@ public class Predicates {
     };
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <X> Predicate<X> not(@Param("condition") Predicate<X> condition) {
     return named(condition.negate(), "¬%s".formatted(condition));

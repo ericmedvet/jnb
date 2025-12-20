@@ -47,7 +47,6 @@ public class Listeners {
   private Listeners() {
   }
 
-  @SuppressWarnings("unused")
   public static <E, K> Function<Executor, ListenerFactory<E, K>> console(
       @Param("defaultEFunctions") List<Function<E, ?>> defaultEFunctions,
       @Param(value = "eFunctions") List<Function<E, ?>> eFunctions,
@@ -72,7 +71,6 @@ public class Listeners {
     );
   }
 
-  @SuppressWarnings("unused")
   public static <E, K> Function<Executor, ListenerFactory<E, K>> csv(
       @Param("defaultEFunctions") List<Function<E, ?>> defaultEFunctions,
       @Param(value = "eFunctions") List<Function<E, ?>> eFunctions,
@@ -103,7 +101,6 @@ public class Listeners {
     );
   }
 
-  @SuppressWarnings("unused")
   public static <E, O, P, K> Function<Executor, ListenerFactory<E, K>> onDone(
       @Param("of") AccumulatorFactory<E, O, K> accumulatorFactory,
       @Param(value = "preprocessor", dNPM = "f.identity()") Function<? super O, ? extends P> preprocessor,
@@ -132,7 +129,6 @@ public class Listeners {
     );
   }
 
-  @SuppressWarnings("unused")
   public static <E, O, P, K> Function<Executor, ListenerFactory<E, K>> onKDone(
       @Param("of") AccumulatorFactory<E, O, K> accumulatorFactory,
       @Param(value = "preprocessor", dNPM = "f.identity()") Function<? super O, ? extends P> preprocessor,

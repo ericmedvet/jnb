@@ -33,12 +33,10 @@ public class Miscs {
   private Miscs() {
   }
 
-  @SuppressWarnings("unused")
   public static RandomGenerator defaultRG(@Param(value = "seed", dI = 0) int seed) {
     return seed >= 0 ? new Random(seed) : new Random();
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <T> Grid<T> grid(@Param("w") int w, @Param("h") int h, @Param("items") List<T> items) {
     if (items.size() != w * h) {
@@ -49,7 +47,6 @@ public class Miscs {
     return Grid.create(w, h, items);
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <T> T nth(
       @Param("n") int n,
@@ -58,19 +55,16 @@ public class Miscs {
     return n >= 0 ? values.get(n) : values.get(values.size() + n);
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static DoubleRange range(@Param("min") double min, @Param("max") double max) {
     return new DoubleRange(min, max);
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static RandomGenerator sharedRG(@Param(value = "seed", dI = 0) int seed) {
     return seed >= 0 ? new Random(seed) : new Random();
   }
 
-  @SuppressWarnings("unused")
   public static <T> Supplier<T> supplier(
       @Param("of") T target,
       @Param(value = "", injection = Param.Injection.MAP) ParamMap map,

@@ -35,7 +35,6 @@ public class Consumers {
   private Consumers() {
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <X, K, O> BiConsumer<X, K> composed(
       @Param(value = "f", dNPM = "f.identity()") Function<X, O> innerF,
@@ -47,14 +46,12 @@ public class Consumers {
     );
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static BiConsumer<?, ?> deaf() {
     return Naming.named("deaf", (i1, i2) -> {
     });
   }
 
-  @SuppressWarnings("unused")
   @Cacheable
   public static <X, K, O> BiConsumer<X, K> saver(
       @Param(value = "of", dNPM = "f.identity()") Function<X, O> f,
