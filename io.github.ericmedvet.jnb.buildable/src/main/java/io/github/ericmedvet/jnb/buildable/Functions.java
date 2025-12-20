@@ -367,11 +367,13 @@ public class Functions {
       @Param(value = "of", dNPM = "f.identity()") Function<X, Grid<T>> beforeF,
       @Param(value = "elementF", dS = "f.identity()") Function<T, String> elementF,
       @Param(value = "separator", dS = ";") String separator,
-      @Param(value = "format", dS = "%s") String format
+      @Param(value = "format", dS = "%s") String format,
+      @Param(value = "nullString", dS = "") String nullString
   ) {
     Function<Grid<T>, String> f = g -> g.values()
         .stream()
         .map(elementF)
+        .map(s -> Objects.isNull(s) ? nullString : s)
         .collect(Collectors.joining(separator));
     return FormattedNamedFunction.from(f, format, name).compose(beforeF);
   }
