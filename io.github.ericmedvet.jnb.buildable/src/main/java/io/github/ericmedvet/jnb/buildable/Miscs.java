@@ -22,10 +22,14 @@ package io.github.ericmedvet.jnb.buildable;
 import io.github.ericmedvet.jnb.core.*;
 import io.github.ericmedvet.jnb.datastructure.DoubleRange;
 import io.github.ericmedvet.jnb.datastructure.Grid;
+import io.github.ericmedvet.jnb.datastructure.Utils;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.function.Supplier;
 import java.util.random.RandomGenerator;
+import java.util.stream.IntStream;
 
 @Discoverable(prefixTemplate = "misc|m")
 public class Miscs {
@@ -47,6 +51,30 @@ public class Miscs {
     return Grid.create(w, h, items);
   }
 
+  public static <K, V> Map<K, V> map(
+      @Param("keys") List<K> keys,
+      @Param("values") List<V> values
+  ) {
+    if (keys.size() != values.size()) {
+      throw new IllegalArgumentException(
+          "Keys and values size do not match: %d != %d".formatted(
+              keys.size(),
+              values.size()
+          )
+      );
+    }
+    return Collections.unmodifiableSequencedMap(
+        IntStream.range(0, keys.size())
+            .boxed()
+            .collect(
+                Utils.toSequencedMap(
+                    keys::get,
+                    values::get
+                )
+            )
+    );
+  }
+
   @Cacheable
   public static <T> T nth(
       @Param("n") int n,
@@ -58,6 +86,27 @@ public class Miscs {
   @Cacheable
   public static DoubleRange range(@Param("min") double min, @Param("max") double max) {
     return new DoubleRange(min, max);
+  }
+
+  public static <V> Map<String, V> sKeyMap(
+      @Param("keys") List<String> keys,
+      @Param("values") List<V> values
+  ) {
+    return map(keys, values);
+  }
+
+  public static Map<String, String> sMap(
+      @Param("keys") List<String> keys,
+      @Param("values") List<String> values
+  ) {
+    return map(keys, values);
+  }
+
+  public static <K> Map<K, String> sValueMap(
+      @Param("keys") List<K> keys,
+      @Param("values") List<String> values
+  ) {
+    return map(keys, values);
   }
 
   @Cacheable
@@ -73,4 +122,5 @@ public class Miscs {
     //noinspection unchecked
     return () -> (T) builder.build((NamedParamMap) map.value("of", ParamMap.Type.NAMED_PARAM_MAP));
   }
+
 }
