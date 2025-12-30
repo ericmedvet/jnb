@@ -829,11 +829,19 @@ public class Functions {
 
   @Cacheable
   public static <X> NamedFunction<X, String> toString(
+      @Param(value = "name", dS = "to.string") String name,
       @Param(value = "of", dNPM = "f.identity()") Function<X, Object> beforeF,
+      @Param(value = "nullString", dS = "") String nullString,
+      @Param("keepNull") boolean keepNull,
       @Param(value = "format", dS = "%s") String format
   ) {
-    Function<Object, String> f = Object::toString;
-    return FormattedNamedFunction.from(f, format, "to.string").compose(beforeF);
+    Function<Object, String> f = o -> {
+      if (o == null) {
+        return keepNull ? null : nullString;
+      }
+      return o.toString();
+    };
+    return FormattedNamedFunction.from(f, format, name).compose(beforeF);
   }
 
   @Cacheable
