@@ -76,7 +76,7 @@ public class Miscs {
   }
 
   @Cacheable
-  public static <T> T nth(
+  public static <T> T nTh(
       @Param("n") int n,
       @Param("values") List<T> values
   ) {
