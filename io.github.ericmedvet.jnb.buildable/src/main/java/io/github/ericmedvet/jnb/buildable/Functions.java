@@ -27,6 +27,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
@@ -58,6 +59,28 @@ public class Functions {
                     .map(NamedFunction::name)
                     .collect(Collectors.joining(";"))
             )
+    )
+        .compose(beforeF);
+  }
+
+  @Cacheable
+  public static <X, T, K> NamedFunction<X, SequencedMap<String, K>> allNamed(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, T> beforeF,
+      @Param("fs") SequencedMap<String, Function<T, K>> functions,
+      @Param(value = "format", dS = "%s") String format
+  ) {
+    Function<T, SequencedMap<String, K>> f = t -> functions.entrySet()
+        .stream()
+        .collect(
+            Utils.toSequencedMap(
+                Entry::getKey,
+                e -> e.getValue().apply(t)
+            )
+        );
+    return FormattedNamedFunction.from(
+        f,
+        format,
+        "[%s]".formatted(String.join(";", functions.keySet()))
     )
         .compose(beforeF);
   }

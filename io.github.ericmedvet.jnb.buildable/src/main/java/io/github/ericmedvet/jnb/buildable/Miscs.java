@@ -93,6 +93,7 @@ public class Miscs {
     return new DoubleRange(min, max);
   }
 
+  @Cacheable
   public static <V> Map<String, V> sKeyMap(
       @Param("keys") List<String> keys,
       @Param("values") List<V> values
@@ -100,6 +101,7 @@ public class Miscs {
     return map(keys, values);
   }
 
+  @Cacheable
   public static Map<String, String> sMap(
       @Param("keys") List<String> keys,
       @Param("values") List<String> values
@@ -107,6 +109,7 @@ public class Miscs {
     return map(keys, values);
   }
 
+  @Cacheable
   public static <K> Map<K, String> sValueMap(
       @Param("keys") List<K> keys,
       @Param("values") List<String> values
