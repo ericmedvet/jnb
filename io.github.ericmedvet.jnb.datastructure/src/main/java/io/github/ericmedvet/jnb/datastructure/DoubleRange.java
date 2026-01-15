@@ -183,13 +183,13 @@ public record DoubleRange(double min, double max) implements Serializable {
     return !(min > other.max);
   }
 
-  /// Returns the `DoubleStream` of the most widespread `n` equispaced values in this interval.
+  /// Returns the `DoubleStream` of the most widespread `n` + 1 equispaced values in this interval.
   /// Builds the `DoubleStream` through [DoubleStream#iterate(double, DoublePredicate ,
   /// DoubleUnaryOperator)] applying an increment given by the extent of this interval divided by
   /// `n` and starting from the lower bound of this interval.
   ///
   /// @param n the number of points
-  /// @return a stream of `n` equispaced points in this interval
+  /// @return a stream of `n` + 1 equispaced points in this interval
   public DoubleStream points(int n) {
     double step = extent() / (double) n;
     return DoubleStream.iterate(min, v -> v <= max, v -> v + step);
