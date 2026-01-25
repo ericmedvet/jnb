@@ -619,6 +619,19 @@ public class Functions {
   }
 
   @Cacheable
+  public static <X, T, K> NamedFunction<X, SequencedMap<String, K>> namedMerged(
+      @Param(value = "name", iS = "merged") String name,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, T> beforeF,
+      @Param("mappers") List<Function<T, SequencedMap<String, K>>> mappers,
+      @Param(value = "format", dS = "%s") String format
+  ) {
+    Function<T, SequencedMap<String, K>> f = t -> mappers.stream()
+        .flatMap(m -> m.apply(t).entrySet().stream())
+        .collect(Utils.toSequencedMap(Entry::getKey, Entry::getValue));
+    return FormattedNamedFunction.from(f, format, name).compose(beforeF);
+  }
+
+  @Cacheable
   public static <X, T> FormattedNamedFunction<X, List<T>> nkTh(
       @Param("n") int n,
       @Param("k") int k,
