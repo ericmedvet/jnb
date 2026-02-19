@@ -656,6 +656,48 @@ public class Functions {
   }
 
   @Cacheable
+  public static <X> FormattedNamedFunction<X, Double> orElseD(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Double> beforeF,
+      @Param(value = "v", dD = 0.0) double v,
+      @Param(value = "format", dS = "%.1f") String format,
+      @Param(value = "name", iS = "orElseD[{v}]") String name
+  ) {
+    Function<X, Double> f = x -> {
+      try {
+        return beforeF.apply(x);
+      } catch (Exception e) {
+        return v;
+      }
+    };
+    return FormattedNamedFunction.from(
+        f,
+        format,
+        name
+    );
+  }
+
+  @Cacheable
+  public static <X> FormattedNamedFunction<X, Integer> orElseI(
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Integer> beforeF,
+      @Param(value = "v", dI = 0) int v,
+      @Param(value = "format", dS = "%.1f") String format,
+      @Param(value = "name", iS = "orElseD[{v}]") String name
+  ) {
+    Function<X, Integer> f = x -> {
+      try {
+        return beforeF.apply(x);
+      } catch (Exception e) {
+        return v;
+      }
+    };
+    return FormattedNamedFunction.from(
+        f,
+        format,
+        name
+    );
+  }
+
+  @Cacheable
   public static <X, F, S> FormattedNamedFunction<X, F> pairFirst(
       @Param(value = "of", dNPM = "f.identity()") Function<X, Pair<F, S>> beforeF,
       @Param(value = "format", dS = "%s") String format
