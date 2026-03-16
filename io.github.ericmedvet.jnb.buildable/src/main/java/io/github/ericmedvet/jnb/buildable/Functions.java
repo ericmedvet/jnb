@@ -496,6 +496,30 @@ public class Functions {
     return FormattedNamedFunction.from(f, format, name).compose(beforeF);
   }
 
+  public static <X, T, K> FormattedNamedFunction<X, Map<String, K>> mapAggregate(
+      @Param(value = "name", iS = "{aggregateF}") String name,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, List<Map<String, T>>> beforeF,
+      @Param("aggregateF") Function<List<T>, K> aggregateF,
+      @Param(value = "format", dS = "%s") String format
+  ) {
+    Function<List<Map<String, T>>, Map<String, K>> f = maps -> {
+      Set<String> keys = maps.stream()
+          .flatMap(map -> map.keySet().stream())
+          .collect(Collectors.toSet());
+      return keys.stream()
+          .collect(
+              Utils.toSequencedMap(
+                  k -> aggregateF.apply(
+                      maps.stream()
+                          .map(map -> map.get(k))
+                          .toList()
+                  )
+              )
+          );
+    };
+    return FormattedNamedFunction.from(f, format, name).compose(beforeF);
+  }
+
   @Cacheable
   public static <X, T> FormattedNamedFunction<X, T> mapValue(
       @Param("key") String key,
