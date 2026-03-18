@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
@@ -37,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SequencedMap;
+import java.util.SequencedSet;
 import java.util.WeakHashMap;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -46,7 +48,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import javax.imageio.ImageIO;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.jspecify.annotations.Nullable;
 
 /// This class provides various `static` utility methods.
@@ -231,7 +236,7 @@ public class Utils {
   /// saved as a PNG image through [ImageIO#write(RenderedImage , String, File)]. A `String` is saved
   /// as text. A `Binarizable` object is saved as raw binary data (obtained through
   /// [Binarizable#data()]). A `byte[]` is saved as raw binary data. A `NamedParamMap` is saved as a
-  /// text, pretty-printed through [MapNamedParamMap#prettyToString()].
+  /// text, pretty-printed through [MapNamedParamMap#prettyToString()]. A `Table` is saved as tsv.
   ///
   /// @param object    the object to save
   /// @param filePath  the path to the file where the object will be saved
@@ -272,6 +277,26 @@ public class Utils {
             StandardOpenOption.CREATE,
             StandardOpenOption.TRUNCATE_EXISTING
         );
+        //noinspection rawtypes
+        case Table table -> {
+          try (CSVPrinter csvPrinter = new CSVPrinter(
+              new PrintStream(file),
+              CSVFormat.Builder.create()
+                  .setDelimiter(";")
+                  .get()
+          )) {
+            SequencedSet<?> colIndexes = table.colIndexes();
+            csvPrinter.printRecord(Stream.concat(Stream.of("row"), colIndexes.stream().map(Object::toString)));
+            for (Object ri : table.rowIndexes()) {
+              csvPrinter.printRecord(
+                  Stream.concat(
+                      Stream.of(ri.toString()),
+                      colIndexes.stream().map(ci -> "%s".formatted(table.row(ri).get(ci)))
+                  )
+              );
+            }
+          }
+        }
         case null -> throw new IllegalArgumentException("Cannot save null data of type %s");
         default -> throw new IllegalArgumentException(
             "Cannot save data of type %s".formatted(object.getClass().getSimpleName())

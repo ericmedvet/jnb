@@ -903,6 +903,33 @@ public class Functions {
   }
 
   @Cacheable
+  public static <X> NamedFunction<X, Table<Double, Integer, Double>> tdaMapToTable(
+      @Param(value = "name", dS = "to.table") String name,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Map<Double, double[]>> beforeF,
+      @Param(value = "format", dS = "%s") String format
+  ) {
+    Function<Map<Double, double[]>, Table<Double, Integer, Double>> f = m -> Table.fromRows(
+        m.entrySet()
+            .stream()
+            .map(
+                e -> new Table.Series<>(
+                    e.getKey(),
+                    IntStream.range(0, e.getValue().length)
+                        .boxed()
+                        .collect(
+                            Utils.toSequencedMap(
+                                j -> j,
+                                j -> e.getValue()[j]
+                            )
+                        )
+                )
+            )
+            .toList()
+    );
+    return FormattedNamedFunction.from(f, format, name).compose(beforeF);
+  }
+
+  @Cacheable
   public static <X> FormattedNamedFunction<X, LocalDateTime> timestamp(
       @Param(value = "format", dS = "%1$tH:%1$tM:%1$tS") String format
   ) {
@@ -943,6 +970,33 @@ public class Functions {
       }
       return o.toString();
     };
+    return FormattedNamedFunction.from(f, format, name).compose(beforeF);
+  }
+
+  @Cacheable
+  public static <X, T> NamedFunction<X, Table<Double, Integer, T>> toaMapToTable(
+      @Param(value = "name", dS = "to.table") String name,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, Map<Double, T[]>> beforeF,
+      @Param(value = "format", dS = "%s") String format
+  ) {
+    Function<Map<Double, T[]>, Table<Double, Integer, T>> f = m -> Table.fromRows(
+        m.entrySet()
+            .stream()
+            .map(
+                e -> new Table.Series<>(
+                    e.getKey(),
+                    IntStream.range(0, e.getValue().length)
+                        .boxed()
+                        .collect(
+                            Utils.toSequencedMap(
+                                j -> j,
+                                j -> e.getValue()[j]
+                            )
+                        )
+                )
+            )
+            .toList()
+    );
     return FormattedNamedFunction.from(f, format, name).compose(beforeF);
   }
 
