@@ -31,7 +31,7 @@ import org.jspecify.annotations.Nullable;
 /// @param <R> the type of row indexes
 /// @param <C> the type of column indexes
 /// @param <T> the type of values in the cells
-public class HashMapTable<R, C, T extends @Nullable Object> implements Table<R, C, T> {
+public class HashMapTable<R, C, T extends @Nullable Object> implements Table<R, C, T>, Copyable<HashMapTable<R, C, T>> {
 
   private final Map<Key<R, C>, T> map;
   private final SequencedSet<R> rowIndexes;
@@ -42,10 +42,6 @@ public class HashMapTable<R, C, T extends @Nullable Object> implements Table<R, 
     this.map = new HashMap<>();
     rowIndexes = new LinkedHashSet<>();
     colIndexes = new LinkedHashSet<>();
-  }
-
-  private record Key<R, C>(R r, C c) {
-
   }
 
   @Override
@@ -67,6 +63,17 @@ public class HashMapTable<R, C, T extends @Nullable Object> implements Table<R, 
   @Override
   public SequencedSet<C> colIndexes() {
     return colIndexes;
+  }
+
+  /// Returns a shallow copy of this table. Elements and indexes in the new table are the same of the ones in
+  /// this table.
+  ///
+  /// @return a shallow copy of this grid
+  @Override
+  public HashMapTable<R, C, T> copyOf() {
+    HashMapTable<R, C, T> copy = new HashMapTable<>();
+    rowIndexes().forEach(ri -> copy.addRow(new Series<>(ri, row(ri))));
+    return copy;
   }
 
   @Override
@@ -108,5 +115,9 @@ public class HashMapTable<R, C, T extends @Nullable Object> implements Table<R, 
   @Override
   public String toString() {
     return "Table[%dx%d]".formatted(nOfRows(), nOfColumns());
+  }
+
+  private record Key<R, C>(R r, C c) {
+
   }
 }

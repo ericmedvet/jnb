@@ -27,7 +27,7 @@ import org.jspecify.annotations.Nullable;
 /// An implementation of [Grid] which internally stores the elements with an array.
 ///
 /// @param <T> the type of cell values
-public class ArrayGrid<T extends @Nullable Object> extends AbstractGrid<T> implements Serializable {
+public class ArrayGrid<T extends @Nullable Object> extends AbstractGrid<T> implements Serializable, Copyable<ArrayGrid<T>> {
 
   private final @Nullable Object[] ts;
 
@@ -40,27 +40,15 @@ public class ArrayGrid<T extends @Nullable Object> extends AbstractGrid<T> imple
     this.ts = new Object[w * h];
   }
 
-  @Override
-  public T get(Key key) {
-    checkValidity(key);
-    //noinspection unchecked
-    return (T) ts[(key.y() * w()) + key.x()];
-  }
-
-  @Override
-  public void set(Key key, T t) {
-    checkValidity(key);
-    ts[(key.y() * w()) + key.x()] = t;
-  }
-
-  /// Returns the hash code value for this grid.
+  /// Returns a shallow copy of this grid. Elements in the new grid are the same of the ones in
+  /// this grid.
   ///
-  /// @return the hash code value for this grid
+  /// @return a shallow copy of this grid
   @Override
-  public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + Arrays.hashCode(ts);
-    return result;
+  public ArrayGrid<T> copyOf() {
+    ArrayGrid<T> copy = new ArrayGrid<>(w(), h());
+    entries().forEach(e -> copy.set(e.key(), e.value()));
+    return copy;
   }
 
   /// Compares the specified object with this grid for equality. Two grids are considered equal if
@@ -83,5 +71,28 @@ public class ArrayGrid<T extends @Nullable Object> extends AbstractGrid<T> imple
     }
     ArrayGrid<?> arrayGrid = (ArrayGrid<?>) o;
     return Arrays.equals(ts, arrayGrid.ts);
+  }
+
+  @Override
+  public T get(Key key) {
+    checkValidity(key);
+    //noinspection unchecked
+    return (T) ts[(key.y() * w()) + key.x()];
+  }
+
+  /// Returns the hash code value for this grid.
+  ///
+  /// @return the hash code value for this grid
+  @Override
+  public int hashCode() {
+    int result = super.hashCode();
+    result = 31 * result + Arrays.hashCode(ts);
+    return result;
+  }
+
+  @Override
+  public void set(Key key, T t) {
+    checkValidity(key);
+    ts[(key.y() * w()) + key.x()] = t;
   }
 }

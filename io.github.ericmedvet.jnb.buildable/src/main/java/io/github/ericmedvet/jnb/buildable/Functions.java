@@ -144,14 +144,12 @@ public class Functions {
       @Param("range") DoubleRange range,
       @Param(value = "format", dS = "%.1f") String format
   ) {
-
     Function<Double, Double> f = range::clip;
     return FormattedNamedFunction.from(
         f,
         format,
         ("clip[" + format + ";" + format + "]").formatted(range.min(), range.max())
-    )
-        .compose(beforeF);
+    ).compose(beforeF);
   }
 
   @Cacheable
@@ -165,6 +163,16 @@ public class Functions {
         NamedFunction.name(afterF)
     )
         .compose(beforeF);
+  }
+
+  @Cacheable
+  public static <X, T extends Copyable<T>> FormattedNamedFunction<X, T> copy(
+      @Param(value = "name", dS = "copy") String name,
+      @Param(value = "of", dNPM = "f.identity()") Function<X, T> beforeF,
+      @Param(value = "format", dS = "%s") String format
+  ) {
+    Function<T, T> f = Copyable::copyOf;
+    return FormattedNamedFunction.from(f, format, name).compose(beforeF);
   }
 
   @Cacheable

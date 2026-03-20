@@ -29,7 +29,7 @@ import org.jspecify.annotations.Nullable;
 /// An implementation of [Grid] which internally stores the elements with an [HashMap] where keys are grid coordinates.
 ///
 /// @param <T> the type of cell values
-public class HashMapGrid<T extends @Nullable Object> extends AbstractGrid<T> implements Serializable {
+public class HashMapGrid<T extends @Nullable Object> extends AbstractGrid<T> implements Serializable, Copyable<HashMapGrid<T>> {
   private final Map<Grid.Key, T> map;
 
   /// Builds an empty grid with the provided width and height.
@@ -41,26 +41,15 @@ public class HashMapGrid<T extends @Nullable Object> extends AbstractGrid<T> imp
     this.map = new HashMap<>(w * h);
   }
 
-  @Override
-  public T get(Key key) {
-    checkValidity(key);
-    return map.get(key);
-  }
-
-  @Override
-  public void set(Key key, T t) {
-    checkValidity(key);
-    if (t != null) {
-      map.put(key, t);
-    }
-  }
-
-  /// Returns the hash code value for this grid.
+  /// Returns a shallow copy of this object. Elements in the new grid are the same of the ones in
+  /// this grid.
   ///
-  /// @return the hash code value for this grid
+  /// @return a shallow copy of this object
   @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), map);
+  public HashMapGrid<T> copyOf() {
+    HashMapGrid<T> copy = new HashMapGrid<>(w(), h());
+    entries().forEach(e -> copy.set(e.key(), e.value()));
+    return copy;
   }
 
   /// Compares the specified object with this grid for equality. Two grids are considered equal if
@@ -80,5 +69,27 @@ public class HashMapGrid<T extends @Nullable Object> extends AbstractGrid<T> imp
       return false;
     HashMapGrid<?> hashMapGrid = (HashMapGrid<?>) o;
     return map.equals(hashMapGrid.map);
+  }
+
+  @Override
+  public T get(Key key) {
+    checkValidity(key);
+    return map.get(key);
+  }
+
+  /// Returns the hash code value for this grid.
+  ///
+  /// @return the hash code value for this grid
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), map);
+  }
+
+  @Override
+  public void set(Key key, T t) {
+    checkValidity(key);
+    if (t != null) {
+      map.put(key, t);
+    }
   }
 }
