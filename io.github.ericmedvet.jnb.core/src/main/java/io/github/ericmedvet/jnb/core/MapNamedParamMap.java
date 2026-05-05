@@ -91,7 +91,7 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
         throw new IllegalArgumentException(
             "Unsupported type for value %s of type %s".formatted(
                 values.get(n),
-                values.get(n).getClass().getSimpleName()
+                values.containsKey(n) ? values.get(n).getClass().getSimpleName() : "null"
             )
         );
       }
