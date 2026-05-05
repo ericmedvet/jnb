@@ -22,6 +22,8 @@ package io.github.ericmedvet.jnb;
 import io.github.ericmedvet.jnb.core.*;
 import io.github.ericmedvet.jnb.core.ParamMap.Type;
 import io.github.ericmedvet.jnb.core.parsing.*;
+import io.github.ericmedvet.jnb.datastructure.AbstractComposed;
+import io.github.ericmedvet.jnb.datastructure.Composed;
 import io.github.ericmedvet.jnb.datastructure.FormattedNamedFunction;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -264,7 +266,8 @@ public class Main {
     //doParsingStuff();
     //doDiscoveryStuff();
     //doManipulationStuff();
-    doNameStuff();
+    //doNameStuff();
+    doDefaultsThings();
   }
 
   private static void doManipulationStuff() {
@@ -359,6 +362,39 @@ public class Main {
           value = "booleans", dBs = {false, false}) List<Boolean> booleans
   ){
 
+  }
+
+  public static class Builders {
+
+    private Builders() {
+    }
+
+    public static String string(
+        @Param("name") String name,
+        @Param("d") double d
+    ) {
+      return "(name=`%s`, d=%.1f)".formatted(name, d);
+    }
+
+    public static Composed<?> boxed(
+        @Param("inner") Object inner
+    ) {
+      return new AbstractComposed<>(inner) {
+        @Override
+        public String toString() {
+          return "[%s]".formatted(inner);
+        }
+      };
+    }
+  }
+
+  private static void doDefaultsThings() {
+    NamedBuilder<?> nb = NamedBuilder.fromUtilityClass(Builders.class);
+    System.out.println(nb.build("string(name=eric;d=1.5)"));
+    System.out.println(nb.build("boxed(inner=string(name=eric;d=1.5))"));
+    System.out.println(nb.build("boxed(inner=string(name=eric))"));
+    System.out.println(nb.build("string(d=1.5)"));
+    System.out.println(nb.build("string()"));
   }
 
   public static class Timed {

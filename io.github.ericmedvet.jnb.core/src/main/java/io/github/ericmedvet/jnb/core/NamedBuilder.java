@@ -490,7 +490,9 @@ public class NamedBuilder<X> {
       if (value instanceof NamedParamMap npm) {
         value = fillWithDefaults(npm);
       }
-      values.put(p.name(), value);
+      if (value != null) {
+        values.put(p.name(), value);
+      }
     }
     return new MapNamedParamMap(map.getName(), values);
   }
