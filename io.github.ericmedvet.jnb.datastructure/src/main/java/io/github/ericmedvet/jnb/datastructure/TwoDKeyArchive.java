@@ -36,9 +36,20 @@
 package io.github.ericmedvet.jnb.datastructure;
 
 import java.util.List;
+import java.util.Map;
 
-public interface NumericalKeyArchive<V> extends Archive<List<Double>, V> {
+public interface TwoDKeyArchive<V> extends NumericalKeyArchive<V> {
 
-  int arity();
+  @Override
+  default int arity() {
+    return 2;
+  }
 
+  Map<Polygon, V> localizedValues();
+
+  record Point(double x, double y) {}
+
+  record Polygon(List<Point> vertexes) {
+    // TODO add compact constructor
+  }
 }

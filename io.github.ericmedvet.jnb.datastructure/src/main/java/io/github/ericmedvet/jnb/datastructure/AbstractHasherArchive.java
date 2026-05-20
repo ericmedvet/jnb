@@ -35,10 +35,27 @@
 
 package io.github.ericmedvet.jnb.datastructure;
 
-import java.util.List;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
 
-public interface NumericalKeyArchive<V> extends Archive<List<Double>, V> {
+public abstract class AbstractHasherArchive<K, H, V> implements Archive<K, V> {
 
-  int arity();
+  private final Map<H, V> map;
 
+  public AbstractHasherArchive(Map<H, V> map) {
+    this.map = map;
+  }
+
+  public abstract H hash(K key);
+
+  @Override
+  public Optional<V> put(K key, V value) {
+    return Optional.ofNullable(map.put(hash(key), value));
+  }
+
+  @Override
+  public Collection<V> values() {
+    return map.values();
+  }
 }
