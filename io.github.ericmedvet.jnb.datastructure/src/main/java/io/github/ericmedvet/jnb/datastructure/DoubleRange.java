@@ -23,6 +23,7 @@ package io.github.ericmedvet.jnb.datastructure;
 import java.io.Serializable;
 import java.util.List;
 import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
 
 /// An interval delimited by two bounds, `min` and `max`.
 ///
@@ -193,6 +194,18 @@ public record DoubleRange(double min, double max) implements Serializable {
   public DoubleStream points(int n) {
     double step = extent() / (double) n;
     return DoubleStream.iterate(min, v -> v <= max, v -> v + step);
+  }
+
+  /// Returns a list of `n` mutually disjoint ranges of equal size whose union is this range. The
+  /// extent of each `DoubleRange` in the list is this range extent divided by `n`.
+  ///
+  /// @param n the number of ranges to divide this range in
+  /// @return a list of `n` mutually disjoint ranges
+  public List<DoubleRange> split(int n) {
+    double step = extent() / (double) n;
+    return IntStream.range(0, n)
+        .mapToObj(i -> new DoubleRange(min + step * n, clip(min + step * (n + 1))))
+        .toList();
   }
 
   /// Returns an interval which has the lowest lower bound of this and the `other` interval and the
