@@ -37,19 +37,46 @@ package io.github.ericmedvet.jnb.datastructure;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public interface TwoDKeyArchive<V> extends NumericalKeyArchive<V> {
+
+  Optional<V> put(double x, double y, V value);
+
+  Optional<V> get(double x, double y);
 
   @Override
   default int arity() {
     return 2;
   }
 
-  Map<Polygon, V> localizedValues();
+  @Override
+  default Optional<V> put(List<Double> key, V value) {
+    if (key.size() != 2) {
+      throw new IllegalArgumentException(
+          "Key has %d dimensions instead of 2".formatted(key.size())
+      );
+    }
+    return put(key.getFirst(), key.getLast(), value);
+  }
 
-  record Point(double x, double y) {}
+  @Override
+  default Optional<V> get(List<Double> key) {
+    if (key.size() != 2) {
+      throw new IllegalArgumentException(
+          "Key has %d dimensions instead of 2".formatted(key.size())
+      );
+    }
+    return get(key.getFirst(), key.getLast());
+  }
+
+  Map<Polygon, Optional<V>> localizedValues();
+
+  record Point(double x, double y) {
+
+  }
 
   record Polygon(List<Point> vertexes) {
-    // TODO add compact constructor
+    // TODO add compact constructor which checks for correctness of vertexes
   }
 }

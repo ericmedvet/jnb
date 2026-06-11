@@ -38,6 +38,7 @@ package io.github.ericmedvet.jnb.datastructure;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class AbstractHasherArchive<K, H, V> implements Archive<K, V> {
 
@@ -47,7 +48,16 @@ public abstract class AbstractHasherArchive<K, H, V> implements Archive<K, V> {
     this.map = map;
   }
 
+  public AbstractHasherArchive() {
+    this(new ConcurrentHashMap<>());
+  }
+
   public abstract H hash(K key);
+
+  @Override
+  public Optional<V> get(K key) {
+    return Optional.ofNullable(map.get(hash(key)));
+  }
 
   @Override
   public Optional<V> put(K key, V value) {

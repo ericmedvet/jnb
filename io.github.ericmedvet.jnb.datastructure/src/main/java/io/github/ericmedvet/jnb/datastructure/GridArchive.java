@@ -35,30 +35,51 @@
 
 package io.github.ericmedvet.jnb.datastructure;
 
-import java.util.Collection;
-import java.util.Optional;
-import java.util.function.BiPredicate;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.IntStream;
 
-public interface Archive<K, V> {
+public class GridArchive<V> extends AbstractHasherArchive<List<Double>, List<DoubleRange>, V> implements NumericalKeyArchive<V> {
 
-  int capacity();
+  public record Axis(DoubleRange range, int nOfBins) {
 
-  default double coverage() {
-    return (double) values().size() / (double) capacity();
   }
 
-  Optional<V> get(K key);
+  private final List<Axis> axes;
+  private final List<List<DoubleRange>> cells;
+  private final int capacity;
 
-  Optional<V> put(K key, V value);
-
-  default Optional<V> putIf(K key, V value, BiPredicate<V, V> predicate) {
-    return get(key).map(existingV -> {
-      if (predicate.test(value, existingV)) {
-        return put(key, value);
-      }
-      return Optional.of(existingV);
-    }).orElse(put(key, value));
+  public GridArchive(List<Axis> axes) {
+    this.axes = Collections.synchronizedList(axes);
+    capacity = axes.stream().mapToInt(Axis::nOfBins).reduce((n1, n2) -> n1 * n2).orElse(0);
+    cells = Collections.synchronizedList(axes.stream().map(a -> a.range.split(a.nOfBins)).toList());
   }
 
-  Collection<V> values();
+  @Override
+  public List<DoubleRange> hash(List<Double> key) {
+    if (key.size() != axes.size()) {
+      throw new IllegalArgumentException(
+          "Wrong key size: %d expected, %d found".formatted(axes.size(), key.size())
+      );
+    }
+    return IntStream.range(0, axes.size())
+        .mapToObj(i -> cellOf(key.get(i), axes.get(i), cells.get(i)))
+        .toList();
+  }
+
+  private static DoubleRange cellOf(double value, Axis axis, List<DoubleRange> subranges) {
+    return subranges.get(
+        (int) Math.clamp(axis.range.normalize(value) * axis.nOfBins, 0, axis.nOfBins - 1)
+    );
+  }
+
+  @Override
+  public int arity() {
+    return axes.size();
+  }
+
+  @Override
+  public int capacity() {
+    return capacity;
+  }
 }
