@@ -91,7 +91,7 @@ public record DoubleRange(double min, double max) implements Serializable {
   /// @param value the input value
   /// @return the clipped value
   public double clip(double value) {
-    return Math.min(Math.max(value, min), max);
+    return Math.clamp(value, min, max);
   }
 
   /// Checks if the given `value` belongs to this interval (assuming both bound included).
@@ -165,11 +165,16 @@ public record DoubleRange(double min, double max) implements Serializable {
   }
 
   /// Normalizes, by shifting and rescaling, the given `value` to this interval. If this interval is
-  /// $\[a,b\]$ and `value` is $v \in \[a,b\]$, then returns $\frac{v-a}{b-a}$.
+  /// $\[a,b\]$ and `value` is $v \in \[a,b\]$, then returns $\frac{v-a}{b-a}$. If this is a
+  /// zero-extent interval, then return $0$ or $1$ depending on `value` being greater than $b$ or
+  /// not.
   ///
   /// @param value the value in this interval to be normalized
   /// @return the normalized value, i.e., a number in $\[0,1\]$
   public double normalize(double value) {
+    if (extent() == 0) {
+      return value > max ? 1 : 0;
+    }
     return (clip(value) - min) / (max - min);
   }
 
@@ -204,7 +209,7 @@ public record DoubleRange(double min, double max) implements Serializable {
   public List<DoubleRange> split(int n) {
     double step = extent() / (double) n;
     return IntStream.range(0, n)
-        .mapToObj(i -> new DoubleRange(min + step * n, clip(min + step * (n + 1))))
+        .mapToObj(i -> new DoubleRange(min + step * i, clip(min + step * (i + 1))))
         .toList();
   }
 
