@@ -30,4 +30,6 @@ module io.github.ericmedvet.jnb.datastructure {
   requires org.jspecify;
 
   exports io.github.ericmedvet.jnb.datastructure;
+
+  opens io.github.ericmedvet.jnb.datastructure to org.junit.platform.commons;
 }
