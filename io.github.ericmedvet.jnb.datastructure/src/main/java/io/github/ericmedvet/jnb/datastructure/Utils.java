@@ -94,13 +94,24 @@ public class Utils {
     return Arrays.stream(lists).flatMap(List::stream).collect(Collectors.toList());
   }
 
+  /// Concatenates the items of the provided `list` and the provided array `ks`.
+  ///
+  /// @param list a list of items
+  /// @param ks an array of items
+  /// @param <K>  the type of the items
+  /// @return an unmodified lists containing of the items of the list and those in the array
+  @SafeVarargs
+  public static <K> List<K> concat(List<K> list, K... ks) {
+    return Stream.concat(list.stream(), Arrays.stream(ks)).toList();
+  }
+
   /// Attempts to execute the provided `runnable` and log if the execution fails.
   ///
   /// @param runnable        the task to be executed
   /// @param logger          the logger on which to log if the execution of the task fails
   /// @param level           the level of the log message
   /// @param messageFunction a function to generate a log message given the `Throwable` raised by
-  ///                        the failed execution of the task
+  /// the failed execution of the task
   public static void doOrLog(
       Runnable runnable,
       Logger logger,
@@ -179,7 +190,7 @@ public class Utils {
   ///
   /// @param pathName  the desired path for the file
   /// @param overwrite if `false`, the returned file represents a renamed version of the given path;
-  ///                  otherwise, represents the given path
+  /// otherwise, represents the given path
   /// @return a `File` object representing the (potentially new) file path
   /// @throws IOException if an I/O error occurs during directory creation or file path resolution
   public static File robustGetFile(String pathName, boolean overwrite) throws IOException {
@@ -233,18 +244,18 @@ public class Utils {
   }
 
   /// Saves an object to a file. The type of saving depends on the object type. A `BufferedImage` is
-  /// saved as a PNG image through [ImageIO#write(RenderedImage , String, File)]. A `String` is saved
-  /// as text. A `Binarizable` object is saved as raw binary data (obtained through
+  /// saved as a PNG image through [ImageIO#write(RenderedImage , String, File)]. A `String` is
+  /// saved as text. A `Binarizable` object is saved as raw binary data (obtained through
   /// [Binarizable#data()]). A `byte[]` is saved as raw binary data. A `NamedParamMap` is saved as a
   /// text, pretty-printed through [MapNamedParamMap#prettyToString()]. A `Table` is saved as tsv.
   ///
   /// @param object    the object to save
   /// @param filePath  the path to the file where the object will be saved
   /// @param overwrite if `true`, overwrites the file at `filePath`, if any; otherwise, obtain a new
-  ///                  path through [#robustGetFile(String, boolean)]
+  /// path through [#robustGetFile(String, boolean)]
   /// @param verbose   if `true`, prints a log message upon successful saving
   /// @throws RuntimeException if an `IOException` occurs during saving, or if the object type is
-  ///                          not supported
+  /// not supported
   public static void save(Object object, String filePath, boolean overwrite, boolean verbose) {
     File file = null;
     try {
@@ -286,7 +297,9 @@ public class Utils {
                   .get()
           )) {
             SequencedSet<?> colIndexes = table.colIndexes();
-            csvPrinter.printRecord(Stream.concat(Stream.of("row"), colIndexes.stream().map(Object::toString)));
+            csvPrinter.printRecord(
+                Stream.concat(Stream.of("row"), colIndexes.stream().map(Object::toString))
+            );
             for (Object ri : table.rowIndexes()) {
               csvPrinter.printRecord(
                   Stream.concat(
@@ -336,9 +349,10 @@ public class Utils {
     );
   }
 
-  /// Returns a `Collector` that accumulates elements into a `SequencedMap`, where the input elements
-  /// themselves are the keys. The values are produced by applying the provided mapping function to
-  /// the input elements. Internally calls [#toSequencedMap(Function, Function)] with the identity as the first argument.
+  /// Returns a `Collector` that accumulates elements into a `SequencedMap`, where the input
+  /// elements themselves are the keys. The values are produced by applying the provided mapping
+  /// function to the input elements. Internally calls [#toSequencedMap(Function, Function)] with
+  /// the identity as the first argument.
   ///
   /// @param valueMapper a function to extract the value from an input element
   /// @param <T>         the type of the input elements (and keys in the map)
