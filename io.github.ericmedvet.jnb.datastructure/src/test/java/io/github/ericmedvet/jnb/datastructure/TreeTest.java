@@ -22,6 +22,8 @@ package io.github.ericmedvet.jnb.datastructure;
 import static org.assertj.core.api.Assertions.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class TreeTest {
@@ -92,6 +94,65 @@ class TreeTest {
     assertThat(t.depthFirstLabels())
         .as("visit nodes of a(b;c(d))")
         .containsExactly('a', 'b', 'c', 'd');
+  }
+
+  @Test
+  void withAt() {
+    Tree<Character> tSmall = new Tree<>(
+        'a',
+        List.of(
+            new Tree<>('b'),
+            new Tree<>('c')
+        )
+    );
+    Tree<Character> subT = new Tree<>(
+        'd',
+        List.of(
+            new Tree<>('e'),
+            new Tree<>('f')
+        )
+    );
+    Tree<Character> tBig = new Tree<>(
+        'a',
+        List.of(
+            new Tree<>('b'),
+            new Tree<>(
+                'd',
+                List.of(
+                    new Tree<>('e'),
+                    new Tree<>('f')
+                )
+            )
+        )
+    );
+    assertThat(tSmall.withAt(subT, List.of(1)))
+        .as("replace leaf with subtree")
+        .isEqualTo(tBig);
+  }
+
+  @Test
+  void from() {
+    Map<List<Integer>, Character> lineageMap = Map.ofEntries(
+        Map.entry(List.of(), 'a'),
+        Map.entry(List.of(0), 'b'),
+        Map.entry(List.of(1), 'c'),
+        Map.entry(List.of(1, 0), 'd')
+    );
+    Tree<Character> t = new Tree<>(
+        'a',
+        List.of(
+            new Tree<>('b'),
+            new Tree<>(
+                'c',
+                List.of(
+                    new Tree<>('d')
+                )
+            )
+        )
+    );
+    assertThat(Tree.from(l -> Optional.ofNullable(lineageMap.get(l))))
+        .as("from lineage of a(b,c(d))")
+        .isEqualTo(t);
   }
 
   @Test

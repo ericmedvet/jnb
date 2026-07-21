@@ -19,8 +19,16 @@
  */
 package io.github.ericmedvet.jnb.datastructure;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.SequencedMap;
+import java.util.SequencedSet;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -52,6 +60,35 @@ public record Tree<L>(
     this(label, List.of());
   }
 
+  /// Builds a tree from a function that maps lineages to labels. For building the new tree, this
+  /// method invokes the function `lineageMapper` repeatedly starting from the root (i.e., with
+  /// lineage `[]`). For every higher branch, it invokes the `lineageMapper` starting from the index
+  /// 0 and stops, for that level, when the mapper returns an empty optional. The method invokes the
+  /// function in a depth first way.
+  ///
+  /// @param lineageMapper a function that takes a *lineage* (see [#descendant(List)]) and returns
+  /// the label that is to be used in the new tree at that lineage
+  /// @param <L>           the type of labels of nodes
+  /// @return the built tree
+  /// @throws IllegalArgumentException if the `lineageMapper` gives an empty `Optional` for the
+  /// empty lineage `[]`, which should instead give the label of the root
+  public static <L> Tree<L> from(
+      Function<? super List<Integer>, Optional<? extends L>> lineageMapper
+  ) {
+    L label = lineageMapper.apply(List.of())
+        .orElseThrow(() -> new IllegalArgumentException("Lineage mapper does not map the root"));
+    int i = 0;
+    List<Tree<L>> children = new ArrayList<>();
+    while (lineageMapper.apply(List.of(i)).isPresent()) {
+      final int j = i;
+      children.add(
+          from(lineageMapper.compose(lineage -> Utils.<Integer>concat(List.of(j), lineage)))
+      );
+      i = i + 1;
+    }
+    return new Tree<>(label, Collections.unmodifiableList(children));
+  }
+
   private static <L> Stream<List<Integer>> lineages(List<Integer> currentLineage, Tree<L> tree) {
     return IntStream.range(0, tree.children.size())
         .mapToObj(
@@ -61,6 +98,14 @@ public record Tree<L>(
             ).collect(Collectors.toSet())
         )
         .flatMap(Set::stream);
+  }
+
+  /// Returns the `index`-th child of this tree.
+  ///
+  /// @param index the index of the child to return
+  /// @return the `index`-th child of this tree
+  public Tree<L> child(int index) {
+    return children.get(index);
   }
 
   /// Creates a shallow copy of this tree. The children are copies of this tree children; the label
@@ -83,6 +128,17 @@ public record Tree<L>(
         Stream.of(label),
         children.stream().flatMap(t -> t.depthFirstLabels().stream())
     ).toList();
+  }
+
+  /// Returns the tree being located at the given lineage coordinate. Internally, it calls
+  /// [#descendant(List)].
+  ///
+  /// @param lineage the sequence of zero-based indexes to look at in this tree
+  /// @return the tree at the given lineage, if any
+  /// @throws IndexOutOfBoundsException if there is no child at one of the indexes of the provided
+  /// lineage
+  public Tree<L> descendant(int... lineage) {
+    return descendant(Arrays.stream(lineage).boxed().toList());
   }
 
   /// Returns the tree being located at the given lineage coordinate. A lineage coordinate, simply
@@ -129,9 +185,14 @@ public record Tree<L>(
     return children.stream().flatMap(t -> t.leafLabels().stream()).toList();
   }
 
-  public Set<List<Integer>> lineages() {
+  /// Returns all the lineages (see [#descendant(List)]) of this tree, in a depth first predictable
+  /// order. A copy of this tree can be rebuilt from the returned lineages through the
+  /// [Tree#from(Function)] method, namely with `from(l -> Optional.of(descendant(l).label()))`.
+  ///
+  /// @return all the lineages of this tree
+  public SequencedSet<List<Integer>> lineages() {
     return Stream.concat(Stream.of(List.<Integer>of()), lineages(List.of(), this))
-        .collect(Collectors.toSet());
+        .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
   /// Returns the number of nodes in this tree.
@@ -153,5 +214,25 @@ public record Tree<L>(
     return label + (isLeaf() ? "" : (CHILDREN_START_DELIMITER + children.stream()
         .map(Tree::toString)
         .collect(Collectors.joining(CHILDREN_SEPARATOR)) + CHILDREN_END_DELIMITER));
+  }
+
+  /// Returns a new tree built from this tree with the provided `subtree` put at the provided
+  /// `lineage` of this tree.
+  ///
+  /// @param subtree the tree to be appended at the specified lineage
+  /// @param lineage the lineage where to append the subtree
+  /// @return the new tree built by putting the provided subtree at the provided lineage in this
+  /// tree
+  public Tree<L> withAt(Tree<? extends L> subtree, List<Integer> lineage) {
+    SequencedMap<List<Integer>, L> lineageMap = lineages().stream()
+        .collect(Utils.toSequencedMap(l -> descendant(l).label()));
+    subtree.lineages()
+        .forEach(
+            l -> lineageMap.put(
+                Utils.concat(lineage, l),
+                subtree.descendant(l).label()
+            )
+        );
+    return Tree.from(l -> Optional.ofNullable(lineageMap.get(l)));
   }
 }
