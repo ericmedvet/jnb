@@ -195,6 +195,21 @@ public record Tree<L>(
         .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
+  /// Returns a new tree with the same structure of this tree where every label is obtained by
+  /// mapping the corresponding label of this tree through the provided `mapper`.
+  ///
+  /// @param mapper a function for mapping this tree labels to the built tree labels
+  /// @param <K>    the type of labels of nodes of the returned tree
+  /// @return a new tree with same structure of this tree and labels mapped through the provided
+  /// mapper
+  public <K> Tree<K> map(Function<? super L, ? extends K> mapper) {
+    //noinspection unchecked
+    return new Tree<>(
+        mapper.apply(label),
+        children.stream().map(c -> (Tree<K>) c.map(mapper)).toList()
+    );
+  }
+
   /// Returns the number of nodes in this tree.
   ///
   /// @return the number of nodes in this tree
