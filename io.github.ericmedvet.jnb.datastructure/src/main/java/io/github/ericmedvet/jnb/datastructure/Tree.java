@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.SequencedMap;
 import java.util.SequencedSet;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -244,16 +245,27 @@ public record Tree<L>(
   /// @return the new tree built by putting the provided subtree at the provided lineage in this
   /// tree
   public Tree<L> withAt(Tree<? extends L> subtree, List<Integer> lineage) {
-    SequencedMap<List<Integer>, L> lineageMap = lineages().stream()
-        .collect(Utils.toSequencedMap(l -> descendant(l).label()));
-    subtree.lineages()
-        .forEach(
-            l -> lineageMap.put(
-                Utils.concat(lineage, l),
-                subtree.descendant(l).label()
-            )
-        );
-    return Tree.from(l -> Optional.ofNullable(lineageMap.get(l)));
+    return Tree.from(l -> {
+      if (startsWith(l, lineage)) {
+        return ifSuccess(() -> subtree.descendant(l.subList(lineage.size(), l.size())).label());
+      }
+      return ifSuccess(() -> descendant(l).label());
+    });
+  }
+
+  private static <K> Optional<K> ifSuccess(Callable<K> supplier) {
+    try {
+      return Optional.of(supplier.call());
+    } catch (Exception e) {
+      return Optional.empty();
+    }
+  }
+
+  private static <K> boolean startsWith(List<K> list, List<K> prefix) {
+    if (list.size() < prefix.size()) {
+      return false;
+    }
+    return list.subList(0, prefix.size()).equals(prefix);
   }
 
   /// A parser which produces tree parsing strings. It has to be configured through four parameters
@@ -291,12 +303,12 @@ public record Tree<L>(
     ///   - if a non-terminal parser matches a label, it looks for a
     /// [Configuration#childrenStartDelimiter()], then parses inner nodes, separated by a
     /// [Configuration#childrenStartDelimiter()] and terminated by a
-    /// [Configuration#childrenEndDelimiter()]; if it does not find a start delimiter, goes to next case;
+    /// [Configuration#childrenEndDelimiter()]; if it does not find a start delimiter, goes to next
+    /// case;
     ///   - otherwise, if a terminal parser matches a label, returns a tree with a leaf node labeled
     /// with the parsed label;
-    ///   - otherwise, throws a `NoSuchElementException`.
-    /// When parsing label nodes, the parser permits empty spaces if [Configuration#allowVoid()] is true.
-    ///
+    ///   - otherwise, throws a `NoSuchElementException`. When parsing label nodes, the parser
+    /// permits empty spaces if [Configuration#allowVoid()] is true.
     ///
     /// @param nonTerminalParsers a list of parsers for labels of non-terminal nodes
     /// @param terminalParsers    a list of parsers for labels of terminal nodes
@@ -348,6 +360,7 @@ public record Tree<L>(
     }
 
     private static class ParseException extends RuntimeException {
+
       public enum Component { LABEL, START_DELIMITER, SEPARATOR, END_DELIMITER }
 
       private final Component component;
