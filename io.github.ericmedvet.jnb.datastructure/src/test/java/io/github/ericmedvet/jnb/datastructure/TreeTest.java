@@ -21,6 +21,9 @@ package io.github.ericmedvet.jnb.datastructure;
 
 import static org.assertj.core.api.Assertions.*;
 
+import io.github.ericmedvet.jnb.datastructure.Tree.StringParser;
+import io.github.ericmedvet.jnb.datastructure.Tree.StringParser.Configuration;
+import io.github.ericmedvet.jnb.datastructure.Tree.StringParser.NodeParser;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,15 +31,16 @@ import org.junit.jupiter.api.Test;
 
 class TreeTest {
 
+  private final static StringParser<Character, Character, Character> P = new StringParser<>(
+      List.of(NodeParser.fromRegex("[a-z]", s -> s.charAt(0), true)),
+      List.of(NodeParser.fromRegex("[a-z]", s -> s.charAt(0), true)),
+      (_, _) -> true,
+      Configuration.DEFAULT
+  );
+
   @Test
   void copyOf() {
-    Tree<Character> t = new Tree<>(
-        'a',
-        List.of(
-            new Tree<>('b'),
-            new Tree<>('c')
-        )
-    );
+    Tree<Character> t = P.parse("a(b;c)");
     assertThat(t.copyOf())
         .as("copy is not ==")
         .isNotSameAs(t);
@@ -47,84 +51,87 @@ class TreeTest {
 
   @Test
   void descendant() {
-    Tree<Character> t = new Tree<>(
-        'a',
-        List.of(
-            new Tree<>('b'),
-            new Tree<>(
-                'c',
-                List.of(
-                    new Tree<>('d')
-                )
-            )
-        )
-    );
+    Tree<Character> t = P.parse("a(b;c(d))");
     assertThat(t.descendant(List.of()))
         .as("empty lineage is the tree")
         .isEqualTo(t);
     assertThat(t.descendant(List.of(1)))
         .as("[1] descendant of a(b;c(d)) is c(d)")
-        .isEqualTo(
-            new Tree<>(
-                'c',
-                List.of(
-                    new Tree<>('d')
-                )
-            )
-        );
+        .isEqualTo(P.parse("c(d)"));
     assertThat(t.descendant(List.of(1, 0)))
-        .as("[1] descendant of a(b;c(d)) is d")
-        .isEqualTo(new Tree<>('d'));
+        .as("[1,0] descendant of a(b;c(d)) is d")
+        .isEqualTo(P.parse("d"));
   }
 
   @Test
   void depthFirstLabels() {
-    Tree<Character> t = new Tree<>(
-        'a',
-        List.of(
-            new Tree<>('b'),
-            new Tree<>(
-                'c',
-                List.of(
-                    new Tree<>('d')
-                )
-            )
-        )
-    );
-    assertThat(t.depthFirstLabels())
+    assertThat(P.parse("a(b;c(d))").depthFirstLabels())
         .as("visit nodes of a(b;c(d))")
         .containsExactly('a', 'b', 'c', 'd');
   }
 
   @Test
-  void withAt() {
-    Tree<Character> tSmall = new Tree<>(
-        'a',
-        List.of(
-            new Tree<>('b'),
-            new Tree<>('c')
-        )
-    );
-    Tree<Character> subT = new Tree<>(
-        'd',
-        List.of(
-            new Tree<>('e'),
-            new Tree<>('f')
-        )
-    );
-    Tree<Character> tBig = new Tree<>(
-        'a',
-        List.of(
-            new Tree<>('b'),
+  void parse() {
+    assertThat(
+        new StringParser<>(
+            List.of(NodeParser.fromRegex("[a-z]", s -> s.charAt(0), true)),
+            List.of(NodeParser.fromRegex("[A-Z]", s -> s.charAt(0), true)),
+            (_, _) -> true,
+            Configuration.DEFAULT
+        ).parse("a(B;c(D))")
+    )
+        .as("parsing NT-T disjoint with default configuration")
+        .isEqualTo(
             new Tree<>(
-                'd',
+                'a',
                 List.of(
-                    new Tree<>('e'),
-                    new Tree<>('f')
+                    new Tree<>('B'),
+                    new Tree<>(
+                        'c',
+                        List.of(
+                            new Tree<>('D')
+                        )
+                    )
                 )
             )
-        )
-    );
+        );
+    assertThat(
+        new StringParser<>(
+            List.of(NodeParser.fromRegex("[a-z]", s -> s.charAt(0), true)),
+            List.of(NodeParser.fromRegex("[a-z]", s -> s.charAt(0), true)),
+            (_, _) -> true,
+            Configuration.DEFAULT
+        ).parse("a(b;c(d))")
+    )
+        .as("parsing NT=T with default configuration")
+        .isEqualTo(
+            new Tree<>(
+                'a',
+                List.of(
+                    new Tree<>('b'),
+                    new Tree<>(
+                        'c',
+                        List.of(
+                            new Tree<>('d')
+                        )
+                    )
+                )
+            )
+        );
+  }
+
+  @Test
+  void map() {
+    assertThat(P.parse("a(b;c(d))").map(c -> (char) (c + 1)))
+        .as("map to incremented char")
+        .isEqualTo(P.parse("b(c;d(e))"));
+  }
+
+  @Test
+  void withAt() {
+    Tree<Character> tSmall = P.parse("a(b;c)");
+    Tree<Character> subT = P.parse("d(e;f)");
+    Tree<Character> tBig = P.parse("a(b;d(e;f))");
     assertThat(tSmall.withAt(subT, List.of(1)))
         .as("replace leaf with subtree")
         .isEqualTo(tBig);
@@ -138,123 +145,47 @@ class TreeTest {
         Map.entry(List.of(1), 'c'),
         Map.entry(List.of(1, 0), 'd')
     );
-    Tree<Character> t = new Tree<>(
-        'a',
-        List.of(
-            new Tree<>('b'),
-            new Tree<>(
-                'c',
-                List.of(
-                    new Tree<>('d')
-                )
-            )
-        )
-    );
     assertThat(Tree.from(l -> Optional.ofNullable(lineageMap.get(l))))
         .as("from lineage of a(b,c(d))")
-        .isEqualTo(t);
+        .isEqualTo(P.parse("a(b;c(d))"));
   }
 
   @Test
   void leafLabels() {
-    Tree<Character> t = new Tree<>(
-        'a',
-        List.of(
-            new Tree<>('b'),
-            new Tree<>(
-                'c',
-                List.of(
-                    new Tree<>('d')
-                )
-            )
-        )
-    );
-    assertThat(t.leafLabels())
+    assertThat(P.parse("a(b;c(d))").leafLabels())
         .as("visit labels of a(b;c(d))")
         .containsExactly('b', 'd');
   }
 
   @Test
   void height() {
-    Tree<Character> t1 = new Tree<>('a');
-    assertThat(t1.height())
+    assertThat(P.parse("a").height())
         .as("height of leaf")
         .isEqualTo(1);
-    Tree<Character> t3 = new Tree<>(
-        'a',
-        List.of(
-            new Tree<>('b'),
-            new Tree<>('c')
-        )
-    );
-    assertThat(t3.height())
+    assertThat(P.parse("a(b;c)").height())
         .as("height of a(b;c)")
         .isEqualTo(2);
-    Tree<Character> t4 = new Tree<>(
-        'a',
-        List.of(
-            new Tree<>('b'),
-            new Tree<>(
-                'c',
-                List.of(
-                    new Tree<>('d')
-                )
-            )
-        )
-    );
-    assertThat(t4.height())
+    assertThat(P.parse("a(b;c(d))").height())
         .as("height of a(b;c(d))")
         .isEqualTo(3);
   }
 
   @Test
   void isLeaf() {
-    Tree<Character> t1 = new Tree<>('a');
-    assertThat(t1.isLeaf())
+    assertThat(P.parse("a").isLeaf())
         .as("a is leaf")
         .isTrue();
-    Tree<Character> t3 = new Tree<>(
-        'a',
-        List.of(
-            new Tree<>('b'),
-            new Tree<>('c')
-        )
-    );
-    assertThat(t3.isLeaf())
+    assertThat(P.parse("a(b;c)").isLeaf())
         .as("a(b;c) is not leaf")
         .isFalse();
-    Tree<Character> t4 = new Tree<>(
-        'a',
-        List.of(
-            new Tree<>('b'),
-            new Tree<>(
-                'c',
-                List.of(
-                    new Tree<>('d')
-                )
-            )
-        )
-    );
-    assertThat(t4.isLeaf())
+    assertThat(P.parse("a(b;c(d))").isLeaf())
         .as("a(b;c(d)) is not leaf")
         .isFalse();
   }
 
   @Test
   void lineages() {
-    Tree<Character> t = new Tree<>(
-        'a',
-        List.of(
-            new Tree<>('b'),
-            new Tree<>(
-                'c',
-                List.of(
-                    new Tree<>('d')
-                )
-            )
-        )
-    );
-    assertThat(t.lineages())
+    assertThat(P.parse("a(b;c(d))").lineages())
         .as("lineage of a(b;c(d))")
         .containsExactlyInAnyOrder(
             List.of(),
@@ -266,33 +197,13 @@ class TreeTest {
 
   @Test
   void size() {
-    Tree<Character> t1 = new Tree<>('a');
-    assertThat(t1.size())
+    assertThat(P.parse("a").size())
         .as("size of leaf")
         .isEqualTo(1);
-    Tree<Character> t3 = new Tree<>(
-        'a',
-        List.of(
-            new Tree<>('b'),
-            new Tree<>('c')
-        )
-    );
-    assertThat(t3.size())
+    assertThat(P.parse("a(b;c)").size())
         .as("size of a(b;c)")
         .isEqualTo(3);
-    Tree<Character> t4 = new Tree<>(
-        'a',
-        List.of(
-            new Tree<>('b'),
-            new Tree<>(
-                'c',
-                List.of(
-                    new Tree<>('d')
-                )
-            )
-        )
-    );
-    assertThat(t4.size())
+    assertThat(P.parse("a(b;c(d))").size())
         .as("size of a(b;c(d))")
         .isEqualTo(4);
   }
