@@ -209,28 +209,43 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
           .append(TokenType.ASSIGN_SEPARATOR.rendered())
           .append(space);
       Object value = m.value(names.get(i));
-      switch (value) {
-        case List<?> l -> sb.append(TokenType.OPEN_LIST.rendered())
-            .append(listContentToInlineString(l, space))
-            .append(TokenType.CLOSED_LIST.rendered());
-        case ParamMap innerMap -> {
-          if (innerMap instanceof NamedParamMap namedParamMap) {
-            sb.append(namedParamMap.getName()).append(TokenType.OPEN_CONTENT.rendered());
-          }
-          sb.append(mapContentToInlineString(innerMap, space));
-          if (innerMap instanceof NamedParamMap) {
-            sb.append(TokenType.CLOSED_CONTENT.rendered());
-          }
-        }
-        case String s -> sb.append(stringValue(s));
-        case null -> sb.append((String) null);
-        default -> sb.append(value);
-      }
+      valueString(value, sb, space);
       if (i < names.size() - 1) {
         sb.append(TokenType.LIST_SEPARATOR.rendered()).append(space);
       }
     }
     return sb.toString();
+  }
+
+  /// Returns a human-friendly string representation of the provided `value`, as if it was one of
+  /// the values of a `ParamMap`.
+  ///
+  /// @param value the object to return the string representation of
+  /// @return a human-friendly string representation of the object
+  public static String valueString(Object value) {
+    StringBuilder sb = new StringBuilder();
+    valueString(value, sb, " ");
+    return sb.toString();
+  }
+
+  private static void valueString(Object value, StringBuilder sb, String space) {
+    switch (value) {
+      case List<?> l -> sb.append(TokenType.OPEN_LIST.rendered())
+          .append(listContentToInlineString(l, space))
+          .append(TokenType.CLOSED_LIST.rendered());
+      case ParamMap innerMap -> {
+        if (innerMap instanceof NamedParamMap namedParamMap) {
+          sb.append(namedParamMap.getName()).append(TokenType.OPEN_CONTENT.rendered());
+        }
+        sb.append(mapContentToInlineString(innerMap, space));
+        if (innerMap instanceof NamedParamMap) {
+          sb.append(TokenType.CLOSED_CONTENT.rendered());
+        }
+      }
+      case String s -> sb.append(stringValue(s));
+      case null -> sb.append((String) null);
+      default -> sb.append(value);
+    }
   }
 
   private static void mapContentToMultilineString(
@@ -311,9 +326,9 @@ public class MapNamedParamMap implements NamedParamMap, Formattable {
   /// @param map           the map to be represented as string
   /// @param stringBuilder the string builder to direct the representation to
   /// @param maxLineLength the maximum line length in the string representation, impacting also on
-  ///                      indentation style
+  /// indentation style
   /// @param indentOffset  the offset for indentation (each line in the produced string
-  ///                      representation will have `indentOffset` indentation tokens)
+  /// representation will have `indentOffset` indentation tokens)
   /// @param indentSize    the number of indentation tokens to be used at each indentation
   /// @param indentToken   the indentation token (a blank indentToken being a reasonable value)
   public static void prettyToString(

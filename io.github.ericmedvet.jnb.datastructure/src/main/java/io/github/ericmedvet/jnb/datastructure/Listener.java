@@ -63,6 +63,14 @@ public interface Listener<E> {
     };
   }
 
+  static <OE, IE> Listener<OE> split(Function<OE, Collection<IE>> splitter, Listener<Pair<OE, IE>> pairListener) {
+    return from(
+        "%s[splitterP:%s]".formatted(pairListener, splitter),
+        oe -> splitter.apply(oe).forEach(ie -> pairListener.listen(new Pair<>(oe, ie))),
+        pairListener::done
+    );
+  }
+
   default Listener<E> and(Listener<? super E> other) {
     return all(List.of(this, other));
   }
@@ -104,14 +112,6 @@ public interface Listener<E> {
   default void done() {
   }
 
-  default <F> Listener<F> forEach(Function<F, Collection<E>> splitter) {
-    return from(
-        "%s[forEach:%s]".formatted(this, splitter),
-        f -> splitter.apply(f).forEach(this::listen),
-        this::done
-    );
-  }
-
   void listen(E e);
 
   default <F> Listener<F> on(Function<F, E> function) {
@@ -123,5 +123,13 @@ public interface Listener<E> {
       listen(e1);
       done();
     });
+  }
+
+  default <F> Listener<F> split(Function<F, Collection<E>> splitter) {
+    return from(
+        "%s[splitter:%s]".formatted(this, splitter),
+        f -> splitter.apply(f).forEach(this::listen),
+        this::done
+    );
   }
 }

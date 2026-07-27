@@ -100,7 +100,7 @@ public interface DocumentedBuilder<T> extends Builder<T> {
   /// @param alias the alias to apply
   /// @return a new `DocumentedBuilder`
   default DocumentedBuilder<T> alias(Alias alias) {
-    NamedParamMap preMap = AutoBuiltDocumentedBuilder.fromAlias(alias, null);
+    NamedParamMap preMap = AutoBuiltDocumentedBuilder.fromAlias(alias, null, "null");
     List<ParamInfo> newParams = Stream.concat(
         params().stream()
             .map(
@@ -136,7 +136,7 @@ public interface DocumentedBuilder<T> extends Builder<T> {
         newParams,
         origin(),
         (map, namedBuilder, index) -> build(
-            map.and(AutoBuiltDocumentedBuilder.fromAlias(alias, map))
+            map.and(AutoBuiltDocumentedBuilder.fromAlias(alias, map, null))
                 .without(
                     Arrays.stream(alias.passThroughParams())
                         .map(PassThroughParam::name)

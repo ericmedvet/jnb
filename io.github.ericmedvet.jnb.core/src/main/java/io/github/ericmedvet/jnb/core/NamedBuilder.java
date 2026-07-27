@@ -97,7 +97,7 @@ public class NamedBuilder<X> {
     record DiscoverableAlias(List<String> prefixes, Alias alias) {
 
       public String of() {
-        return AutoBuiltDocumentedBuilder.fromAlias(alias, null).getName();
+        return AutoBuiltDocumentedBuilder.fromAlias(alias, null, "null").getName();
       }
     }
     // find out-of-place aliases

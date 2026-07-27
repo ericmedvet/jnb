@@ -28,6 +28,7 @@ import io.github.ericmedvet.jnb.datastructure.FormattedFunction;
 import io.github.ericmedvet.jnb.datastructure.Listener;
 import io.github.ericmedvet.jnb.datastructure.ListenerFactory;
 import io.github.ericmedvet.jnb.datastructure.Naming;
+import io.github.ericmedvet.jnb.datastructure.Pair;
 import io.github.ericmedvet.jnb.datastructure.TabularPrinter;
 import io.github.ericmedvet.jnb.datastructure.Utils;
 import java.util.Collection;
@@ -159,6 +160,40 @@ public class Listeners {
     //noinspection unchecked
     return FormattedFunction.from(f)
         .reformattedToFit(ts.stream().map(t -> (T) t).toList());
+  }
+
+  public static <OE, IE, K> Function<Executor, ListenerFactory<OE, K>> split(
+      @Param("splitter") Function<OE, Collection<IE>> splitter,
+      @Param("inner") Function<Executor, ListenerFactory<IE, K>> inner,
+      @Param(value = "deferred") boolean deferred,
+      @Param(value = "onlyLast") boolean onlyLast,
+      @Param(value = "eCondition", dNPM = "predicate.always()") Predicate<OE> ePredicate,
+      @Param(value = "kCondition", dNPM = "predicate.always()") Predicate<K> kPredicate
+  ) {
+    return executor -> new CustomListenerFactory<>(
+        inner.apply(executor).split(splitter),
+        kPredicate,
+        ePredicate,
+        deferred ? executor : null,
+        onlyLast
+    );
+  }
+
+  public static <OE, IE, K> Function<Executor, ListenerFactory<OE, K>> splitPair(
+      @Param("splitter") Function<OE, Collection<IE>> splitter,
+      @Param("inner") Function<Executor, ListenerFactory<Pair<OE, IE>, K>> inner,
+      @Param(value = "deferred") boolean deferred,
+      @Param(value = "onlyLast") boolean onlyLast,
+      @Param(value = "eCondition", dNPM = "predicate.always()") Predicate<OE> ePredicate,
+      @Param(value = "kCondition", dNPM = "predicate.always()") Predicate<K> kPredicate
+  ) {
+    return executor -> new CustomListenerFactory<>(
+        ListenerFactory.split(splitter, inner.apply(executor)),
+        kPredicate,
+        ePredicate,
+        deferred ? executor : null,
+        onlyLast
+    );
   }
 
   private static class CustomListenerFactory<E, K> implements ListenerFactory<E, K> {

@@ -23,7 +23,6 @@ import io.github.ericmedvet.jnb.core.Param.Injection;
 import io.github.ericmedvet.jnb.core.parsing.StringParser;
 import java.lang.reflect.*;
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -166,8 +165,8 @@ public record AutoBuiltDocumentedBuilder<T>(
   /// @param aliases    an array of aliases for the builder
   /// @return a list of documented builders
   /// @throws BuilderException if `executable` is not a `public` constructor, nor a `public static`
-  ///                          method; or if there is the wrong number of annotated params; or if
-  ///                          the builder of aliases cannot be built
+  /// method; or if there is the wrong number of annotated params; or if the builder of aliases
+  /// cannot be built
   public static List<DocumentedBuilder<Object>> from(Executable executable, Alias[] aliases) {
     Logger l = Logger.getLogger(AutoBuiltDocumentedBuilder.class.getName());
     // check annotations
@@ -309,13 +308,13 @@ public record AutoBuiltDocumentedBuilder<T>(
       Map<String, DocumentedBuilder<Object>> builders = new TreeMap<>();
       builders.put(mainBuilder.name(), mainBuilder);
       for (Alias alias : aliases) {
-        String aliasName = fromAlias(alias, null).getName();
-        DocumentedBuilder<Object> toAliasBuilder = builders.get(aliasName);
+        String aliasedName = fromAlias(alias, null, "null").getName();
+        DocumentedBuilder<Object> toAliasBuilder = builders.get(aliasedName);
         if (toAliasBuilder == null) {
           throw new BuilderException(
               "Cannot build alias \"%s\" for builder \"%s\": known builders are %s"
                   .formatted(
-                      aliasName,
+                      aliasedName,
                       mainBuilder.name,
                       builders.keySet()
                           .stream()
@@ -544,10 +543,12 @@ public record AutoBuiltDocumentedBuilder<T>(
   }
 
   /// Creates a [NamedParamMap] from an [Alias] annotation and a [ParamMap]. The returned
-  /// `NamedParamMap` will have the `name()` of the `Alias` and the names defined in the `value()`
-  /// of the `Alias`, which can possibly have values defined as constants (through
+  /// `NamedParamMap` will have the `name()` of the `Alias` and the parameters defined in the
+  /// `value()` of the `Alias`, which can possibly have values defined as constants (through
   /// [StringParser#CONST_NAME_PREFIX]) and being pass-through parameters. The values of those
-  /// constants are taken from the `map`, i.e., they are resolved from it.
+  /// constants are taken from the `map`, i.e., they are resolved from it. If the map does not
+  /// contain the value for a param, nor it is specified in the `alias` (i.e., there is no value for
+  /// the `value` param of the corresponding [PassThroughParam]), then `defaultValue` is used (if not `null`).
   ///
   /// For example, given a map with `name` -> `"Eric"`, `age` -> `46`, and `lang` -> `"Italian"`,
   /// and an `Alias` named `headPerson`, a value `person(name = $name; age = $age; role = head)`,
@@ -556,27 +557,41 @@ public record AutoBuiltDocumentedBuilder<T>(
   ///
   /// @param alias the alias annotation
   /// @param map   a parameter map to resolve pass-through parameters
+  /// @param defaultValue the default string to used while building (through parsing) the map from the alias; set to `null` to purposely not including an unvalued parameter
   /// @return a NamedParamMap representing the alias
-  public static NamedParamMap fromAlias(Alias alias, ParamMap map) {
-    BiFunction<String, ParamMap.Type, String> quoter = (s, t) -> t.equals(ParamMap.Type.STRING) ? "\"%s\"".formatted(
-        s
-    ) : s;
+  public static NamedParamMap fromAlias(Alias alias, ParamMap map, String defaultValue) {
     String consts = Arrays.stream(alias.passThroughParams())
+        .map(p -> Map.entry(p.name(), aliasParamValue(p, map)))
+        .filter(e -> e.getValue().isPresent() || Objects.nonNull(defaultValue))
         .map(
-            p -> StringParser.CONST_NAME_PREFIX + "%s = %s"
-                .formatted(
-                    p.name(),
-                    quoter.apply(
-                        map == null ? (p.value().isEmpty() ? "null" : p.value()) : (map.value(p.name()) == null ? p
-                            .value() : map.value(p.name())
-                                .toString()),
-                        p.type()
-                    )
-                )
+            e -> StringParser.CONST_NAME_PREFIX + "%s = %s"
+                .formatted(e.getKey(), e.getValue().orElse(defaultValue))
         )
         .collect(Collectors.joining("\n"));
     consts = consts + "\n" + alias.value();
     return StringParser.parse(consts);
+  }
+
+  private static Optional<String> aliasParamValue(PassThroughParam p, ParamMap map) {
+    if (map == null || map.value(p.name()) == null) {
+      if (p.value().isEmpty()) {
+        return Optional.empty();
+      }
+      return Optional.of(switch (p.type()) {
+        case STRING -> "\"%s\"".formatted(p.value());
+        default -> p.value();
+      });
+    }
+    if (!map.types(p.name()).contains(p.type())) {
+      throw new IllegalArgumentException(
+          "Type mismatch in alias: param %s declared as %s but valued as %s".formatted(
+              p.name(),
+              p.type(),
+              map.types(p.name())
+          )
+      );
+    }
+    return Optional.of(MapNamedParamMap.valueString(map.value(p.name(), p.type())));
   }
 
   /// Builds an object of type `T` from a `ParamMap`, a `NamedBuilder`, and an index. The `ParamMap`
@@ -590,9 +605,9 @@ public record AutoBuiltDocumentedBuilder<T>(
   ///
   /// @param map          the `ParamMap` containing the parameters for building the object
   /// @param namedBuilder the `NamedBuilder` that can be used to recursively build values in the
-  ///                     `ParamMap`
+  /// `ParamMap`
   /// @param index        the index of the object to build (different from 0 if the object is a part
-  ///                     of sequence)
+  /// of sequence)
   /// @return the built object
   /// @throws BuilderException if an error occurs during the building process
   @Override

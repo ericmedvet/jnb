@@ -731,20 +731,22 @@ public class Functions {
 
   @Cacheable
   public static <X, F, S> FormattedNamedFunction<X, F> pairFirst(
+      @Param(value = "name", dS = "first") String name,
       @Param(value = "of", dNPM = "f.identity()") Function<X, Pair<F, S>> beforeF,
       @Param(value = "format", dS = "%s") String format
   ) {
     Function<Pair<F, S>, F> f = Pair::first;
-    return FormattedNamedFunction.from(f, format, "first").compose(beforeF);
+    return FormattedNamedFunction.from(f, format, name).compose(beforeF);
   }
 
   @Cacheable
   public static <X, F, S> FormattedNamedFunction<X, S> pairSecond(
+      @Param(value = "name", dS = "second") String name,
       @Param(value = "of", dNPM = "f.identity()") Function<X, Pair<F, S>> beforeF,
       @Param(value = "format", dS = "%s") String format
   ) {
     Function<Pair<F, S>, S> f = Pair::second;
-    return FormattedNamedFunction.from(f, format, "second").compose(beforeF);
+    return FormattedNamedFunction.from(f, format, name).compose(beforeF);
   }
 
   @Cacheable
@@ -780,7 +782,7 @@ public class Functions {
     Function<Collection<T>, T> f = cs -> cs.stream()
         .sorted(Comparator.comparing(byFunction))
         .toList()
-        .get((int) Math.min(cs.size() - 1, Math.max(0, cs.size() * p / 100d)));
+        .get((int) Math.clamp(cs.size() * p / 100d, 0, cs.size() - 1));
     return FormattedNamedFunction.from(
         f,
         format,
@@ -888,8 +890,8 @@ public class Functions {
       @Param(value = "format", dS = "%s") String format
   ) {
     Function<List<T>, List<T>> f = ts -> ts.subList(
-        (int) Math.min(Math.max(0, relative ? (from * ts.size()) : from), ts.size()),
-        (int) Math.min(Math.max(0, relative ? (to * ts.size()) : to), ts.size())
+        (int) Math.clamp(relative ? (from * ts.size()) : from, 0, ts.size() - 1),
+        (int) Math.clamp(relative ? (to * ts.size()) : to, 0, ts.size())
     );
     return FormattedNamedFunction.from(
         f,

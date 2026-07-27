@@ -31,8 +31,6 @@ import java.util.stream.Collectors;
 
 public interface ListenerFactory<E, K> {
 
-  Listener<E> build(K k);
-
   static <E, K> ListenerFactory<E, K> all(List<? extends ListenerFactory<? super E, ? super K>> factories) {
     return from(
         "all[%s]".formatted(factories.stream().map(Object::toString).collect(Collectors.joining(";"))),
@@ -75,9 +73,22 @@ public interface ListenerFactory<E, K> {
     };
   }
 
+  static <OE, IE, K> ListenerFactory<OE, K> split(
+      Function<OE, Collection<IE>> splitter,
+      ListenerFactory<Pair<OE, IE>, K> pairKListenerFactory
+  ) {
+    return from(
+        "%s[splitterP:%s]".formatted(pairKListenerFactory, splitter),
+        k -> Listener.split(splitter, pairKListenerFactory.build(k)),
+        pairKListenerFactory::shutdown
+    );
+  }
+
   default ListenerFactory<E, K> and(ListenerFactory<? super E, ? super K> other) {
     return all(List.of(this, other));
   }
+
+  Listener<E> build(K k);
 
   default ListenerFactory<E, K> conditional(Predicate<K> kPredicate, Predicate<E> ePredicate) {
     return from(
@@ -89,14 +100,6 @@ public interface ListenerFactory<E, K> {
 
   default ListenerFactory<E, K> deferred(Executor executor) {
     return from("%s[deferred]".formatted(this), k -> build(k).deferred(executor), this::shutdown);
-  }
-
-  default <F> ListenerFactory<F, K> forEach(Function<F, Collection<E>> splitter) {
-    return from(
-        "%s[forEach:%s]".formatted(this, NamedFunction.name(splitter)),
-        k -> build(k).forEach(splitter),
-        this::shutdown
-    );
   }
 
   default <F> ListenerFactory<F, K> on(Function<F, E> function) {
@@ -117,25 +120,31 @@ public interface ListenerFactory<E, K> {
         final Listener<E> innerListener = thisFactory.build(k);
         return new Listener<>() {
           @Override
-          public void listen(E e) {
-            if (counter.get() == -1) {
-              L.warning("listen() invoked on a shutdown factory");
-              return;
-            }
-            counter.incrementAndGet();
-            try {
-              innerListener.listen(e);
-            } finally {
-              synchronized (counter) {
-                counter.decrementAndGet();
-                counter.notifyAll();
-              }
-            }
-          }
-
-          @Override
           public Listener<E> deferred(Executor executor) {
             return new Listener<>() {
+              @Override
+              public void done() {
+                counter.incrementAndGet();
+                executor.execute(() -> {
+                  try {
+                    innerListener.done();
+                  } catch (RuntimeException ex) {
+                    L.warning(
+                        String.format(
+                            "Listener (from factory) %s cannot done() event: %s",
+                            innerListener.getClass().getSimpleName(),
+                            ex
+                        )
+                    );
+                  } finally {
+                    synchronized (counter) {
+                      counter.decrementAndGet();
+                      counter.notifyAll();
+                    }
+                  }
+                });
+              }
+
               @Override
               public void listen(E e) {
                 if (counter.get() == -1) {
@@ -162,29 +171,6 @@ public interface ListenerFactory<E, K> {
                   }
                 });
               }
-
-              @Override
-              public void done() {
-                counter.incrementAndGet();
-                executor.execute(() -> {
-                  try {
-                    innerListener.done();
-                  } catch (RuntimeException ex) {
-                    L.warning(
-                        String.format(
-                            "Listener (from factory) %s cannot done() event: %s",
-                            innerListener.getClass().getSimpleName(),
-                            ex
-                        )
-                    );
-                  } finally {
-                    synchronized (counter) {
-                      counter.decrementAndGet();
-                      counter.notifyAll();
-                    }
-                  }
-                });
-              }
             };
           }
 
@@ -197,6 +183,23 @@ public interface ListenerFactory<E, K> {
             counter.incrementAndGet();
             try {
               innerListener.done();
+            } finally {
+              synchronized (counter) {
+                counter.decrementAndGet();
+                counter.notifyAll();
+              }
+            }
+          }
+
+          @Override
+          public void listen(E e) {
+            if (counter.get() == -1) {
+              L.warning("listen() invoked on a shutdown factory");
+              return;
+            }
+            counter.incrementAndGet();
+            try {
+              innerListener.listen(e);
             } finally {
               synchronized (counter) {
                 counter.decrementAndGet();
@@ -235,6 +238,14 @@ public interface ListenerFactory<E, K> {
   }
 
   default void shutdown() {
+  }
+
+  default <F> ListenerFactory<F, K> split(Function<F, Collection<E>> splitter) {
+    return from(
+        "%s[splitter:%s]".formatted(this, NamedFunction.name(splitter)),
+        k -> build(k).split(splitter),
+        this::shutdown
+    );
   }
 
 }
