@@ -94,7 +94,7 @@ public class NamedBuilder<X> {
         nb = nb.and(dci.prefixes, NamedBuilder.fromClass(dci.clazz));
       }
     }
-    record DiscoverableAlias(List<String> prefixes, Alias alias) {
+    record DiscoverableAlias(List<String> prefixes, Alias alias, DiscoverableClassInfo discoverableClassInfo) {
 
       public String of() {
         return AutoBuiltDocumentedBuilder.fromAlias(alias, null, "null").getName();
@@ -106,7 +106,7 @@ public class NamedBuilder<X> {
             .filter(DiscoverableClassInfo::utility)
             .flatMap(
                 dci -> Arrays.stream(dci.clazz().getAnnotationsByType(Alias.class))
-                    .map(alias -> new DiscoverableAlias(dci.prefixes, alias))
+                    .map(alias -> new DiscoverableAlias(dci.prefixes, alias, dci))
             )
             .toList()
     );
@@ -141,9 +141,10 @@ public class NamedBuilder<X> {
           "Cannot build one or more aliases: %s".formatted(
               discoverableAliases.stream()
                   .map(
-                      da -> "%s of %s".formatted(
+                      da -> "%s declared in %s as alias of %s".formatted(
                           da.prefixes.isEmpty() ? da.alias.name() : (da.prefixes.getFirst() + NAME_SEPARATOR + da.alias
                               .name()),
+                          da.discoverableClassInfo().clazz.getName(),
                           da.of()
                       )
                   )

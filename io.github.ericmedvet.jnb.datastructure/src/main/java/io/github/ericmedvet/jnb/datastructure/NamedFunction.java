@@ -51,7 +51,7 @@ public interface NamedFunction<T extends @Nullable Object, R extends @Nullable O
   /// @return the concatenation of the input names
   static String composeNames(String... names) {
     return Arrays.stream(names)
-        .filter(s -> !s.equals(UNNAMED_NAME) && !s.equals(IDENTITY_NAME))
+        .filter(s -> !s.equals(UNNAMED_NAME) && !s.equals(IDENTITY_NAME) && !s.isEmpty())
         .collect(Collectors.joining(NAME_JOINER));
   }
 
